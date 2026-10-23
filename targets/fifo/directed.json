@@ -1,0 +1,17 @@
+{
+  "experiment_id": "fifo-directed-v1",
+  "fixture_id": "fifo_correct",
+  "objective_ids": ["FIFO_BEHAVIOR"],
+  "budget": {"max_cycles": 100, "wall_time_seconds": 120.0, "max_artifact_bytes": 104857600},
+  "operations": [
+    {"op":"reset"}, {"op":"read"},
+    {"op":"cycle","write":true,"read":true,"value":11},
+    {"op":"read"}, {"op":"write","value":17},
+    {"op":"write","value":42}, {"op":"write","value":63}, {"op":"write","value":84},
+    {"op":"cycle","write":true,"read":true,"value":99},
+    {"op":"read"}, {"op":"read"}, {"op":"read"}, {"op":"read"},
+    {"op":"write","value":111},
+    {"op":"cycle","reset":true,"write":true,"read":true,"value":222},
+    {"op":"read"}, {"op":"write","value":123}, {"op":"read"}
+  ]
+}
