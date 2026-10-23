@@ -1,0 +1,87 @@
+name: ${COMPOSE_PROJECT_NAME:-veriforge-local}
+
+x-app: &app
+  image: ${VERIFORGE_APP_IMAGE:-veriforge-app:local}
+  build:
+    context: .
+    dockerfile: infra/app/Dockerfile
+    args:
+      RTL_IMAGE: ${VERIFORGE_RTL_IMAGE:-veriforge-rtl:dev}
+  environment: &runtime-env
+    VERIFORGE_DATABASE_URL: postgresql+psycopg://veriforge:${VERIFORGE_POSTGRES_PASSWORD:-veriforge-local-only}@postgres:5432/veriforge
+    VERIFORGE_REDIS_URL: redis://valkey:6379/0
+    VERIFORGE_ARTIFACT_ROOT: /artifacts
+  init: true
+  volumes:
+    - artifacts:/artifacts
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: veriforge
+      POSTGRES_DB: veriforge
+      POSTGRES_PASSWORD: ${VERIFORGE_POSTGRES_PASSWORD:-veriforge-local-only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U veriforge -d veriforge']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  valkey:
+    image: valkey/valkey:8.1.4-alpine
+    command: [valkey-server, --appendonly, 'yes']
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: [CMD, valkey-cli, ping]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    <<: *app
+    command: [python, -m, alembic, upgrade, head]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+  api:
+    <<: *app
+    ports:
+      - '127.0.0.1:${VERIFORGE_API_PORT:-18000}:8000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  reconciler:
+    <<: *app
+    command: [python, -m, veriforge.core.worker, --loop]
+    depends_on:
+      api:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+  rtl-worker:
+    <<: *app
+    command: [rq, worker, --url, 'redis://valkey:6379/0', --name, veriforge-rtl-local, veriforge]
+    depends_on:
+      api:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    stop_grace_period: 15s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  valkey-data:
+  artifacts:

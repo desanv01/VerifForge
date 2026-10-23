@@ -1,0 +1,8 @@
+# Preserve the pre-VF-022 API snapshot while correcting the known simulator
+# runtime dependency and adopting only the RTL owner's finalized runner.
+# Before building, tag the recorded sha256:a51b5c50ed678c5e52dd667f48af8f2da9c454cb9bf579a0587d45bcb28eebdf
+# local image as veriforge-app:vf020-snapshot (the local digest cannot be pulled).
+FROM veriforge-app:vf020-snapshot
+RUN apt-get update && apt-get install -y --no-install-recommends libpython3.12t64 && rm -rf /var/lib/apt/lists/*
+COPY src/veriforge/rtl ./src/veriforge/rtl
+COPY tests/integration ./tests/integration
