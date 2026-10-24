@@ -23,7 +23,7 @@ def run_container_experiment(experiment: Experiment, output_dir: Path, *, cancel
             (control / "experiment.json").write_text(experiment.model_dump_json())
             command = ["docker", "run", "--pull", "never", "--rm", "--name", name, "--network", "none", "--read-only",
                 "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--pids-limit", "128",
-                "--memory", "2g", "--cpus", "2", "--tmpfs", "/tmp:rw,nosuid,size=64m",
+                "--memory", "2g", "--cpus", "2", "--tmpfs", "/tmp:rw,exec,nosuid,size=128m",
                 "--mount", f"type=bind,source={ROOT / 'src'},target=/workspace/src,readonly",
                 "--mount", f"type=bind,source={ROOT / 'targets/fifo'},target=/workspace/targets/fifo,readonly",
                 "--mount", f"type=bind,source={control},target=/input,readonly",
