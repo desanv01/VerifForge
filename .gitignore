@@ -28,4 +28,5 @@ tmp/
 # Private scratch evidence and CI outputs; preserve local files.
 **/.tmp*
 ci-artifacts/
-
+# Private hash receipt for the retained local acceptance image.
+infra/app/vf024-source-selection.json

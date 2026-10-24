@@ -71,19 +71,44 @@ snapshot, installs the corrected shared Python library, and copies only the RTL
 owner's files and integration tests. Select it with
 `VERIFORGE_APP_IMAGE=veriforge-app:baseline-acceptance` and `docker compose up -d --no-build`.
 This image is an acceptance checkpoint, not proof of newer source revisions.
-Ordinary builds use `infra/app/Dockerfile` and the corrected RTL base image.
+It depends on a retained local `veriforge-app:vf020-snapshot` base image, which
+cannot be fetched from this public repository. These historical image-selection
+recipes are not clean-clone setup instructions. New checkouts use the ordinary
+`infra/app/Dockerfile` and corrected RTL base image through Start and inspect above.
 
-Tested versions and actual execution evidence are recorded in
-`.coordination/deliveries/VF-021.md`. This stack does not establish live model or
+The acceptance results below summarize locally retained execution evidence;
+raw receipts and artifacts are not published in this repository. Reproducible
+checks are defined in the committed [baseline runtime tests](../../tests/integration/test_local_runtime.py)
+and [evidence runtime tests](../../tests/integration/test_evidence_runtime.py),
+using the commands and opt-in prerequisites described above. This stack does not establish live model or
 Vivado support, public authentication, arbitrary RTL upload support, or a hosted
 release. Current implemented runtime scope is the installed FIFO fixtures.
 
 Baseline acceptance on October 24, 2026: three real integration tests passed in
 31.44 seconds. Correct FIFO passed, reset mutant produced a checked mismatch,
 duplicate delivery and cancellation passed. Tests used explicit120s simulator
-budgets; default30s clean-build compatibility is not established. Evidence and
-JUnit XML: `infra/app/evidence/vf021-baseline/`. This proves the preserved baseline
+budgets; default30s clean-build compatibility is not established. The underlying
+evidence and JUnit XML are retained locally. This proves the preserved baseline
 image only, not later API source revisions.
+
+Controlled evidence upgrade on October24,2026 is also live at localhost18000:
+`veriforge-app:vf024-reviewed`, image
+`a37049a056a33392a9df79c41bafae23f61bc0c398756a390046191324126433`,
+Alembic6bf022evidence, health `evidence_api: "1"`. A retained pre-upgrade PostgreSQL
+backup was archive-inspected (not restore-tested). Exact fingerprints of seven
+existing tables and26saved files survived migration and export. One real
+existing-artifact/RQ export/download test passed in5.58s. A separately granted
+single exact API replay then passed in30.62s in the same image, preserving the
+original records/files and reproducing the checked reset-mutant signature.
+The upgrade receipt and generated export/replay evidence are retained locally,
+not published public acceptance artifacts.
+To retain that reviewed snapshot for service commands, set
+`VERIFORGE_APP_IMAGE=veriforge-app:vf024-reviewed` and use `--no-build`; the ordinary
+build recipe adopts current checkout source and is a different snapshot.
+That reviewed tag must already exist in the local Docker engine; the image hash
+identifies the observed snapshot and is not a downloadable public image reference.
+Use the ordinary source-build recipe for a clean clone rather than this historical
+`--no-build` snapshot selection.
 
 Official references: [Compose readiness dependencies](https://docs.docker.com/compose/how-tos/startup-order/)
 and [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/).
