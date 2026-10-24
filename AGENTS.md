@@ -1,6 +1,6 @@
 # VerifForge implementation
 
-Read docs/project/IMPLEMENTATION_GAMEPLAN.md and your assigned scope before editing. The user authorized implementation and persistent phase worker chats, with no three-worker limit. Main coordinator: 01a14964-dc0a-7ba0-a44c-ec87bdcc9423.
+Read docs/project/IMPLEMENTATION_GAMEPLAN.md and your assigned scope before editing. The user authorized implementation and persistent phase worker chats, with no three-worker limit. The active main coordinator is recorded in private canonical state. Human resumed implementation, workers and the existing schedule on 24 October 2026. Read .coordination/current-state.json for the latest controls; migration archive remains historical.
 
 ## Coordination
 - Main owns integration, root configuration, shared dependency locks, canonical .coordination/current-state.json, worker-registry.json, and MASTER_CHECKLIST.md unless explicitly delegated.
