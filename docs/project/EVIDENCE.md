@@ -141,8 +141,12 @@ use `--basetemp=tests/evidence/.tmp-unit` to avoid blocked default temporary pat
 
 `tests/evidence/test_live_rtl.py` is opt-in with `VF_REAL_RTL=1`. It runs the prebuilt
 Docker RTL image with 120-second per-plan budget, the real reset-mutant witness,
-replay, four reduction calls, safe export, and curated correct-fixture witness,
+replay, two bounded reduction calls, safe export, and curated correct-fixture witness,
 neighbor and regression checks. A skipped opt-in test is not real simulator evidence.
+Set `VF_EVIDENCE_ORIGINAL` to an accepted immutable attempt directory to reuse its
+exact witness instead of rerunning original discovery. The neighboring plan changes
+write data and adds idle cycles; the regression fills the FIFO, exercises simultaneous
+traffic at full, and drains past empty. All three inputs are distinct.
 Actual command outcomes are recorded in the task delivery. No API endpoints or
 persistence orchestration are added by this package; the API owner integrates these
 hooks and stores records/authorization. Arithmetic, AXI-Lite and arbitrary patch

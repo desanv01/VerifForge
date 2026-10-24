@@ -1,4 +1,4 @@
-# Meta planner integration — VF-030A
+# Meta planner integration — VF-030A / VF-030B / VF-032
 
 Implemented locally on October 23, 2026. Python direct controller architecture selected by the implementation gameplan; no second orchestration framework was introduced. The build-agents skill was read; its exception for an explicitly selected framework applies.
 
@@ -38,7 +38,7 @@ controller = InvestigationController(
 report = await controller.run()
 ```
 
-The executor is trusted application code. It owns unique attempt directories, dispatch/persistence, isolation, tool construction, credential removal, and independent checking. It must settle simulator/compiler child processes when its async task is cancelled. **Do not use `asyncio.to_thread` around the blocking RTL runner as a cancellation implementation.** Cancelling that thread does not terminate its subprocesses. API/core must provide a cancellation-aware bridge before claiming end-to-end cancellation. This worker does not edit those components.
+The executor is trusted application code. It owns unique attempt directories, dispatch/persistence, isolation, tool construction, credential removal, and independent checking. It must settle simulator/compiler child processes when its async task is cancelled. **Do not use `asyncio.to_thread` around the blocking RTL runner as a cancellation implementation.** Cancelling that thread does not terminate its subprocesses. VF-030B supplies `LocalRunnerExecutor` for local use, with explicit cancellation tokens and shielded settlement as described below. API/core integration remains separate; this worker does not edit those components.
 
 For the installed FIFO runner, construct `reviewed_contract(parameters)` using `from veriforge.rtl import reviewed_contract`, and pass that exact typed contract to the controller. Its `canonical_hash(BehavioralContract)` is the runner/API shared identity; do not hash the older raw oracle dictionary or weaken identity checks. The controller remains provider/runner-neutral and receives the contract as a trusted explicit argument.
 
@@ -73,3 +73,55 @@ Primary stop codes include `round_limit`, `cycle_limit`, `wall_time_limit`, `mod
 Run `.venv/Scripts/python.exe -m pytest tests/planner -q`. Tests label both provider and executor doubles explicitly and use `httpx.MockTransport` for request/auth/schema/usage/error behavior. They exercise typed rejection, bounded correction/retry/no-progress, cycle/token/cost admission, feedback, evidence identity, timeout classification, cancellation cleanup, pause/stop hooks, immutable limits, and missing credentials. These tests do not establish live Meta schema acceptance, real tokenization, real simulator cancellation, or simulator/model benchmark performance.
 
 Remaining live gate: configure an authorized Meta key, run one valid model proposal through the real cancellation-aware RTL executor, feed actual checked evidence into a subsequent round, and retain the report plus simulator artifacts. This is not claimed complete by VF-030A.
+
+## Local CLI and runner bridge — VF-030B
+
+Implemented October 24, 2026. The local CLI connects the reviewed FIFO contract, typed model proposals, real runner interface, independent checker results, and subsequent feedback without an API service. This is implementation readiness, not live model acceptance. Simulator starts in the shared development workspace must still respect the coordinator's serialized execution gate.
+
+The CLI reads only normal process environment through `MetaConfig.from_env()`. If the human configures the ignored root `.env`, launch using the existing uv loader; the planner does not search or print credential files:
+
+```powershell
+uv run --env-file .env python -m veriforge.planner --fixture fifo_correct --rounds 2 --cycles 32 --cycles-per-round 16 --seconds 540 --execution-seconds 180 --model-seconds 60 --model-tokens 50000 --output-tokens 4096 --output artifacts/planner
+```
+
+This is the prepared bounded smoke command, **not an instruction to bypass readiness or the serial gate**. It admits at most two provider attempts and reserves at most 32 simulator cycles; validation/retry can consume rounds without simulation. It stops early on an independently observed finding or unavailable infrastructure. No fallback is labeled Meta. Check the boolean `MetaProvider.available` without printing config/key, obtain the coordinator's available gate, then use this command only when the human has indicated key readiness. Provider authorization errors still produce `model_unavailable`.
+
+VF-032 readiness review (24 October 2026) supersedes the original 45-second execution / 120-second campaign example. The preserved VF-080C review records a roughly 107.78-second cold compile followed by a harness error, **not a functional pass**. A 45-second wrapper would cancel that work before completion. The revised 180-second per-execution allowance includes build time and gives margin over that observation. Two 180-second execution admissions plus two 60-second model admissions consume 480 seconds; 540 campaign seconds add 60 seconds of orchestration margin. These are finite proposed smoke bounds, not measured performance guarantees. Windows container startup/finalization and cancellation cleanup must settle before propagation and can extend elapsed time beyond a controller admission deadline. No new build was run to set these values. Generic CLI/controller defaults remain unchanged; use the explicit smoke arguments for cold-build readiness.
+
+`--help` lists finite round, total/per-round cycle, model/output token, model/execution/campaign time, width/depth, and optional current-price/cost limits. Both input and output rates must be supplied together. Dollar caps without known rates stop before any provider call. CLI fixture choices come from installed `veriforge.rtl.runner.FIXTURES`; no arbitrary source, checker, command, adapter, or credential path is accepted.
+
+Windows selects `run_container_experiment` against the prebuilt image. Linux selects `run_experiment`. Neither installs a toolchain on submission. `curated_fifo_inputs()` uses the RTL owner's `reviewed_contract(parameters)` and exact source identity formula: canonical encoded source-file SHA, curated variant, and parameters. It checks that installed source/checker/contract identities remain unchanged immediately before every runner invocation. The controller independently validates returned identities. Model context still excludes fixture labels.
+
+`LocalRunnerExecutor` invokes the blocking trusted runner in a dedicated non-daemon thread and passes a private `threading.Event` as `cancel_event`. On coroutine cancellation it sets that token, shields the completion future, tolerates repeated task cancellation, and joins the thread before propagating cancellation. The runner owns process-group/taskkill/container cleanup. The bridge never accepts a successful result returned after cancellation. It retains original runner files and writes a sibling `discarded_after_cancel` settlement rather than overwriting immutable runner evidence. A faulty runner that ignores its token can delay cleanup; the bridge does not falsely claim that Python can kill such a thread. OS cleanup remains an independently testable runner responsibility.
+
+SIGINT/SIGTERM requests controller cancellation, allowing a final report after runner settlement. CLI exit codes are 0 for ordinary finite completion/finding/model stop, 2 for unavailable/blocked/limited/error states, 130 for requested cancellation, and 1 for a local workflow failure. Output is safe JSON containing the workspace/report paths, stop code, and checked-result count. No API key, raw HTTP error, or model output is printed.
+
+Each invocation creates `investigation-<uuid>` under `--output`, never reusing an existing workspace:
+
+```text
+manifest.json                   reviewed contract/revision/limits/model, no credentials
+state.json                      atomic current local checkpoint
+report.json                     final InvestigationReport on a settled controller run
+rounds/round-0001/
+  experiment.json               exact controller-bound plan before execution
+  settlement.json               delivered / discarded / error and runner settlement
+  runner-result.json            returned result, pending controller identity checks
+  attempt/                      empty on entry, exclusively owned by RTL runner
+    experiment.json, result.json, stimulus.json, contract.json, ...
+```
+
+Round directories count executed proposals; exact `experiment_id` maps them to the controller's model round (rejected proposals do not allocate a runner directory). Runner evidence layout remains compatible with the evidence module. `runner-result.json` is not itself a validated finding: the final report contains only controller-accepted checked results. Cancellation can retain a late successful raw runner file under `attempt/`; its sibling settlement excludes it from accepted feedback. Inspect settlement and the final report before using a runner artifact as campaign evidence.
+
+Checkpoints use same-directory atomic replacement and file flush/fsync. Completed attempts remain inspectable after a crash. This is **not** DB durability, a lease/outbox implementation, full power-loss safety across directories, or automatic resume. A force-cancelled caller task waits for runner cleanup and writes an interrupted checkpoint; it may have no final report. Hard process/OS termination can leave a running checkpoint and requires inspection. Normal controller cancellation produces a final report.
+
+Controlled verification: planner tests inject explicitly fake providers and runners, test two-round feedback and local report persistence, repeated cancellation and discarded late success, external cancellation, identity changes before dispatch, missing credentials, CLI argument bounds, and actual Python child/grandchild termination through the RTL `_bounded` primitive. They start **no simulator or Docker container**. Actual Meta schema acceptance and actual model-to-RTL evidence remain pending authorized credentials and the serialized live gate.
+
+## VF-032 current account and execution prerequisites
+
+Official documentation rechecked on 24 October 2026 still documents the fixed [Chat Completions endpoint and request parameters](https://dev.meta.ai/docs/protocols/chat-completions) used by the adapter. The [models page](https://dev.meta.ai/docs/models) lists `muse-spark-1.3` as a current supported default. It is the Standard-mode identifier; do not silently select the separate Contributor identifier. [Authentication](https://dev.meta.ai/docs/authentication) specifies a dashboard-created API key in the Bearer header. The adapter treats the key as opaque rather than enforcing a historical example format.
+
+An authorized [Model API account](https://dev.meta.ai/docs/quickstart) and valid key are required. Current [billing setup guidance](https://dev.meta.ai/help/billing/set-up-billing) calls for a team admin to configure a payment method and account/business information. The public [pricing page](https://dev.meta.ai/docs/pricing-rate-limits) describes token-based pay-as-you-go billing; a coding subscription or historical preview statement does not establish API credit. Account billing, model permissions and quota remain unverified locally. User/account-specific credits must be confirmed by the human in the dashboard; no credit or card data is inspected here. [Error guidance](https://dev.meta.ai/docs/error-handling) distinguishes billing failure (402) and permission failure (403); the adapter preserves safe status codes or `model_unavailable` without printing server bodies. No automatic retries of billing/permission errors are performed.
+
+Readiness check result: the root `.env` was confirmed ignored by Git. A bounded, read-only parser examined only the literal `MODEL_API_KEY` assignment and emitted booleans: process key nonempty **false**, ignored-file key nonempty **false**, parse ambiguous **false**. No value, file content, inferred credential length, or credential-derived hash was printed. No shell evaluation, interpolation, file import, inference request, network authentication probe, simulator, Docker job, or token spend occurred. This is a local presence result, not an account-authentication result.
+
+Exact pending live prerequisites are: the human configures a valid authorized key locally and confirms readiness; the human verifies account billing/credit, selected model permissions and quota; main grants an explicit serialized model/simulator slot after runtime readiness; independent VF-053 bridge review is accepted or any concrete finding is resolved. Then an authorized bounded run must retain live usage, accepted plan, actual checker/tool evidence, next-round feedback, final stop reason and cleanup outcome. A model stop, invalid proposal or model timeout may consume both rounds without producing two checked results; two checked results with a follow-up request containing real prior feedback are the feedback-loop acceptance evidence. Missing access does not block deterministic work or this documentation delivery.

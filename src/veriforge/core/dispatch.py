@@ -25,6 +25,9 @@ class RQDispatcher:
         # Claiming the durable queued attempt makes duplicate delivery harmless.
         self.queue.enqueue("veriforge.core.worker.execute_attempt", attempt_id, job_timeout=3720, result_ttl=0)
 
+    def enqueue_export(self, export_id: str) -> None:
+        self.queue.enqueue("veriforge.core.artifacts.execute_export", export_id, job_timeout=60, result_ttl=0)
+
 
 def dispatch_pending(sessions, dispatcher: Dispatcher) -> dict:
     sent = failed = 0

@@ -12,27 +12,12 @@ from fastapi.testclient import TestClient
 from veriforge.api.app import create_app
 from veriforge.contracts import AttemptResult
 from veriforge.core import service
-from veriforge.core.catalog import seed_catalog
-from veriforge.core.database import Attempt, Campaign, Dispatch, make_engine, now, session_factory
+from veriforge.core.database import Attempt, Campaign, Dispatch, now
 from veriforge.core.dispatch import dispatch_pending
 from veriforge.core.worker import execute_attempt
 
 
 PLAN = {"experiment_id": "api-test", "fixture_id": "fifo_correct", "contract_id": "fifo-v1", "objective_ids": ["reset"], "operations": [{"op": "reset"}, {"op": "write", "value": 7}, {"op": "read"}]}
-
-
-@pytest.fixture
-def db(tmp_path):
-    engine = make_engine("sqlite:///" + (tmp_path / "state.db").as_posix())
-    config = Config("alembic.ini")
-    with engine.begin() as connection:
-        config.attributes["connection"] = connection
-        command.upgrade(config, "head")
-    sessions = session_factory(engine)
-    with sessions.begin() as session:
-        seed_catalog(session)
-    yield engine, sessions
-    engine.dispose()
 
 
 @pytest.fixture

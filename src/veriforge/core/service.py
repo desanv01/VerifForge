@@ -7,7 +7,7 @@ from datetime import timedelta, timezone
 from sqlalchemy import select, update
 from veriforge.contracts import AttemptResult, BehavioralContract, Experiment, Verdict, canonical_hash
 
-from .database import Attempt, Campaign, Contract, Dispatch, Finding, Project, RunEvent, identifier, now
+from .database import Attempt, Campaign, Contract, Dispatch, Finding, Project, ReplayLink, RunEvent, identifier, now
 
 TERMINAL = {"completed", "cancelled", "interrupted", "infrastructure_error"}
 VERDICTS = {v.value for v in Verdict}
@@ -49,10 +49,12 @@ def emit(session, campaign: Campaign, kind: str, payload: dict | None = None):
     session.add(RunEvent(campaign_id=campaign.id, sequence=campaign.event_sequence, kind=kind, payload=payload or {}))
 
 
-def create_campaign(session, project_id: str, plan: dict, key: str) -> Campaign:
+def create_campaign(session, project_id: str, plan: dict, key: str, *, require_new: bool = False) -> Campaign:
     request_hash = digest({"project_id": project_id, "plan": plan})
     prior = session.scalar(select(Campaign).where(Campaign.owner == "local", Campaign.create_key == key))
     if prior:
+        if require_new:
+            raise Conflict("Fresh campaign creation cannot reuse an existing record")
         if prior.request_hash != request_hash:
             raise Conflict("Idempotency key already used for a different request")
         return prior
@@ -183,10 +185,12 @@ def recover_stale(session, stale_seconds: int = 300) -> int:
 def campaign_view(session, campaign: Campaign) -> dict:
     def utc(value):
         return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
+    replay = session.get(ReplayLink, campaign.id)
     return {
         "id": campaign.id, "project_id": campaign.project_id, "contract_id": campaign.contract_id,
         "execution_status": campaign.execution_status, "verdict": campaign.verdict,
         "version": campaign.version, "plan": campaign.plan,
+        "source_attempt_id": replay.source_attempt_id if replay else None,
         "identity": campaign.identity,
         "contract_snapshot": BehavioralContract.model_validate(session.get(Contract, campaign.contract_id).data).model_copy(update={"parameters": Experiment.model_validate(campaign.plan).parameters}).model_dump(mode="json"),
         "created_at": utc(campaign.created_at), "updated_at": utc(campaign.updated_at),

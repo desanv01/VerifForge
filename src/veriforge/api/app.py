@@ -26,7 +26,7 @@ class CreateCampaign(BaseModel):
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]
 
 
-def create_app(engine=None, *, initialize_catalog=True):
+def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
     engine = engine if engine is not None else make_engine()
     sessions = session_factory(engine)
 
@@ -40,6 +40,8 @@ def create_app(engine=None, *, initialize_catalog=True):
 
     app = FastAPI(title="VerifForge local API", version="0.1.0", lifespan=lifespan)
     app.state.sessions = sessions
+    from .evidence import evidence_router
+    app.include_router(evidence_router(sessions, artifact_root))
 
     @app.exception_handler(service.NotFound)
     async def missing(request, error):
@@ -55,7 +57,7 @@ def create_app(engine=None, *, initialize_catalog=True):
     def health():
         with sessions() as session:
             session.execute(text("SELECT 1"))
-        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated"}
+        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1"}
 
     @app.get("/api/projects")
     def projects():
