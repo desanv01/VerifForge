@@ -52,6 +52,36 @@ Every accepted result is validated as `AttemptResult` and compared against campa
 
 SQLite uses foreign keys, WAL and serialized writes as an explicit local fallback. PostgreSQL is the intended concurrent deployment baseline; SQLite does not prove PostgreSQL operational behavior. Migrations are versioned and app startup never creates tables. Reviewed contract versions are immutable; a checker/contract change under an existing catalog version stops startup rather than silently replacing history.
 
-Current scope: one bounded curated FIFO experiment per campaign; localhost identity only. Planner-driven multi-experiment campaigns, replay/reduce/export endpoints, artifact download authorization, remote authentication, pagination cursors and automatic interrupted-run retry remain later integration work. The artifact references inside attempt results are metadata, not a download endpoint.
+Current scope: one bounded curated FIFO experiment per campaign; localhost identity only. Planner-driven multi-experiment campaigns, reduction/candidate endpoints, remote authentication, pagination cursors and automatic interrupted-run retry remain later integration work.
+
+## Evidence endpoints (VF-022)
+
+These routes require migration `6bf022evidence`, a shared `VERIFORGE_ARTIFACT_ROOT` for API/workers, and the existing reconciler/RQ worker. They use **database attempt IDs** (`campaign.attempts[].id`). `attempt.result.attempt_id` is an independent adapter record ID and is never a filesystem lookup authority. No request body or local path is accepted.
+
+`GET /api/health` advertises `evidence_api: "1"` when these routes are installed. This is an endpoint capability marker; it does not certify simulator readiness. UI must keep evidence execution actions unavailable when the marker is absent from an older runtime snapshot.
+
+| Method/path | Result |
+| --- | --- |
+| GET /attempts/{attempt_id}/artifacts | `{items:[{artifact_id,path,sha256,size_bytes,media_type,downloadable}]}` |
+| GET /attempts/{attempt_id}/artifacts/{artifact_id}/download | bounded verified bytes as attachment; application/octet-stream; nosniff |
+| POST /attempts/{attempt_id}/replay | `Idempotency-Key` required; 202 full Campaign with `source_attempt_id`, already queued |
+| POST /attempts/{attempt_id}/exports | `Idempotency-Key` required; 202 export job |
+| GET /exports/{export_id} | export job status |
+| POST /exports/{export_id}/cancel | `Idempotency-Key` required; revoke queued/running job; terminal state unchanged |
+| GET /exports/{export_id}/download | completed ZIP bytes attachment; application/zip; nosniff |
+
+All table paths retain `/api` prefix. Export job: `{id,attempt_id,status,error_type,sha256,size_bytes}`. Status is `queued`, `running`, `completed`, `failed`, or `cancelled`. Hash/size stay null until publication; `error_type` is a sanitized exception class only, never a message/path. Same key and same source returns the same replay campaign/export job; key reuse for another source returns 409. Replay campaign state/attempts use the existing campaign shape and cancellation endpoint. Retrying a cancelled replay with the original key returns that same cancelled record; use a fresh key for a distinct replay request.
+
+Unknown IDs, cross-owner access and unknown/excluded artifact IDs return 404. Missing/changed/unsafe evidence, mismatched provenance, unavailable replay installation, and downloading an unfinished/failed/cancelled export return 409 with `{detail: string}`. An export request may be accepted while filesystem verification later fails: observe its durable job status. `downloadable` means the artifact name belongs to the portable allowlist and a checked identity exists; the download still verifies bytes and content screening before serving.
+
+Artifacts are selected by matching the stored artifact ID within that authorized database attempt. The server maps the attempt to `<artifact-root>/<DB-attempt-id>`; a URL cannot choose a directory or path. Completed evidence must match the immutable DB result and exact campaign experiment; source/checker/contract/stimulus hashes must agree with the campaign. All referenced artifacts are hash/size checked under fixed bounds: 100 files, 20 MiB total, bounded metadata JSON. Every symlink/junction and ancestor is rejected. Bytes are read into a bounded immutable response snapshot before returning, avoiding a later path reopen.
+
+Only `stimulus.json`, `contract.json`, `fifo.sv`, `checker.py`, and `observed.json` are eligible for raw download. Shared evidence content screening rejects common credential/private-key/local-path markers and invalid UTF-8. Logs, job metadata and environment diagnostics are browse-only relative metadata. Screening is conservative protection for curated fixtures, not a universal secret classifier or arbitrary-upload support.
+
+Export runs as a bounded RQ job (`job_timeout=60`) from a private DB-verified byte snapshot, using the shared safe exporter. Exclusive server-generated output paths cannot overwrite original evidence. Only a successfully published ZIP hash/size permits download. Duplicate deliveries claim one job; stale running jobs fail after 120 seconds and revoke publication. The reconciler retries queued delivery after broker failures; a failed export needs a fresh request key. Cancellation and late worker completion cannot overwrite terminal state.
+
+Replay preserves the original experiment ID, seed, operations, budgets, parameters and four immutable identities. It records `source_attempt_id` and never changes the original campaign/finding. Installed curated source/checker/contract must still match at submission **and before worker execution**; changed installations reject exact replay. Before finalization, fresh replay files must match the returned typed result, submitted experiment and bounded artifact hashes. Replay calls no model. A fresh checked outcome is still required to claim reproduction; a queued replay is not a reproduced finding. Reduction/candidate validation remains outside this slice.
+
+Replay request idempotency is owned by `ReplayLink`. Internal campaign creation uses a fresh server identity and explicitly forbids existing-record reuse; public campaign idempotency keys cannot alias or mutate a replay source or another existing campaign.
 
 Official implementation references: [SQLAlchemy sessions](https://docs.sqlalchemy.org/en/20/orm/session_basics.html), [FastAPI heavy background task guidance](https://fastapi.tiangolo.com/tutorial/background-tasks/), and [RQ queue delivery](https://python-rq.org/docs/).

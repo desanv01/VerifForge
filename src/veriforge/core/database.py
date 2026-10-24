@@ -94,6 +94,32 @@ class Finding(Base):
     data: Mapped[dict] = mapped_column(JSON)
 
 
+class ReplayLink(Base):
+    __tablename__ = "replay_links"
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), primary_key=True)
+    source_attempt_id: Mapped[str] = mapped_column(ForeignKey("attempts.id"))
+    owner: Mapped[str] = mapped_column(String(128), default="local")
+    request_key: Mapped[str] = mapped_column(String(128))
+    __table_args__ = (UniqueConstraint("owner", "request_key"),)
+
+
+class EvidenceExport(Base):
+    __tablename__ = "evidence_exports"
+    __table_args__ = (UniqueConstraint("owner", "request_key"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    owner: Mapped[str] = mapped_column(String(128), default="local")
+    attempt_id: Mapped[str] = mapped_column(ForeignKey("attempts.id"))
+    request_key: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), default="queued")
+    lease: Mapped[str] = mapped_column(String(36), default=identifier)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
 def database_url() -> str:
     return os.getenv("VERIFORGE_DATABASE_URL", "sqlite:///./veriforge.db")
 

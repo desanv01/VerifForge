@@ -13,22 +13,25 @@ from .database import make_engine, session_factory
 from . import service
 
 
-def validate_identity(experiment: Experiment, result: AttemptResult):
-    if result.identity is None:
-        return
+def installed_identity(experiment: Experiment) -> dict:
     from veriforge.rtl import oracle, reviewed_contract
     from veriforge.rtl.runner import FIXTURES, ROOT
     def hash_bytes(data):
         return hashlib.sha256(data).hexdigest()
     def encode(value):
         return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-    expected = {
+    return {
         "experiment_hash": canonical_hash(experiment),
         "checker_hash": hash_bytes(Path(oracle.__file__).read_bytes()),
         "contract_hash": canonical_hash(reviewed_contract(experiment.parameters)),
         "source_hash": hash_bytes(encode({"source": hash_bytes((ROOT / "targets/fifo/fifo.sv").read_bytes()), "variant": FIXTURES[experiment.fixture_id], "parameters": experiment.parameters.model_dump()})),
     }
-    if any(getattr(result.identity, key) != value for key, value in expected.items()):
+
+
+def validate_identity(experiment: Experiment, result: AttemptResult):
+    if result.identity is None:
+        return
+    if any(getattr(result.identity, key) != value for key, value in installed_identity(experiment).items()):
         raise ValueError("Worker evidence does not match trusted experiment/source/checker/contract")
 
 
@@ -67,6 +70,14 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
     heartbeat_thread = threading.Thread(target=keepalive, daemon=True)
     heartbeat_thread.start()
     try:
+        from .database import Campaign, ReplayLink
+        experiment = Experiment.model_validate(plan)
+        with sessions() as session:
+            from .database import Attempt
+            campaign = session.get(Campaign, session.get(Attempt, attempt_id).campaign_id)
+            is_replay = session.get(ReplayLink, campaign.id) is not None
+            if campaign.identity != installed_identity(experiment):
+                raise ValueError("Installed execution provenance changed since campaign creation")
         if runner is None:
             if os.name == "nt":
                 from veriforge.rtl import run_container_experiment
@@ -74,10 +85,12 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
             else:
                 from veriforge.rtl import run_experiment
                 runner = run_experiment
-        experiment = Experiment.model_validate(plan)
         output = Path(artifact_root or os.getenv("VERIFORGE_ARTIFACT_ROOT", "artifacts")) / attempt_id
         result = AttemptResult.model_validate(runner(experiment, output, cancel_event=LeaseCancellation(sessions, attempt_id, lease)))
         validate_identity(experiment, result)
+        if is_replay:
+            from .artifacts import verify_replay_output
+            verify_replay_output(output, experiment, result)
         with sessions.begin() as session:
             accepted = service.finalize(session, attempt_id, lease, result.model_dump(mode="json"))
         return {"accepted": accepted}
@@ -92,10 +105,14 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
 
 def reconcile_once():
     from .dispatch import RQDispatcher, dispatch_pending
+    from .artifacts import dispatch_exports, recover_exports
     sessions = session_factory(make_engine())
     with sessions.begin() as session:
         interrupted = service.recover_stale(session)
-    return {**dispatch_pending(sessions, RQDispatcher()), "interrupted": interrupted}
+        interrupted_exports = recover_exports(session)
+    dispatcher = RQDispatcher()
+    return {**dispatch_pending(sessions, dispatcher), "interrupted": interrupted,
+            "exports": dispatch_exports(sessions, dispatcher), "interrupted_exports": interrupted_exports}
 
 
 if __name__ == "__main__":
