@@ -1,8 +1,9 @@
 # GitHub CI preparation — VF-091
 
-Status: workflow source and static checks prepared on October 24, 2026. This is not
-a hosted CI pass, publication receipt, deployment, or new simulator result. Main
-owns repository creation, coherent staging, commits, pushes, and branch protection.
+Status: workflow prepared on October 24, 2026. The first hosted run passed Python
+and web checks but FIFO failed to write its evidence mount. The VF-091B UID/GID
+correction below is statically validated; a passing hosted FIFO rerun is pending.
+Main owns commits, pushes and branch protection. This is not deployment acceptance.
 
 ## Workflow and scope
 
@@ -51,10 +52,23 @@ its Python subset is separate from the application's uv-locked environment.
 
 FIFO execution disables networking, drops capabilities, applies read-only root
 and source mounts, and limits CPU, memory, PIDs and executable temporary storage.
+Both simulator preflight and test containers explicitly use the hosted runner's
+numeric UID/GID, with a guard rejecting UID zero. New evidence directories use
+umask 077 and must be owned/writable by that runner before launch. This lets the
+non-root container write its dedicated evidence bind mount without changing
+workspace permissions, using a root process, or making the directory world-writable.
 An eight-minute outer timeout plus named-container cleanup bounds the whole smoke.
 The image build is limited to eight minutes and the entire job to twenty. A build
 or timeout failure does not claim a functional design defect. Cold image pulls
 and unmeasured hosted-runner throughput may require later evidence-based tuning.
+
+The [initial FIFO job](https://github.com/desanv01/VerifForge/actions/runs/40053182108/job/120750191039)
+built the image and observed Verilator 5.042/cocotb 2.0.1, then failed with
+`PermissionError: /evidence/results.xml` before functional checks. The image's
+default identity did not own the host-created output directory. Explicit numeric
+UID/GID mapping addresses that mount boundary; it does not weaken test selection
+or the fail-closed aggregate gate. No local rebuild/full suite was used to claim
+the correction passed; the next hosted revision must establish that result.
 
 Meta calls, Vivado execution, arithmetic HDL, PostgreSQL/Valkey/RQ integration,
 application migrations against a real service, and full browser/runtime acceptance
@@ -126,6 +140,7 @@ remote push, workflow dispatch or simulator execution was performed in VF-091.
 - [Official uv GitHub guidance](https://docs.astral.sh/uv/guides/integration/github/) and [uv 0.11.25 release](https://github.com/astral-sh/uv/releases/tag/0.11.25)
 - [Checkout action](https://github.com/actions/checkout) and [Python setup action](https://github.com/actions/setup-python)
 - [Node setup action](https://github.com/actions/setup-node) and [v7.0.0 release](https://github.com/actions/setup-node/releases/tag/v7.0.0)
+- [Docker run user selection](https://docs.docker.com/reference/cli/docker/container/run/#user) and [bind-mount permissions](https://docs.docker.com/engine/storage/bind-mounts/)
 
 The chosen checkout/Python full pins are in uv's official current integration
 examples. The Node full pin was resolved from its official release commit. These
