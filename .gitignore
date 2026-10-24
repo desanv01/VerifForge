@@ -25,3 +25,7 @@ tmp/
 *.db-wal
 *.sqlite
 
+# Private scratch evidence and CI outputs; preserve local files.
+**/.tmp*
+ci-artifacts/
+
