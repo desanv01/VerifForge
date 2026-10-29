@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import re
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 
 from veriforge.adapters import get_adapter
 from veriforge.contracts import AttemptResult, BehavioralContract, ProjectRevision, SourceFile
@@ -462,40 +462,81 @@ def cancel_investigation(session, campaign_id, *, at):
     return state
 
 
-def recover_rounds(session, *, at, stale_seconds=120):
+def claim_execution_step(session, attempt_id, *, at, control="RUNNING"):
+    """Claim one exact current planner child; caller first gates global resource.
+
+    No reservation/admission is created here. Never use generic claim as a
+    fallback when a planner claim is stale, unreserved or otherwise rejected.
+    """
     at = _at(at)
+    attempt = session.get(Attempt, attempt_id)
+    if attempt is None:
+        return None
+    campaign = service.lock(session, attempt.campaign_id)
+    state = session.get(PlannerState, campaign.id)
+    if state is None or not _guard(session, campaign, state, at, control):
+        return None
+    attempt = session.get(Attempt, attempt_id)
+    if state.phase != "waiting_execution" or attempt.execution_status != "queued":
+        return None
+    if not _consume_results(session, campaign, state, at):
+        return None
+    binding = session.get(AttemptExperiment, attempt_id)
+    row = session.scalar(select(PlannerRound).where(PlannerRound.campaign_id == campaign.id,
+        PlannerRound.experiment_id == binding.experiment_id)) if binding else None
+    if (state.phase != "waiting_execution" or row is None or row.status != "accepted" or
+            state.generation != row.generation + 1):
+        return None
+    return service.claim(session, attempt_id)
+
+
+def recover_campaign(session, campaign_id, *, at, control="RUNNING", stale_seconds=120):
+    """Recover one parent under caller's resource->campaign lock ordering."""
+    at = _at(at)
+    if type(stale_seconds) is not int or not 1 <= stale_seconds <= 86400:
+        raise ValueError("Invalid planner recovery age")
+    campaign = service.lock(session, campaign_id)
+    state = session.get(PlannerState, campaign.id)
+    if state is None or state.phase in TERMINAL:
+        return False
+    if not _guard(session, campaign, state, at, control):
+        return True
+    row = session.scalar(select(PlannerRound).where(PlannerRound.campaign_id == campaign_id, PlannerRound.status == "running"))
+    call = session.get(PlannerModelCall, row.id) if row else None
+    if row and ((row.heartbeat_at and _utc(row.heartbeat_at) <= at - timedelta(seconds=stale_seconds)) or (call and call.deadline_at and at >= _utc(call.deadline_at))):
+        _close(session, campaign, state, "model_call_uncertain", at, status="interrupted")
+        return True
+    if state.phase == "waiting_execution":
+        generation = state.generation
+        _consume_results(session, campaign, state, at)
+        return generation != state.generation
+    return False
+
+
+def recover_rounds(session, *, at, stale_seconds=120, control="RUNNING", limit=100):
+    """Bounded legacy wrapper; driver uses one recovery transaction per parent."""
+    at = _at(at)
+    if type(limit) is not int or not 1 <= limit <= 100:
+        raise ValueError("Invalid planner recovery batch")
+    ids = list(session.scalars(select(PlannerState.campaign_id).where(PlannerState.phase.not_in(TERMINAL))
+        .order_by(PlannerState.deadline_at, PlannerState.campaign_id).limit(limit)))
     recovered = 0
-    ids = list(session.scalars(select(PlannerState.campaign_id).where(PlannerState.phase.not_in(TERMINAL))))
     for campaign_id in ids:
-        campaign = service.lock(session, campaign_id)
-        state = session.get(PlannerState, campaign_id)
-        if not _guard(session, campaign, state, at, "RUNNING"):
-            recovered += 1
-            continue
-        row = session.scalar(select(PlannerRound).where(PlannerRound.campaign_id == campaign_id, PlannerRound.status == "running"))
-        call = session.get(PlannerModelCall, row.id) if row else None
-        if row and ((row.heartbeat_at and _utc(row.heartbeat_at) <= at - timedelta(seconds=stale_seconds)) or (call and call.deadline_at and at >= _utc(call.deadline_at))):
-            _close(session, campaign, state, "model_call_uncertain", at, status="interrupted")
-            recovered += 1
-        elif state.phase == "waiting_execution":
-            _consume_results(session, campaign, state, at)
+        recovered += int(recover_campaign(session, campaign_id, at=at, control=control, stale_seconds=stale_seconds))
     return recovered
 
 
-def pending_intents(session, *, at, retry_seconds=30):
+def pending_intents(session, *, at, retry_seconds=30, limit=100):
+    at = _at(at)
+    if type(limit) is not int or not 1 <= limit <= 100 or type(retry_seconds) is not int or not 1 <= retry_seconds <= 3600:
+        raise ValueError("Invalid planner intent batch")
     rows = session.scalars(select(PlannerIntent).join(PlannerState, PlannerState.campaign_id == PlannerIntent.campaign_id).where(PlannerIntent.generation == PlannerState.generation,
-        PlannerState.phase.not_in(TERMINAL)).order_by(PlannerIntent.id))
-    result = []
-    for row in rows:
-        state = session.get(PlannerState, row.campaign_id)
-        expected_phase = "round_queued" if row.kind == "model" else "ready"
-        if state.phase != expected_phase:
-            continue
-        if state.not_before is not None and _at(at) < _utc(state.not_before):
-            continue
-        if row.sent_at is None or _utc(row.sent_at) <= _at(at) - timedelta(seconds=retry_seconds):
-            result.append(row)
-    return result
+        or_(and_(PlannerIntent.kind == "model", PlannerState.phase == "round_queued"),
+            and_(PlannerIntent.kind == "advance", PlannerState.phase == "ready")),
+        or_(PlannerState.not_before.is_(None), PlannerState.not_before <= at),
+        or_(PlannerIntent.sent_at.is_(None), PlannerIntent.sent_at <= at - timedelta(seconds=retry_seconds))
+    ).order_by(PlannerIntent.id).limit(limit))
+    return list(rows)
 
 
 def acknowledge_intent(session, intent_id, *, at):
