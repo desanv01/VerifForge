@@ -139,7 +139,7 @@ def preflight_writing_roles(host, user):
     source += "\nprint(json.dumps({'role': sys.argv[1], 'mounts': [mount_preflight(Path(path), sys.argv[2], sys.argv[1]) for path in sys.argv[3:]]}, sort_keys=True), flush=True)\n"
     for role in WRITING_ROLES:
         paths = ['/evidence', '/controls'] if role == 'controller' else ['/evidence']
-        output = host.run(host.prefix + ['run', '--rm', '--no-deps', '--no-build', '--pull', 'never',
+        output = host.run(host.prefix + ['run', '--rm', '--no-deps', '--pull', 'never',
                           '--entrypoint', 'python', role, '-c', source, role, user] + paths,
                           'mount-preflight-' + role, 15)
         proof = json.loads(output)
