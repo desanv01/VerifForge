@@ -159,13 +159,13 @@ def test_finite_two_feedback_rounds_with_fresh_sessions_and_id_only_messages(db,
     assert not driver.execute_intent(model_intent, sessions=db, now=clock, model_handler=handle)["accepted"]
     assert provider.calls == 1 and len(provider.contexts[0].feedback) == 1
     attempt_id = child(db, campaign)
-    assert dispatch.dispatch_pending(db, broker, clock=clock) == {"sent": 0, "failed": 0}
+    assert dispatch.dispatch_pending(db, broker, clock=clock, control=lambda: "RUNNING") == {"sent": 0, "failed": 0}
     assert driver.release_settled_resource(db, now=clock)
-    assert dispatch.dispatch_pending(db, broker, clock=clock)["sent"] == 1
+    assert dispatch.dispatch_pending(db, broker, clock=clock, control=lambda: "RUNNING")["sent"] == 1
     assert broker.attempts == [attempt_id]
     calls = []
-    assert worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock)["accepted"]
-    assert not worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock)["accepted"]
+    assert worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
+    assert not worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
     with db() as session:
         assert session.scalar(select(func.count()).select_from(PlannerFeedback)) == 2
         assert rounds.totals(session, campaign)["cycles"] == 16  # Full8+8, not measured3+3.
@@ -248,7 +248,7 @@ def test_cancelled_delivery_cannot_claim_or_publish_late_work(db, tmp_path, stag
     with db.begin() as session: rounds.cancel_investigation(session, campaign, at=clock())
     calls = []
     if stage == "execution":
-        assert not worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock)["accepted"]
+        assert not worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
     else:
         assert not driver.execute_intent(intent_id, sessions=db, now=clock, model_handler=lambda value: calls.append(value))["accepted"]
     assert not calls
@@ -291,8 +291,8 @@ def test_unresolved_cleanup_blocks_planner_execution_but_not_manual(db, tmp_path
         grant = resources.claim_provider_slot(session, current_round(db, other), incarnation=resources.new_incarnation(),
             role=resources.ROLE, at=clock(), control="RUNNING")
     broker, calls = Broker(), []
-    assert dispatch.dispatch_pending(db, broker, clock=clock)["sent"] == 0
-    assert not worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock)["accepted"]
+    assert dispatch.dispatch_pending(db, broker, clock=clock, control=lambda: "RUNNING")["sent"] == 0
+    assert not worker.execute_attempt(attempt_id, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
     manual, manual_attempt = seed(db, "manual", planner=False)
     assert worker.execute_attempt(manual_attempt, sessions=db, runner=fake_runner(db, calls), artifact_root=tmp_path, now=clock)["accepted"]
     with db.begin() as session: resources.mark_owner_lost(session, grant, role=resources.ROLE, at=clock())
@@ -309,7 +309,7 @@ def test_stale_execution_generation_cannot_fall_back_to_generic_claim(db, tmp_pa
     with db.begin() as session: session.get(PlannerState, campaign).generation += 1
     def forbidden(*args, **kwargs): pytest.fail("stale planner child used generic claim")
     monkeypatch.setattr(service, "claim", forbidden)
-    assert not worker.execute_attempt(attempt_id, sessions=db, runner=forbidden, artifact_root=tmp_path, now=clock)["accepted"]
+    assert not worker.execute_attempt(attempt_id, sessions=db, runner=forbidden, artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
 
 
 @pytest.mark.parametrize("infrastructure", [False, True])
@@ -326,7 +326,7 @@ def test_planner_finalizer_refusal_never_falls_back_to_generic(db, tmp_path, mon
     monkeypatch.setattr(service, "finalize", forbidden)
     def bad(*args, **kwargs): raise RuntimeError("synthetic runner failure")
     result = worker.execute_attempt(attempt_id, sessions=db, runner=bad if infrastructure else fake_runner(db, []),
-        artifact_root=tmp_path, now=clock)
+        artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")
     assert not result["accepted"] and calls == [infrastructure]
 
 
@@ -340,7 +340,7 @@ def test_invalid_checked_result_does_not_publish_finding_or_feedback(db, tmp_pat
             identity = {**record.identity, "environment_hash": "b" * 64}
         return AttemptResult(attempt_id="synthetic-out-of-budget", experiment_id=experiment.experiment_id,
             execution_status="completed", verdict="pass_within_scope", identity=identity, usage={"cycles": 9})
-    assert not worker.execute_attempt(attempt_id, sessions=db, runner=unbound, artifact_root=tmp_path, now=clock)["accepted"]
+    assert not worker.execute_attempt(attempt_id, sessions=db, runner=unbound, artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
     with db() as session:
         assert session.scalar(select(func.count()).select_from(Finding)) == 0
         assert session.scalar(select(func.count()).select_from(PlannerFeedback)) == 1
@@ -351,7 +351,7 @@ def test_generic_reconciler_only_publishes_never_runs_model_inline(db, monkeypat
     def forbidden(*args, **kwargs): pytest.fail("reconciler executed a model intent")
     monkeypatch.setattr(driver, "execute_intent", forbidden)
     broker = Broker()
-    result = worker.reconcile_once(sessions=db, dispatcher=broker, now=clock)
+    result = worker.reconcile_once(sessions=db, dispatcher=broker, now=clock, control=lambda: "RUNNING")
     assert result["planner"]["sent"] == 1 and len(broker.planner) == 1
 
 
@@ -378,7 +378,7 @@ def test_actual_planner_infrastructure_finalization_is_not_design_failure(db, tm
     attempt_id, _ = proposed_child(db, campaign)
     driver.release_settled_resource(db, now=clock)
     def fail(*args, **kwargs): raise RuntimeError("synthetic controlled runner error")
-    assert worker.execute_attempt(attempt_id, sessions=db, runner=fail, artifact_root=tmp_path, now=clock)["accepted"]
+    assert worker.execute_attempt(attempt_id, sessions=db, runner=fail, artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
     with db() as session:
         attempt, state = session.get(Attempt, attempt_id), session.get(PlannerState, campaign)
         assert attempt.execution_status == "infrastructure_error" and attempt.verdict is None
@@ -398,7 +398,7 @@ def test_cancel_during_runner_discards_late_result_and_continuation(db, tmp_path
             rounds.cancel_investigation(session, campaign, at=clock())
         assert cancel_event.is_set()
         return result
-    assert not worker.execute_attempt(attempt_id, sessions=db, runner=cancel, artifact_root=tmp_path, now=clock)["accepted"]
+    assert not worker.execute_attempt(attempt_id, sessions=db, runner=cancel, artifact_root=tmp_path, now=clock, control=lambda: "RUNNING")["accepted"]
     with db() as session:
         assert session.get(Attempt, attempt_id).result is None
         assert session.scalar(select(func.count()).select_from(PlannerFeedback)) == 1

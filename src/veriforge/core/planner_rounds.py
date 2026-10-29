@@ -426,6 +426,32 @@ def fail_model_round(session, lease, *, code, at, transient=False, remote_unknow
     return True
 
 
+def quarantine_model_round(session, round_id, *, campaign_id, generation, request_hash, execution_lease, at, control):
+    """Revoke an exact persisted running call after trusted owner-loss evidence.
+
+    Caller supplies no reconstructed ModelLease; supervisor resource authority
+    must hold global -> campaign locks. No execution/cleanup authority is granted.
+    Already committed completed/cancelled/uncertain outcomes remain untouched.
+    """
+    at = _at(at)
+    if type(generation) is not int or generation < 0 or any(type(value) is not str for value in
+            (round_id, campaign_id, request_hash, execution_lease, control)):
+        raise ValueError("Invalid persisted model quarantine identity")
+    campaign = service.lock(session, campaign_id)
+    state = session.get(PlannerState, campaign.id)
+    row = session.get(PlannerRound, round_id)
+    call = session.get(PlannerModelCall, round_id)
+    if (state is None or row is None or call is None or campaign.execution_status != "running" or
+        state.phase != "model_running" or row.status != "running" or call.outcome is not None or
+        row.campaign_id != campaign.id or row.generation != generation or state.generation != generation or
+        row.lease != execution_lease or call.request_hash != request_hash):
+        return False
+    if not _guard(session, campaign, state, at, control):
+        return row.status != "running" or row.lease != execution_lease
+    _close(session, campaign, state, "runtime_owner_lost", at, status="interrupted")
+    return True
+
+
 def finish_execution_step(session, attempt_id, lease, result, *, at, infrastructure_error=False, control="RUNNING"):
     attempt = session.get(Attempt, attempt_id)
     if attempt is None:
