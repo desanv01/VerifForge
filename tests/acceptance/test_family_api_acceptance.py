@@ -91,7 +91,7 @@ def test_changed_installed_source_stops_worker_before_any_adapter_call(store, tm
         assert list(session.scalars(select(Finding))) == []
 
 
-def test_arithmetic_snapshot_uses_nondefault_parameters_and_gate_precedes_fifo_loader(store, monkeypatch):
+def test_arithmetic_snapshot_uses_nondefault_parameters_and_rejects_unfinalized_evidence(store, monkeypatch):
     descriptor = get_adapter("rtl.arithmetic.v1")
     experiment = descriptor.validate_experiment(payload(descriptor.adapter_id))
     with store.begin() as session:
@@ -106,12 +106,12 @@ def test_arithmetic_snapshot_uses_nondefault_parameters_and_gate_precedes_fifo_l
         attempt_id = session.scalar(select(Attempt.id).where(Attempt.campaign_id == campaign.id))
 
         def forbidden_loader(*args, **kwargs):
-            raise AssertionError("Arithmetic evidence cannot reach the FIFO loader before adoption")
+            raise AssertionError("Unfinalized evidence must be rejected before any family loader")
 
         monkeypatch.setattr(artifacts, "load_attempt", forbidden_loader)
-        with pytest.raises(service.Conflict, match="unsupported"):
+        with pytest.raises(service.Conflict, match="Only finalized completed evidence"):
             artifacts.artifact_list(session, attempt_id)
-        with pytest.raises(service.Conflict, match="unsupported"):
+        with pytest.raises(service.Conflict, match="Only finalized completed evidence"):
             artifacts.replay_campaign(session, attempt_id, "blocked-replay")
-        with pytest.raises(service.Conflict, match="unsupported"):
+        with pytest.raises(service.Conflict, match="Export requires finalized checked evidence"):
             artifacts.request_export(session, attempt_id, "blocked-export")
