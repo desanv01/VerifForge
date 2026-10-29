@@ -1,0 +1,36 @@
+name: Curated AXI application acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: axi-application-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build and qualify only ephemeral committed-source application
+        run: python3 scripts/ci_axi_application.py
+      - name: Always settle only this run's ephemeral project and builder
+        if: always()
+        run: python3 scripts/ci_axi_application.py --cleanup
+      - name: Upload bounded curated evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: axi-application-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-artifacts/axi-application/
+          retention-days: 1
+          compression-level: 6
+          include-hidden-files: false
+          overwrite: false
+          if-no-files-found: error
