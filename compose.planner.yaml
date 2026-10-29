@@ -1,0 +1,72 @@
+# Optional overlay, pending coordinator review and local adoption.
+# Explicit host directories are required; no private evidence is copied to images.
+x-planner-control: &planner-control
+  type: bind
+  source: ${VERIFORGE_CONTROL_DIRECTORY:?Set an absolute canonical control directory}
+  target: /veriforge-control
+  read_only: true
+  bind:
+    create_host_path: false
+x-planner-policy: &planner-policy
+  type: bind
+  source: ${VERIFORGE_PLANNER_POLICY_DIRECTORY:?Set an absolute server policy directory}
+  target: /veriforge-policy
+  read_only: true
+  bind:
+    create_host_path: false
+x-planner-settings: &planner-settings
+  VERIFORGE_PLANNER_ENABLED: ${VERIFORGE_PLANNER_ENABLED:-0}
+  VERIFORGE_CONTROL_PATH: /veriforge-control/current-state.json
+
+services:
+  api:
+    command: [uvicorn, 'veriforge.api.runtime:create_configured_app', --factory, --host, '0.0.0.0', --port, '8000']
+    environment:
+      <<: *planner-settings
+      VERIFORGE_PLANNER_POLICY_PATH: /veriforge-policy/planner-policy.json
+    volumes:
+      - *planner-control
+      - *planner-policy
+  reconciler:
+    environment:
+      <<: *planner-settings
+    volumes:
+      - *planner-control
+  rtl-worker:
+    environment:
+      <<: *planner-settings
+    volumes:
+      - *planner-control
+  planner-worker:
+    profiles: [planner]
+    image: ${VERIFORGE_APP_IMAGE:-veriforge-app:local}
+    init: true
+    # Fixed, no-shell command. Disabled/invalid policy exits before provider/DB.
+    command:
+      - python
+      - -c
+      - >-
+        from veriforge.api.runtime import load_configuration;
+        from veriforge.core.planner_runtime import serve;
+        from veriforge.planner.provider import MetaConfig, MetaProvider;
+        config, policy = load_configuration();
+        result = serve(enabled=config.enabled and policy.enabled, control=config.control,
+        provider_factory=lambda: MetaProvider(MetaConfig.from_env().model_copy(update={'model': policy.requested_model})));
+        print(result.reason, flush=True)
+    environment:
+      <<: *planner-settings
+      VERIFORGE_PLANNER_POLICY_PATH: /veriforge-policy/planner-policy.json
+      VERIFORGE_DATABASE_URL: postgresql+psycopg://veriforge:${VERIFORGE_POSTGRES_PASSWORD:-veriforge-local-only}@postgres:5432/veriforge
+      VERIFORGE_REDIS_URL: redis://valkey:6379/0
+      # These variables belong exclusively to the dedicated provider role.
+      MODEL_API_KEY: ${MODEL_API_KEY-}
+    volumes:
+      - *planner-control
+      - *planner-policy
+    depends_on:
+      api:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    stop_grace_period: 15s
+    restart: 'no'
