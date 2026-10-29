@@ -1,6 +1,7 @@
 """Durable glue evidence with isolated SQLite and explicit fake Meta; no network."""
 import asyncio
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -15,6 +16,7 @@ from sqlalchemy import select
 from veriforge.contracts import AttemptResult, Experiment
 from veriforge.core import planner_rounds as rounds, planner_transport as glue, service
 from veriforge.core import planner_cleanup as cleanup
+from veriforge.core import planner_resources as resources
 from veriforge.core.catalog import seed_catalog
 from veriforge.core.database import (Attempt, PlannerModelCall, PlannerReservation, PlannerRound,
     PlannerCleanup, PlannerState, make_engine, session_factory)
@@ -82,13 +84,34 @@ def database(tmp_path):
     engine.dispose()
 
 
-def queued(factory, *, strategy="meta"):
-    experiment = Experiment(experiment_id="seed", fixture_id="fifo_correct", objective_ids=("FIFO_BEHAVIOR",),
+def real_authority():
+    return glue.ResourceAuthority(resources.new_incarnation())
+
+
+class RecordedAuthority:
+    """Test instrumentation delegates every claim/validation to real resource API."""
+    def __init__(self):
+        self.real, self.grants, self.phases = real_authority(), [], []
+
+    def claim(self, session, round_id, **kwargs):
+        grant = self.real.claim(session, round_id, **kwargs)
+        if grant is not None:
+            self.grants.append(grant)
+        return grant
+
+    def validate(self, session, grant, **kwargs):
+        assert grant is self.grants[0]
+        self.phases.append(kwargs["phase"])
+        return self.real.validate(session, grant, **kwargs)
+
+
+def queued(factory, *, strategy="meta", key="seed"):
+    experiment = Experiment(experiment_id=key, fixture_id="fifo_correct", objective_ids=("FIFO_BEHAVIOR",),
         operations=({"op": "reset"}, {"op": "write", "value": 17}, {"op": "read"}),
         budget={"max_cycles": 8, "wall_time_seconds": 2.0})
     with factory.begin() as session:
         campaign = service.create_campaign(session, experiment.fixture_id, experiment.model_dump(mode="json"),
-            "seed", completion_policy="sequential")
+            key, completion_policy="sequential")
         service.start(session, campaign.id)
         attempt = session.scalar(select(Attempt).where(Attempt.campaign_id == campaign.id))
         lease, _, _ = service.claim(session, attempt.id)
@@ -107,7 +130,7 @@ def queued(factory, *, strategy="meta"):
 
 
 def run(round_id, sessions, provider, **options):
-    return asyncio.run(glue.run_model_intent(round_id, sessions=sessions, provider=provider,
+    return asyncio.run(glue.run_model_intent(round_id, authority=options.pop("authority", real_authority()), sessions=sessions, provider=provider,
         now=options.pop("now", lambda: AT + timedelta(milliseconds=200)),
         control=options.pop("control", lambda: "RUNNING"), poll_seconds=0.01,
         settlement_seconds=0.02, **options))
@@ -188,7 +211,7 @@ def test_cancellation_during_claim_commit_never_starts_provider(database, bounda
         def cancel():
             event.set() if kind == "event" else task.cancel()
         setattr(sessions, boundary + "_commit", cancel)
-        return await glue.run_model_intent(round_id, sessions=sessions, provider=provider,
+        return await glue.run_model_intent(round_id, authority=real_authority(), sessions=sessions, provider=provider,
             now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING", cancel_event=event)
     result = asyncio.run(scenario())
     assert result.claimed and result.reason == "cancelled" and provider.calls == 0
@@ -219,7 +242,7 @@ def test_inflight_revocation_discards_late_provider_result(database, monkeypatch
                 calls.append(1)
                 return original(*args, **kwargs) if len(calls) == 1 else False
             monkeypatch.setattr(rounds, "heartbeat_model_round", heartbeat)
-        task = asyncio.create_task(glue.run_model_intent(round_id, sessions=sessions, provider=provider,
+        task = asyncio.create_task(glue.run_model_intent(round_id, authority=real_authority(), sessions=sessions, provider=provider,
             now=lambda: AT + timedelta(milliseconds=200), control=lambda: control_value[0],
             poll_seconds=0.01, settlement_seconds=0.02))
         await entered.wait()
@@ -232,7 +255,13 @@ def test_inflight_revocation_discards_late_provider_result(database, monkeypatch
         result = await task
         saved = snapshot(database, campaign_id, round_id)
         assert result.cleanup_pending and result.remote_outcome_unknown and provider.calls == 1
-        assert saved[0] in {"interrupted", "cancelled"} and saved[4] == before
+        if mode == "heartbeat-false":
+            # Synthetic refusal does not itself revoke DB authority. Core must
+            # not bypass the resource refusal with a raw round finalizer.
+            assert not result.applied and saved[0] == "model_running"
+        else:
+            assert saved[0] in {"interrupted", "cancelled"}
+        assert saved[4] == before
         release.set()
         await asyncio.sleep(0.02)
         assert snapshot(database, campaign_id, round_id) == saved
@@ -300,7 +329,7 @@ def test_cancel_event_set_with_completion_wins_before_final_commit(database):
             event.set()
             return completion()
         provider.effect = complete_and_cancel
-        return await glue.run_model_intent(round_id, sessions=Sessions(database), provider=provider,
+        return await glue.run_model_intent(round_id, authority=real_authority(), sessions=Sessions(database), provider=provider,
             now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING", cancel_event=event,
             poll_seconds=0.01, settlement_seconds=0.02)
     result = asyncio.run(scenario())
@@ -328,7 +357,7 @@ def test_wall_deadline_poll_revokes_inflight_provider(database):
             clock[0] = AT + timedelta(seconds=61)
             await asyncio.Event().wait()
         provider.effect = stall
-        return await glue.run_model_intent(round_id, sessions=Sessions(database), provider=provider,
+        return await glue.run_model_intent(round_id, authority=real_authority(), sessions=Sessions(database), provider=provider,
             now=lambda: clock[0], control=lambda: "RUNNING", poll_seconds=0.01, settlement_seconds=0.02)
     result = asyncio.run(scenario())
     assert provider.calls == 1 and result.remote_outcome_unknown and not result.cleanup_pending
@@ -387,7 +416,7 @@ def test_repeated_caller_cancellation_has_finite_cleanup(database):
                     continue
             return completion()
         provider.effect = ignore_cancellation
-        task = asyncio.create_task(glue.run_model_intent(round_id, sessions=Sessions(database), provider=provider,
+        task = asyncio.create_task(glue.run_model_intent(round_id, authority=real_authority(), sessions=Sessions(database), provider=provider,
             now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING",
             poll_seconds=0.01, settlement_seconds=0.02))
         await entered.wait()
@@ -427,8 +456,10 @@ def test_duplicate_cleanup_refusal_never_invokes(database, monkeypatch):
     monkeypatch.setattr(cleanup, "record_pending", lambda *args, **kwargs: None)
     provider = FakeMetaProvider()
     result = run(round_id, Sessions(database), provider)
-    assert result.claimed and result.reason == "cleanup_registration_refused" and provider.calls == 0
-    assert result.cleanup_pending and not run(round_id, Sessions(database), provider).claimed
+    assert not result.claimed and result.reason == "not_claimed" and provider.calls == 0
+    # The resource API rolls the partial round claim back atomically on refusal.
+    assert snapshot(database, campaign_id, round_id)[2] == "queued"
+    assert not run(round_id, Sessions(database), provider).claimed
 
 
 @pytest.mark.parametrize("boundary", ["before", "after"])
@@ -465,7 +496,7 @@ def test_task_observation_failure_retains_durable_pending_without_io(database, m
     async def scenario():
         errors = []
         asyncio.get_running_loop().set_exception_handler(lambda loop, context: errors.append(context))
-        result = await glue.run_model_intent(round_id, sessions=Sessions(database), provider=provider,
+        result = await glue.run_model_intent(round_id, authority=real_authority(), sessions=Sessions(database), provider=provider,
             now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING", settlement_seconds=0.02)
         await asyncio.sleep(0)
         assert not errors and all(task.done() for task in seen)
@@ -477,7 +508,7 @@ def test_task_observation_failure_retains_durable_pending_without_io(database, m
 
 def test_late_child_settlement_acknowledges_unknown_after_parent_cancel(database):
     campaign_id, round_id = queued(database)
-    sessions, provider = Sessions(database), FakeMetaProvider()
+    sessions, provider, authority = Sessions(database), FakeMetaProvider(), RecordedAuthority()
     async def scenario():
         entered, release, cancel = asyncio.Event(), asyncio.Event(), asyncio.Event()
         clock = [AT + timedelta(milliseconds=200)]
@@ -490,7 +521,7 @@ def test_late_child_settlement_acknowledges_unknown_after_parent_cancel(database
                     continue
             return completion()
         provider.effect = uncooperative
-        wrapper = asyncio.create_task(glue.run_model_intent(round_id, sessions=sessions, provider=provider,
+        wrapper = asyncio.create_task(glue.run_model_intent(round_id, authority=authority, sessions=sessions, provider=provider,
             now=lambda: clock[0], control=lambda: "RUNNING", cancel_event=cancel,
             poll_seconds=0.01, settlement_seconds=0.02))
         await entered.wait()
@@ -501,7 +532,8 @@ def test_late_child_settlement_acknowledges_unknown_after_parent_cancel(database
         assert cleanup_view(database, round_id).local_state == "pending"
         with database.begin() as session:
             rounds.cancel_investigation(session, campaign_id, at=AT + timedelta(milliseconds=300))
-            cleanup.mark_owner_lost(session, round_id, at=AT + timedelta(milliseconds=300))
+            assert resources.mark_owner_lost(session, authority.grants[0], role=resources.ROLE,
+                at=AT + timedelta(milliseconds=300))
         assert cleanup_view(database, round_id).local_state == "unknown"
         saved = snapshot(database, campaign_id, round_id)
         clock[0] = AT + timedelta(milliseconds=400)
@@ -509,6 +541,8 @@ def test_late_child_settlement_acknowledges_unknown_after_parent_cancel(database
         await asyncio.sleep(0.03)
         assert cleanup_view(database, round_id).local_state == "settled"
         assert snapshot(database, campaign_id, round_id) == saved
+        with database() as session:
+            assert resources.safe_snapshot(session).state == "unknown"  # Callback never releases.
         assert result.cleanup_pending  # Frozen historical result is not rewritten.
         assert provider.calls == 1
     asyncio.run(scenario())
@@ -521,7 +555,7 @@ def test_acknowledgment_failure_has_no_unhandled_callback_or_false_settlement(da
     async def scenario():
         errors = []
         asyncio.get_running_loop().set_exception_handler(lambda loop, context: errors.append(context))
-        result = await glue.run_model_intent(round_id, sessions=Sessions(database), provider=FakeMetaProvider(),
+        result = await glue.run_model_intent(round_id, authority=real_authority(), sessions=Sessions(database), provider=FakeMetaProvider(),
             now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING")
         await asyncio.sleep(0)
         assert not errors
@@ -571,3 +605,168 @@ def test_unobserved_inner_pending_report_cannot_acknowledge_wrapper_only(databas
     result = run(round_id, Sessions(database), FakeMetaProvider())
     assert result.cleanup_pending and result.remote_outcome_unknown
     assert cleanup_view(database, round_id).local_state == "pending"
+
+
+def test_authority_is_mandatory_without_legacy_fallback(database):
+    _, round_id = queued(database)
+    provider = FakeMetaProvider()
+    with pytest.raises(TypeError, match="authority"):
+        glue.run_model_intent(round_id, sessions=Sessions(database), provider=provider,
+            now=lambda: AT, control=lambda: "RUNNING")
+    assert provider.calls == 0 and cleanup_view(database, round_id) is None
+
+
+def test_atomic_resource_grant_is_not_claimed_or_registered_twice(database, monkeypatch):
+    _, round_id = queued(database)
+    authority, calls = RecordedAuthority(), []
+    claim, register = rounds.claim_model_round, cleanup.record_pending
+    def counted_claim(*args, **kwargs):
+        calls.append("claim")
+        return claim(*args, **kwargs)
+    def counted_registration(*args, **kwargs):
+        calls.append("registration")
+        return register(*args, **kwargs)
+    monkeypatch.setattr(rounds, "claim_model_round", counted_claim)
+    monkeypatch.setattr(cleanup, "record_pending", counted_registration)
+    async def delayed(*args):
+        await asyncio.sleep(0.03)
+        return completion()
+    result = run(round_id, Sessions(database), FakeMetaProvider(delayed), authority=authority)
+    assert result.applied and calls == ["claim", "registration"]
+    assert authority.phases[0] == "pre_io" and "running" in authority.phases and authority.phases[-1] == "completion"
+    assert cleanup_view(database, round_id).local_state == "settled"
+    with database() as session:
+        slot = resources.safe_snapshot(session)
+        assert slot.state == "active" and slot.active_round_id == round_id  # No callback release.
+
+
+@pytest.mark.parametrize("mutation", ["fence-bool", "generation-bool", "ticket", "round"])
+def test_malformed_grant_rolls_back_before_io(database, mutation):
+    campaign_id, round_id = queued(database)
+    class CorruptGrant(RecordedAuthority):
+        def claim(self, session, round_id, **kwargs):
+            grant = super().claim(session, round_id, **kwargs)
+            if mutation == "fence-bool": return replace(grant, fence=True)
+            if mutation == "generation-bool": return replace(grant, lease=replace(grant.lease, generation=True))
+            if mutation == "ticket": return replace(grant, cleanup_ticket=replace(grant.cleanup_ticket, request_hash="f" * 64))
+            return replace(grant, lease=replace(grant.lease, round_id="other"))
+    provider = FakeMetaProvider()
+    with pytest.raises(ValueError, match="grant"):
+        run(round_id, Sessions(database), provider, authority=CorruptGrant())
+    assert provider.calls == 0 and cleanup_view(database, round_id) is None
+    assert snapshot(database, campaign_id, round_id)[2] == "queued"
+    with database() as session:
+        assert resources.safe_snapshot(session).state == "idle"
+
+
+def test_fence_revoked_after_commit_prevents_io_and_never_releases_slot(database):
+    campaign_id, round_id = queued(database)
+    sessions, authority, provider = Sessions(database), RecordedAuthority(), FakeMetaProvider()
+    def revoke():
+        with database.begin() as session:
+            assert resources.mark_owner_lost(session, authority.grants[0], role=resources.ROLE,
+                at=AT + timedelta(milliseconds=200))
+    sessions.after_commit = revoke
+    result = run(round_id, sessions, provider, authority=authority)
+    assert provider.calls == 0 and not result.applied and result.reason == "lease_revoked"
+    assert cleanup_view(database, round_id).local_state == "settled"  # Trusted zero-task proof.
+    assert snapshot(database, campaign_id, round_id)[0] == "interrupted"
+    with database() as session:
+        assert resources.safe_snapshot(session).state == "unknown"
+
+
+def test_owner_loss_before_completion_cannot_use_round_only_finalizers(database, monkeypatch):
+    campaign_id, round_id = queued(database)
+    authority = RecordedAuthority()
+    async def lose_owner(*args):
+        with database.begin() as session:
+            assert resources.mark_owner_lost(session, authority.grants[0], role=resources.ROLE,
+                at=AT + timedelta(milliseconds=200))
+        def forbidden(*args, **kwargs): pytest.fail("resource refusal bypassed with raw round mutation")
+        monkeypatch.setattr(rounds, "finish_model_round", forbidden)
+        monkeypatch.setattr(rounds, "fail_model_round", forbidden)
+        return completion()
+    result = run(round_id, Sessions(database), FakeMetaProvider(lose_owner), authority=authority)
+    assert result.claimed and not result.applied
+    assert snapshot(database, campaign_id, round_id)[3] == "remote_outcome_unknown"
+    assert cleanup_view(database, round_id).local_state == "settled"
+
+
+@pytest.mark.parametrize("path", ["reconstruction", "observation", "pre-task-cancel"])
+def test_early_fail_paths_obey_completion_authority_refusal(database, monkeypatch, path):
+    _, round_id = queued(database)
+    class RefuseCompletion(RecordedAuthority):
+        def validate(self, session, grant, **kwargs):
+            valid = super().validate(session, grant, **kwargs)
+            return valid and kwargs["phase"] != "completion"
+    authority, sessions, event = RefuseCompletion(), Sessions(database), asyncio.Event()
+    if path == "reconstruction":
+        monkeypatch.setattr(glue, "reconstruct_admitted_request", lambda **kwargs: (_ for _ in ()).throw(ValueError()))
+    elif path == "observation":
+        monkeypatch.setattr(glue._LocalCleanupOwner, "track", lambda *args: (_ for _ in ()).throw(RuntimeError()))
+    else:
+        sessions.after_commit = event.set
+    def forbidden(*args, **kwargs): pytest.fail("early failure bypassed resource completion fence")
+    monkeypatch.setattr(rounds, "fail_model_round", forbidden)
+    provider = FakeMetaProvider()
+    result = run(round_id, sessions, provider, authority=authority, cancel_event=event)
+    assert result.claimed and not result.applied and provider.calls == 0
+    assert authority.phases[-1] == "completion"
+
+
+def test_two_campaign_consumers_share_real_global_provider_slot(database):
+    _, first = queued(database, key="first")
+    _, second = queued(database, key="second")
+    async def scenario():
+        entered, release = asyncio.Event(), asyncio.Event()
+        async def wait(*args):
+            entered.set()
+            await release.wait()
+            return completion()
+        provider1, provider2 = FakeMetaProvider(wait), FakeMetaProvider()
+        task = asyncio.create_task(glue.run_model_intent(first, authority=real_authority(), sessions=Sessions(database),
+            provider=provider1, now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING"))
+        await entered.wait()
+        refused = await glue.run_model_intent(second, authority=real_authority(), sessions=Sessions(database),
+            provider=provider2, now=lambda: AT + timedelta(milliseconds=200), control=lambda: "RUNNING")
+        assert not refused.claimed and provider2.calls == 0
+        release.set()
+        result = await task
+        assert result.applied and provider1.calls == 1
+    asyncio.run(scenario())
+
+
+def test_already_settled_cleanup_cannot_authorize_fresh_io(database):
+    _, round_id = queued(database)
+    sessions, authority = Sessions(database), RecordedAuthority()
+    def settle_zero_created_tasks():
+        with database.begin() as session:
+            assert cleanup.acknowledge_settled(session, authority.grants[0].cleanup_ticket,
+                proof="cooperative_tasks_settled", at=AT + timedelta(milliseconds=200))
+    sessions.after_commit = settle_zero_created_tasks
+    provider = FakeMetaProvider()
+    result = run(round_id, sessions, provider, authority=authority)
+    assert provider.calls == 0 and result.reason == "lease_revoked"
+    assert authority.phases == ["pre_io", "completion"]
+    assert cleanup_view(database, round_id).local_state == "settled"
+
+
+def test_full_observed_settlement_before_finalization_allows_completion_phase(database, monkeypatch):
+    campaign_id, round_id = queued(database)
+    observed = []
+    original_init = glue._LocalCleanupOwner.__init__
+    def remember(owner, *args):
+        original_init(owner, *args)
+        observed.append(owner)
+    monkeypatch.setattr(glue._LocalCleanupOwner, "__init__", remember)
+    class SettleBeforeCompletion(RecordedAuthority):
+        def validate(self, session, grant, **kwargs):
+            if kwargs["phase"] == "completion":
+                owner = observed[0]
+                assert all(task.done() for task in owner.tasks)
+                owner.seal()  # Original owner proves all real tracked tasks done.
+                assert owner.acknowledged and cleanup_view(database, round_id).local_state == "settled"
+            return super().validate(session, grant, **kwargs)
+    result = run(round_id, Sessions(database), FakeMetaProvider(), authority=SettleBeforeCompletion())
+    assert result.applied and not result.cleanup_pending
+    assert snapshot(database, campaign_id, round_id)[0] == "waiting_execution"

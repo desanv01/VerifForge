@@ -1,13 +1,19 @@
-"""Independent glue boundary tests: in-memory transaction doubles, no DB or HTTP."""
+"""Independent glue boundaries: real resource grants/isolated SQLite, no HTTP."""
 import ast
 import asyncio
 from contextlib import contextmanager
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
+import runpy
+from alembic import command
+from alembic.config import Config
 import pytest
+from veriforge.core import planner_resources as resources
+from veriforge.core.catalog import seed_catalog
+from veriforge.core.database import PlannerCleanup, make_engine, session_factory
 
 from veriforge.core import planner_transport as glue
 from veriforge.planner import durable_transport
@@ -27,31 +33,53 @@ class NoNetworkMeta(MetaProvider):
         pytest.fail("review may not invoke a live provider")
 
 
-class MemorySessions:
-    def __init__(self, limits):
-        self.active, self.commits, self.dispatches = 0, 0, 0
-        self.claimed, self.claim_committed, self.settled = False, False, False
-        self.strategy, self.policy = "meta", limits.model_dump(mode="json")
-        self.reserved_tokens, self.failures, self.finishes = 0, [], []
-        self.crash, self.heartbeat, self.accept_finish = None, True, True
+class ReviewSessions:
+    """Real transactions with explicit commit/authority fault injection only."""
+    def __init__(self, factory, round_id):
+        self.factory, self.round_id = factory, round_id
+        self.active = self.commits = self.dispatches = 0
+        self.claimed = self.claim_committed = self.settled = False
         self.cleanup_registered = self.cleanup_committed = False
-        self.cleanup_state = None
+        self._cleanup_state = None
+        self.failures, self.finishes = [], []
+        self.crash, self.heartbeat, self.accept_finish = None, True, True
+        self.strategy = "meta"
         self.ack_attempts, self.ack_commit_failure = 0, False
         self.register_refused = False
+        self.grant = None
+
+    @property
+    def cleanup_state(self):
+        return self._cleanup_state
+
+    @cleanup_state.setter
+    def cleanup_state(self, value):
+        # Existing test's explicit synthetic reconciler handoff now uses the
+        # genuine resource API rather than changing an in-memory status label.
+        if value == "unknown" and self.grant is not None:
+            with self.factory.begin() as session:
+                resources.mark_owner_lost(session, self.grant, role=resources.ROLE, at=STAMP)
+        self._cleanup_state = value
 
     @contextmanager
     def begin(self):
         self.active += 1
-        previous_cleanup = self.cleanup_state
+        previous_cleanup = self._cleanup_state
         try:
-            yield self
-            if self.commits == 0 and self.crash == "before":
-                self.claimed = False
-                self.cleanup_registered = False
-                raise RuntimeError("simulated claim commit failure")
-            if self.cleanup_state == "settled" and self.ack_commit_failure:
-                self.cleanup_state = previous_cleanup
-                raise RuntimeError("simulated cleanup acknowledgment commit rollback")
+            with self.factory.begin() as session:
+                if self.strategy != "meta":
+                    original_get = session.get
+                    def get(cls, key, *args, **kwargs):
+                        value = original_get(cls, key, *args, **kwargs)
+                        return SimpleNamespace(strategy=self.strategy, policy=value.policy) if cls is glue.PlannerState else value
+                    session.get = get
+                yield session
+                if self.commits == 0 and self.crash == "before":
+                    self.claimed = self.cleanup_registered = False
+                    raise RuntimeError("simulated claim commit failure")
+                if self._cleanup_state == "settled" and self.ack_commit_failure:
+                    self._cleanup_state = previous_cleanup
+                    raise RuntimeError("simulated cleanup acknowledgment commit rollback")
             self.commits += 1
             self.claim_committed = self.claimed
             self.cleanup_committed = self.cleanup_registered
@@ -60,81 +88,102 @@ class MemorySessions:
         finally:
             self.active -= 1
 
-    def get(self, cls, key):
-        if cls is glue.PlannerRound:
-            return SimpleNamespace(campaign_id="campaign-review")
-        return SimpleNamespace(strategy=self.strategy, policy=self.policy)
 
-    def scalar(self, query):
-        return SimpleNamespace(reserved_tokens=self.reserved_tokens, reserved_cost_usd=None)
+ROOT = Path(__file__).resolve().parents[2]
+BUILDERS = runpy.run_path(str(ROOT / "tests/core/test_planner_transport.py"))
+STAMP = BUILDERS["AT"] + timedelta(milliseconds=200)
 
 
 @pytest.fixture
-def harness(monkeypatch):
+def harness(monkeypatch, tmp_path):
+    engine = make_engine("sqlite:///" + (tmp_path / "review.db").as_posix())
+    config = Config(str(ROOT / "alembic.ini"))
+    with engine.begin() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "head")
+    factory = session_factory(engine)
+    with factory.begin() as session:
+        seed_catalog(session)
+    _, round_id = BUILDERS["queued"](factory, key="prior-independent-review")
+    sessions = ReviewSessions(factory, round_id)
+    # This immutable value is ONLY a reconstruction-fault selector for prior
+    # negative tests. It never grants a model lease/resource/cleanup authority.
     limits = InvestigationLimits(max_model_seconds=1)
     context = build_context(reviewed_contract(), limits, reserved_cycles=0, feedback=())
     admission = prepare_model_call(context, "review-model", limits,
         reserved_tokens=0, reserved_cost_usd=None, pricing=None)
-    lease = ModelLease("campaign-review", "round-review", 7, "lease-review", "review-model",
+    lease = ModelLease("fault-campaign", "fault-round", 7, "fault-lease", "review-model",
         admission.request_hash, admission.schema_hash, admission.input_allowance,
         admission.request_body, context.model_dump(mode="json"), 1.0, "meta")
-    sessions = MemorySessions(limits)
-    sessions.reserved_tokens = admission.reserved_tokens
-    state = SimpleNamespace(lease=lease, sessions=sessions, invoke=None)
+    state = SimpleNamespace(lease=lease, sessions=sessions, invoke=None, round_id=round_id,
+                           authority=glue.ResourceAuthority(resources.new_incarnation()))
+    real_claim = resources.claim_provider_slot
+    real_validate = resources.validate_provider_slot
+    real_finish, real_fail = glue.rounds.finish_model_round, glue.rounds.fail_model_round
+    real_register, real_ack = glue.cleanup.record_pending, glue.cleanup.acknowledge_settled
+    real_reconstruct = glue.reconstruct_admitted_request
 
     def claim(session, *args, **kwargs):
-        assert session.active == 1
-        if session.claimed:
-            return None
-        session.claimed = True
-        return state.lease
+        assert sessions.active == 1
+        grant = real_claim(session, *args, **kwargs)
+        if grant is not None:
+            sessions.claimed, sessions.grant = True, grant
+        return grant
 
-    def heartbeat(session, *args, **kwargs):
-        assert session.active == 1
-        return session.heartbeat and kwargs["control"] == "RUNNING"
+    def validate(session, *args, **kwargs):
+        assert sessions.active == 1
+        return real_validate(session, *args, **kwargs) and sessions.heartbeat
 
     def finish(session, lease, completion, **kwargs):
-        assert session.active == 1
-        session.finishes.append((lease, completion, kwargs))
-        session.settled = session.accept_finish
-        return session.accept_finish
+        assert sessions.active == 1
+        sessions.finishes.append((lease, completion, kwargs))
+        sessions.settled = sessions.accept_finish and real_finish(session, lease, completion, **kwargs)
+        return sessions.settled
 
     def fail(session, lease, **kwargs):
-        assert session.active == 1
-        session.failures.append(kwargs)
-        session.settled = True
-        return True
+        sessions.failures.append(kwargs)
+        sessions.settled = real_fail(session, lease, **kwargs)
+        return sessions.settled
 
     def register(session, lease, **kwargs):
-        assert session.active == 1 and not session.claim_committed
-        if session.register_refused:
+        assert sessions.active == 1 and not sessions.claim_committed
+        if sessions.register_refused:
             return None
-        session.cleanup_registered, session.cleanup_state = True, "pending"
-        return SimpleNamespace(round_id=lease.round_id, generation=lease.generation, owner_token="original-memory-owner")
+        ticket = real_register(session, lease, **kwargs)
+        if ticket is not None:
+            sessions.cleanup_registered, sessions._cleanup_state = True, "pending"
+        return ticket
 
     def acknowledge(session, ticket, **kwargs):
-        assert session.active == 1 and session.cleanup_committed
-        assert ticket.owner_token == "original-memory-owner"
+        assert sessions.active == 1 and sessions.cleanup_committed
+        assert ticket == sessions.grant.cleanup_ticket
         assert kwargs["proof"] == "cooperative_tasks_settled"
-        session.ack_attempts += 1
-        session.cleanup_state = "settled"
-        return True
+        sessions.ack_attempts += 1
+        settled = real_ack(session, ticket, **kwargs)
+        if settled:
+            sessions._cleanup_state = "settled"
+        return settled
+
+    def reconstruct(*args, **kwargs):
+        if state.lease != lease:
+            raise ValueError("synthetic immutable admission reconstruction drift")
+        return real_reconstruct(*args, **kwargs)
 
     async def invoke(request, **kwargs):
         assert sessions.active == 0 and sessions.claim_committed and sessions.cleanup_committed
         sessions.dispatches += 1
-        if state.invoke:
-            return await state.invoke(request, **kwargs)
-        return outcome(request)
+        return await state.invoke(request, **kwargs) if state.invoke else outcome(request)
 
-    monkeypatch.setattr(glue.rounds, "claim_model_round", claim)
-    monkeypatch.setattr(glue.rounds, "heartbeat_model_round", heartbeat)
+    monkeypatch.setattr(resources, "claim_provider_slot", claim)
+    monkeypatch.setattr(resources, "validate_provider_slot", validate)
     monkeypatch.setattr(glue.rounds, "finish_model_round", finish)
     monkeypatch.setattr(glue.rounds, "fail_model_round", fail)
     monkeypatch.setattr(glue, "invoke_admitted", invoke)
+    monkeypatch.setattr(glue, "reconstruct_admitted_request", reconstruct)
     monkeypatch.setattr(glue.cleanup, "record_pending", register)
     monkeypatch.setattr(glue.cleanup, "acknowledge_settled", acknowledge)
-    return state
+    yield state
+    engine.dispose()
 
 
 def outcome(request, **changes):
@@ -148,8 +197,8 @@ def outcome(request, **changes):
 
 
 async def run(state, **kwargs):
-    return await glue.run_model_intent("round-review", sessions=state.sessions,
-        now=lambda: datetime(2026, 10, 29, tzinfo=timezone.utc),
+    return await glue.run_model_intent(state.round_id, sessions=state.sessions, authority=state.authority,
+        now=lambda: STAMP,
         control=kwargs.pop("control", lambda: "RUNNING"), provider=kwargs.pop("provider", NoNetworkMeta()),
         poll_seconds=0.001, settlement_seconds=0.005, **kwargs)
 
@@ -257,7 +306,8 @@ def test_poll_revocation_is_finite_and_late_success_has_no_authority(harness):
             assert task in done
             result = task.result()
             assert result.cleanup_pending and result.remote_outcome_unknown
-            assert not harness.sessions.finishes and harness.sessions.failures
+            assert not harness.sessions.finishes and not harness.sessions.failures
+            assert not result.applied  # Resource refusal forbids raw finalization.
         finally:
             release.set()
             await asyncio.sleep(0.01)
@@ -310,8 +360,12 @@ def test_rejected_forged_cleanup_claim_is_not_silently_lost(harness):
 def test_cleanup_refusal_never_constructs_transport_or_grants_io(harness):
     harness.sessions.register_refused = True
     result = asyncio.run(run(harness))
-    assert result.claimed and result.reason == "cleanup_registration_refused"
-    assert result.cleanup_pending and harness.sessions.dispatches == 0
+    assert not result.claimed and result.reason == "not_claimed"
+    assert not result.cleanup_pending and harness.sessions.dispatches == 0
+    with harness.sessions.factory() as session:
+        assert session.get(PlannerCleanup, harness.round_id) is None
+        assert session.get(glue.PlannerRound, harness.round_id).status == "queued"
+        assert resources.safe_snapshot(session).state == "idle"
     assert not harness.sessions.finishes and not harness.sessions.ack_attempts
 
 
@@ -377,7 +431,7 @@ def test_observer_creation_failure_before_await_prevents_provider_io(harness, mo
             return True
         @property
         def model(self):
-            return "review-model"
+            return BUILDERS["MODEL"]
         async def complete(self, *args, **kwargs):
             self.calls += 1
             pytest.fail("observation failure allowed provider invocation")

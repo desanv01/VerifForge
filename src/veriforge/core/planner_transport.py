@@ -7,11 +7,12 @@ or settlement authority; only this invocation can attempt a fenced settlement.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 import math
 import re
 import time
+from typing import Protocol
 
 from sqlalchemy import select
 
@@ -23,7 +24,43 @@ from veriforge.planner.provider import MetaProvider
 from veriforge.planner.steps import validate_completion
 from . import planner_rounds as rounds
 from . import planner_cleanup as cleanup
+from . import planner_resources as resources
 from .database import PlannerReservation, PlannerRound, PlannerState
+
+
+class ProviderAuthority(Protocol):
+    """Trusted in-process authority, never a public/queue-supplied callback."""
+    def claim(self, session, round_id, *, at, control) -> resources.ProviderGrant | None: ...
+    def validate(self, session, grant, *, at, control, phase) -> bool: ...
+
+
+@dataclass(frozen=True)
+class ResourceAuthority:
+    incarnation: str = field(repr=False)
+    role: str = resources.ROLE
+
+    def claim(self, session, round_id, *, at, control):
+        return resources.claim_provider_slot(session, round_id, incarnation=self.incarnation,
+                                              role=self.role, at=at, control=control)
+
+    def validate(self, session, grant, *, at, control, phase):
+        # Resource validation locks global -> campaign and heartbeats the exact
+        # current model lease. Caller retains both locks through final mutation.
+        return resources.validate_provider_slot(session, grant, role=self.role, at=at, control=control, phase=phase)
+
+
+def _grant_parts(grant, round_id):
+    if (type(grant) is not resources.ProviderGrant or type(grant.fence) is not int or grant.fence <= 0 or
+            grant.resource != resources.RESOURCE or type(grant.incarnation) is not str or
+            type(grant.lease) is not rounds.ModelLease or type(grant.cleanup_ticket) is not cleanup.CleanupTicket):
+        raise ValueError("Resource authority returned an invalid grant")
+    lease, ticket = grant.lease, grant.cleanup_ticket
+    if (type(lease.generation) is not int or lease.generation < 0 or type(ticket.generation) is not int or
+            (lease.round_id, lease.campaign_id, lease.generation, lease.lease, lease.request_hash) !=
+            (ticket.round_id, ticket.campaign_id, ticket.generation, ticket.execution_lease, ticket.request_hash) or
+            lease.round_id != round_id):
+        raise ValueError("Resource authority returned an inconsistent grant")
+    return lease, ticket
 
 
 @dataclass(frozen=True)
@@ -147,11 +184,15 @@ def _failure_code(code):
     return "model_response_invalid"
 
 
-async def run_model_intent(round_id, *, sessions, now, control, provider,
+async def run_model_intent(round_id, *, sessions, now, control, provider, authority: ProviderAuthority,
                            cancel_event=None, poll_seconds=0.1, settlement_seconds=1.0):
     """Claim/commit once, invoke once, then settle using a new fenced transaction.
 
     This adapter dispatches only explicit ``meta`` strategy through MetaProvider.
+    Mandatory service-owned authority claims the global resource, model lease
+    and exact cleanup ticket atomically. No unguarded compatibility path exists.
+    Its phase-aware validation must retain global -> campaign locks through the
+    caller's transaction; it never releases a slot from a late cleanup callback.
     ``mock_planner`` is refused before claim. ``now`` returns aware service UTC
     time; ``control`` returns RUNNING to authorize work. Caller cancellation is
     settled as data, with finite local cleanup and explicit remote uncertainty.
@@ -174,20 +215,18 @@ async def run_model_intent(round_id, *, sessions, now, control, provider,
             return ModelIntentResult(round_id, reason="strategy_mismatch")
         if not isinstance(provider, MetaProvider):
             return ModelIntentResult(round_id, reason="provider_invalid")
-        lease = rounds.claim_model_round(session, round_id, at=now(), control=_control(control))
-        if lease is None:
+        grant = authority.claim(session, round_id, at=now(), control=_control(control))
+        if grant is None:
             return ModelIntentResult(round_id)
+        lease, ticket = _grant_parts(grant, round_id)
         # Snapshot only immutable metadata; no attached ORM object crosses IO.
+        state = session.get(PlannerState, lease.campaign_id)
         policy = dict(state.policy)
         reservation = session.scalar(select(PlannerReservation).where(
             PlannerReservation.round_id == round_id, PlannerReservation.attempt_id.is_(None)))
         metadata = dict(request_hash=lease.request_hash, schema_hash=lease.schema_hash,
             input_allowance=lease.input_allowance, reserved_tokens=reservation.reserved_tokens,
             reserved_cost_usd=Decimal(reservation.reserved_cost_usd) if reservation.reserved_cost_usd is not None else None)
-        ticket = cleanup.record_pending(session, lease, at=now(), control=_control(control))
-        if ticket is None:
-            return ModelIntentResult(round_id, lease.generation, True, reason="cleanup_registration_refused",
-                                     cleanup_pending=True)
     # Commit failure propagates above and cannot reach provider invocation.
     owner = _LocalCleanupOwner(ticket, sessions, now)
     revoked = asyncio.Event()
@@ -205,7 +244,7 @@ async def run_model_intent(round_id, *, sessions, now, control, provider,
     if request is not None:
         # A post-commit revocation/deadline must not reach even the first IO.
         with sessions.begin() as session:
-            valid = rounds.heartbeat_model_round(session, lease, at=now(), control=_control(control))
+            valid = authority.validate(session, grant, at=now(), control=_control(control), phase="pre_io")
         if (not valid or cancel_event is not None and cancel_event.is_set() or
                 asyncio.current_task().cancelling()):
             # Claim/commit hooks may revoke authorization synchronously. Consume
@@ -215,8 +254,10 @@ async def run_model_intent(round_id, *, sessions, now, control, provider,
             except asyncio.CancelledError:
                 pass
             with sessions.begin() as session:
-                applied = rounds.fail_model_round(session, lease, code="model_transport_error", at=now(),
-                    transient=False, remote_unknown=False, control=_control(control))
+                stamp, current_control = now(), _control(control)
+                applied = authority.validate(session, grant, at=stamp, control=current_control, phase="completion") and rounds.fail_model_round(
+                    session, lease, code="model_transport_error", at=stamp,
+                    transient=False, remote_unknown=False, control=current_control)
             owner.seal()  # No provider/wrapper tasks were created.
             return ModelIntentResult(round_id, lease.generation, True, applied,
                                      "cancelled" if valid else "lease_revoked",
@@ -232,8 +273,10 @@ async def run_model_intent(round_id, *, sessions, now, control, provider,
             task.cancel()
             await _settle(task, settlement_seconds)
             with sessions.begin() as session:
-                applied = rounds.fail_model_round(session, lease, code="model_transport_error", at=now(),
-                    transient=False, remote_unknown=False, control=_control(control))
+                stamp, current_control = now(), _control(control)
+                applied = authority.validate(session, grant, at=stamp, control=current_control, phase="completion") and rounds.fail_model_round(
+                    session, lease, code="model_transport_error", at=stamp,
+                    transient=False, remote_unknown=False, control=current_control)
             return ModelIntentResult(round_id, lease.generation, True, applied,
                                      "cleanup_observation_failed", cleanup_pending=True)
         interrupted = False
@@ -247,7 +290,7 @@ async def run_model_intent(round_id, *, sessions, now, control, provider,
                 done, _ = await asyncio.wait({task}, timeout=poll_seconds)
                 if task not in done:
                     with sessions.begin() as session:
-                        valid = rounds.heartbeat_model_round(session, lease, at=now(), control=_control(control))
+                        valid = authority.validate(session, grant, at=now(), control=_control(control), phase="running")
                     if not valid:
                         revoked.set()
             else:
@@ -295,21 +338,23 @@ async def run_model_intent(round_id, *, sessions, now, control, provider,
             outcome = None
     else:
         completion = None
-        owner.seal()
     # Only the round API can grant durable authority, after all lease checks.
     with sessions.begin() as session:
         if cancel_event is not None and cancel_event.is_set():
             completion = None
             unknown = unknown or bool(outcome and outcome.invocation_started)
             reason = "cancelled"
-        if completion is not None:
-            applied = rounds.finish_model_round(session, lease, completion, at=now(), control=_control(control))
+        stamp, current_control = now(), _control(control)
+        if not authority.validate(session, grant, at=stamp, control=current_control, phase="completion"):
+            applied = False
+        elif completion is not None:
+            applied = rounds.finish_model_round(session, lease, completion, at=stamp, control=current_control)
         else:
             known_transient = bool(outcome and outcome.transient_error and not unknown and
                 outcome.state == "rejected" and (reason == "model_http_429" or
                 re.fullmatch(r"model_http_5[0-9]{2}", reason)))
-            applied = rounds.fail_model_round(session, lease, code=_failure_code(reason), at=now(),
-                transient=known_transient, remote_unknown=unknown, control=_control(control))
+            applied = rounds.fail_model_round(session, lease, code=_failure_code(reason), at=stamp,
+                transient=known_transient, remote_unknown=unknown, control=current_control)
     owner.seal()
     cleanup_pending = not owner.acknowledged
     return ModelIntentResult(round_id, lease.generation, True, applied, reason,
