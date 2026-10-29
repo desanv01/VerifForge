@@ -11,7 +11,7 @@ export function readArithmeticTrace(raw: unknown, plan: SavedExperiment): Arithm
   const fail = () => { throw new Error('Arithmetic trace is missing, malformed, or does not match the saved experiment. No trace was interpreted.') }
   if (!record(raw) || raw.schema_version !== 'arithmetic.trace.v1' || !Array.isArray(raw.expected) || !Array.isArray(raw.observed)) return fail()
   const width = plan.parameters.width
-  if (!Number.isInteger(width) || width < 1 || width > 32 || plan.parameters.latency !== 2 || plan.target !== 'arithmetic') return fail()
+  if (typeof width !== 'number' || !Number.isInteger(width) || width < 1 || width > 32 || plan.parameters.latency !== 2 || plan.target !== 'arithmetic') return fail()
   const indices: number[] = []
   if (!Array.isArray(plan.operations) || !plan.operations.length || plan.operations.length > 10000) return fail()
   for (const [index, op] of plan.operations.entries()) {
