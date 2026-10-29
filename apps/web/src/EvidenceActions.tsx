@@ -2,19 +2,20 @@ import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { downloadEvidence, humanize, mutate, request } from './api'
 import type { Campaign, DownloadableArtifact, ExportJob, Health } from './api'
+import { evidenceAvailable, familyName, FIFO } from './families'
 
 function Failure({ error, retry }: { error: Error | null; retry?: () => void }) {
   return error ? <div role="alert" className="notice error"><p>{error.message}</p>{retry ? <button onClick={retry}>Retry evidence request</button> : null}</div> : null
 }
 
-export function EvidenceActions({ attemptId, hasIdentity, onReplay }: { attemptId: string; hasIdentity: boolean; onReplay: (campaign: Campaign) => void }) {
+export function EvidenceActions({ attemptId, adapterId = FIFO, hasIdentity, onReplay }: { attemptId: string; adapterId?: string | null; hasIdentity: boolean; onReplay: (campaign: Campaign) => void }) {
   const client = useQueryClient()
   const [exportId, setExportId] = useState(() => new URLSearchParams(location.search).get('export') ?? '')
   const replayKey = useRef(crypto.randomUUID())
   const exportKey = useRef(crypto.randomUUID())
   const cancelKey = useRef(crypto.randomUUID())
   const health = useQuery({ queryKey: ['health'], queryFn: () => request<Health>('/health'), staleTime: 10000, refetchInterval: 15000 })
-  const available = health.data?.status === 'ok' && health.data.evidence_api === '1' && !health.isError
+  const available = evidenceAvailable(health.data, adapterId) && !health.isError
   const artifacts = useQuery({ queryKey: ['artifacts', attemptId], queryFn: () => request<{ items: DownloadableArtifact[] }>(`/attempts/${encodeURIComponent(attemptId)}/artifacts`), enabled: available && hasIdentity })
   const exportJob = useQuery({ queryKey: ['export', exportId], queryFn: () => request<ExportJob>(`/exports/${encodeURIComponent(exportId)}`), enabled: available && !!exportId, refetchInterval: q => ['queued', 'running'].includes(q.state.data?.status ?? '') ? 1500 : false })
   const job = exportJob.data?.attempt_id === attemptId ? exportJob.data : undefined
@@ -31,7 +32,7 @@ export function EvidenceActions({ attemptId, hasIdentity, onReplay }: { attemptI
   return <section className="evidence-actions" aria-labelledby="evidence-actions-title">
     <h3 id="evidence-actions-title">Replay & portable evidence</h3>
     <p className="meta">Attempt record <code>{attemptId}</code></p>
-    {health.isPending ? <p role="status">Checking evidence API support…</p> : !available ? <p className="notice">This server has not advertised evidence API support. Replay and export are unavailable until the local API is upgraded.</p> : !hasIdentity ? <p className="notice">This attempt has no complete checked identity. Portable evidence and exact replay are unavailable.</p> : null}
+    {health.isPending ? <p role="status">Checking evidence API support…</p> : !available ? <p className="notice">This server has not advertised evidence API support for {familyName(adapterId)}. Replay and export are unavailable for this family.</p> : !hasIdentity ? <p className="notice">This attempt has no complete checked identity. Portable evidence and exact replay are unavailable.</p> : null}
     <Failure error={health.error} retry={() => { void health.refetch() }}/>
     <Failure error={artifacts.error} retry={() => { void artifacts.refetch() }}/>
     {artifacts.isFetching && !artifacts.data ? <p role="status">Loading authorized artifacts…</p> : null}
