@@ -34,6 +34,7 @@ def url(row):
 
 
 def test_import_visible_after_refresh_with_safe_downloads_and_etag(client, db):
+    assert client.get('/api/health').json()['investigation_api'] == '1'
     row = store(db)
     root = f"/api/investigations/{row['investigation_id']}"
     listed = client.get('/api/projects/fifo_correct/investigations')

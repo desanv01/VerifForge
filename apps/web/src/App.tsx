@@ -6,6 +6,7 @@ import { EvidenceActions } from './EvidenceActions'
 import { ARITHMETIC, campaignAdapter, familyName, projectAdapter, setupError, validOperand } from './families'
 import { ContractSemantics, ExperimentControls } from './FamilyPanels'
 import { TraceView } from './TraceView'
+import { EngineeringInvestigation } from './EngineeringInvestigation'
 
 function ErrorNotice({ error, retry }: { error: Error | null; retry?: () => void }) {
   if (!error) return null
@@ -13,6 +14,26 @@ function ErrorNotice({ error, retry }: { error: Error | null; retry?: () => void
 }
 function Status({ label, value }: { label: string; value: string | null }) {
   return <div className="status-cell"><span className="eyebrow">{label}</span><strong>{value ? humanize(value) : 'Not evaluated'}</strong></div>
+}
+function ProjectEngineeringEvidence({ projectId }: { projectId: string }) {
+  const health = useQuery({
+    queryKey: ['health', 'investigation-api', projectId],
+    queryFn: ({ signal }) => request<unknown>('/health', { signal }),
+    retry: false, staleTime: 0, refetchOnMount: 'always', refetchInterval: 15000,
+  })
+  const available = health.isSuccess && health.isFetchedAfterMount &&
+    !!health.data && typeof health.data === 'object' && !Array.isArray(health.data) &&
+    'investigation_api' in health.data && health.data.investigation_api === '1'
+  // Hide the existing view during revalidation without resetting its selected
+  // immutable version on every health poll. A failure/revoked marker unmounts it.
+  if (available) return <>{health.isFetching ? <p role="status">Checking recorded investigation availability…</p> : null}<div hidden={health.isFetching}><EngineeringInvestigation projectId={projectId} /></div></>
+  return <section className="panel" aria-label="Engineering investigation availability"><h2>Engineering investigations</h2>
+    {health.isPending || health.isFetching ? <p role="status">Checking recorded investigation availability…</p> : <>
+      <p role="status">{health.isError ? 'Recorded engineering investigations are unavailable because runtime capability could not be checked.' : 'Recorded engineering investigations are unavailable on this runtime. Investigation API version 1 is required.'}</p>
+      <p className="muted">No investigation records were requested or evaluated.</p>
+      <button onClick={() => void health.refetch()}>Check investigation availability</button>
+    </>}
+  </section>
 }
 export function App() {
   const [projectId, setProjectId] = useState('')
@@ -45,6 +66,9 @@ export function App() {
   }, onSuccess: c => { draftSubmission.current = null; selectCampaign(c.id); void client.invalidateQueries({ queryKey: ['campaigns'] }) } })
   const action = useMutation({ mutationFn: (name: 'start' | 'cancel') => mutate<Campaign>(`/campaigns/${encodeURIComponent(campaignId)}/${name}`), onSuccess: c => { client.setQueryData(['campaign', c.id], c); void client.invalidateQueries({ queryKey: ['events', c.id] }); void client.invalidateQueries({ queryKey: ['campaigns'] }) } })
   const c = campaign.data
+  const investigationProjectId = campaignId
+    ? (!campaign.isError && c?.id === campaignId ? c.project_id : undefined)
+    : (!projects.isError ? selected?.id : undefined)
   const attempt = c?.attempts.at(-1)
   const result = attempt?.result
   const finding = c?.findings[0]
@@ -79,7 +103,9 @@ export function App() {
         <h3>Durable progress</h3><ErrorNotice error={events.error} retry={() => { void events.refetch() }}/><ol className="timeline" aria-live="polite">{events.data?.items.map(e => <li key={e.sequence}><span className="event-sequence">{String(e.sequence).padStart(2, '0')}</span><div><strong>{humanize(e.kind)}</strong><time dateTime={e.created_at}>{new Date(e.created_at).toLocaleString()}</time><details><summary>Event payload</summary><pre>{JSON.stringify(e.payload, null, 2)}</pre></details></div></li>)}</ol>{!events.data?.items.length ? <p className="muted">No persisted events yet.</p> : null}</div>
         <section className="panel" id="evidence"><div className="section-heading"><span className="section-number">03</span><h2>Finding & evidence</h2></div>{finding ? <FindingDetail finding={finding}/> : <p className="muted">No checked finding has been recorded. This does not establish correctness.</p>}
         {result ? <><TraceView campaign={c!} attemptId={attempt!.id} result={result}/><h3>Evidence identity</h3><dl className="identities">{Object.entries(result.identity ?? {}).map(([k, v]) => <div key={k}><dt>{humanize(k)}</dt><dd><code>{v}</code></dd></div>)}</dl><h3>Observed tools</h3>{result.tool_versions.length ? <ul>{result.tool_versions.map(t => <li key={t.name}>{t.name} <code>{t.version}</code></li>)}</ul> : <p>No tool versions recorded.</p>}<h3>Artifacts</h3>{result.artifacts.length ? <ul>{result.artifacts.map(a => <li key={a.artifact_id}><strong>{a.path}</strong> · {a.size_bytes.toLocaleString()} bytes<code>{a.sha256}</code></li>)}</ul> : <p>No artifacts recorded.</p>}{singleExperiment ? <EvidenceActions key={attempt!.id} attemptId={attempt!.id} adapterId={savedAdapter} hasIdentity={hasCompleteIdentity(result.identity)} onReplay={replayed => { client.setQueryData(['campaign', replayed.id], replayed); selectCampaign(replayed.id); void client.invalidateQueries({ queryKey: ['campaigns'] }) }}/> : <p className="notice">Replay and export need the selected attempt’s experiment context for this campaign policy.</p>}{result.uncertainties.map(u => <p className="notice" key={u}>{u}</p>)}</> : <div className="empty small"><h3>Evidence will appear here</h3><p>Source, checker, contract and environment identities are preserved with each checked attempt.</p></div>}</section>
-      </section></div><footer>VerifForge / local development <span>FIFO / arithmetic controls · Support follows the local catalog · Other families require a supported adapter</span></footer>
+      </section></div>
+      <div className="evidence-actions">{investigationProjectId ? <ProjectEngineeringEvidence key={investigationProjectId} projectId={investigationProjectId} /> : <section className="panel" aria-label="Engineering investigation availability"><h2>Engineering investigations</h2><p role="status">{campaignId ? 'Load the selected saved campaign to identify its engineering project.' : 'Select an available project to inspect recorded engineering investigations.'}</p></section>}</div>
+      <footer>VerifForge / local development <span>FIFO / arithmetic controls · Support follows the local catalog · Other families require a supported adapter</span></footer>
     </main></div></div>
 }
 function FindingDetail({ finding }: { finding: Finding }) {
