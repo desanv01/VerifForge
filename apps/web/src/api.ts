@@ -1,4 +1,7 @@
-export interface Project { id: string; name: string; family: string; support_level: string; contract_id: string; adapter_id?: string; experiment_schema_version?: string; trace_schema?: string | null; trace_artifact?: string | null }
+interface ProjectMetadata { id: string; name: string; description?: string; domains?: string[]; adapter_id?: string; experiment_schema_version?: string; trace_schema?: string | null; trace_artifact?: string | null }
+export interface RtlProject extends ProjectMetadata { kind?: 'rtl_fixture'; family: string; support_level: string; contract_id: string }
+export interface RecordedEngineeringProject extends ProjectMetadata { kind: 'engineering_recorded'; description: string; domains: string[]; contract_id: null; family?: never; support_level?: never; adapter_id?: never; experiment_schema_version?: never; trace_schema?: never; trace_artifact?: never }
+export type Project = RtlProject | RecordedEngineeringProject
 export type FamilyParameters = { width?: number; depth?: number; latency?: number } & Partial<AxiLiteParameters>
 export interface Contract { contract_id: string; version?: string; review_status: string; checker: { checker_id: string; version: string; sha256: string }; parameters: FamilyParameters; requirements: { requirement_id: string; description: string }[]; assumptions: string[]; target?: string; schema_version?: string; reset_priority?: string; acceptance?: string; read_semantics?: string; timing?: string; reset?: string; bubbles?: string; sampling?: string; read_write_collision?: string; invalid_access?: string }
 export interface Signature { requirement_id: string; failure_class: string; first_cycle: number; expected: string; observed: string; signature_hash: string }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { downloadEvidence, humanize, mutate, request } from './api'
 import type { Campaign, DownloadableArtifact, ExportJob, Health } from './api'
@@ -14,18 +14,23 @@ export function EvidenceActions({ attemptId, adapterId = FIFO, hasIdentity, onRe
   const replayKey = useRef(crypto.randomUUID())
   const exportKey = useRef(crypto.randomUUID())
   const cancelKey = useRef(crypto.randomUUID())
+  // A mutation keeps its originating token even if its observer receives new
+  // props. Strict Mode's effect cleanup/setup reactivates the same live token.
+  const context = useMemo(() => ({ active: false }), [attemptId, adapterId, hasIdentity])
+  useEffect(() => { context.active = true; return () => { context.active = false } }, [context])
   const health = useQuery({ queryKey: adapterId === AXI_LITE ? ['health', 'axi-workbench'] : ['health'], queryFn: ({ signal }) => request<Health>('/health', { signal }), staleTime: adapterId === AXI_LITE ? 0 : 10000, refetchOnMount: 'always', retry: false, refetchInterval: 15000 })
   const available = evidenceAvailable(health.data, adapterId) && !health.isError && (adapterId !== AXI_LITE || (health.isSuccess && health.isFetchedAfterMount && !health.isFetching))
   const artifacts = useQuery({ queryKey: ['artifacts', attemptId], queryFn: () => request<{ items: DownloadableArtifact[] }>(`/attempts/${encodeURIComponent(attemptId)}/artifacts`), enabled: available && hasIdentity })
   const exportJob = useQuery({ queryKey: ['export', exportId], queryFn: () => request<ExportJob>(`/exports/${encodeURIComponent(exportId)}`), enabled: available && !!exportId, refetchInterval: q => ['queued', 'running'].includes(q.state.data?.status ?? '') ? 1500 : false })
   const job = exportJob.data?.attempt_id === attemptId ? exportJob.data : undefined
-  const replay = useMutation({ mutationFn: () => mutate<Campaign>(`/attempts/${encodeURIComponent(attemptId)}/replay`, undefined, replayKey.current), onSuccess: campaign => { replayKey.current = crypto.randomUUID(); onReplay(campaign) } })
-  const prepare = useMutation({ mutationFn: () => mutate<ExportJob>(`/attempts/${encodeURIComponent(attemptId)}/exports`, undefined, exportKey.current), onSuccess: job => {
+  const replay = useMutation({ onMutate: () => context, mutationFn: () => mutate<Campaign>(`/attempts/${encodeURIComponent(attemptId)}/replay`, undefined, replayKey.current), onSuccess: (campaign, _variables, origin) => { if (!origin?.active || origin !== context) return; replayKey.current = crypto.randomUUID(); onReplay(campaign) } })
+  const prepare = useMutation({ onMutate: () => context, mutationFn: () => mutate<ExportJob>(`/attempts/${encodeURIComponent(attemptId)}/exports`, undefined, exportKey.current), onSuccess: (job, _variables, origin) => {
+    if (!origin?.active || origin !== context) return
     exportKey.current = crypto.randomUUID(); setExportId(job.id); client.setQueryData(['export', job.id], job)
     const url = new URL(location.href); url.searchParams.set('export', job.id); history.replaceState(null, '', url)
   } })
-  const cancel = useMutation({ mutationFn: () => mutate<ExportJob>(`/exports/${encodeURIComponent(exportId)}/cancel`, undefined, cancelKey.current), onSuccess: job => { client.setQueryData(['export', job.id], job); cancelKey.current = crypto.randomUUID() } })
-  const download = useMutation({ mutationFn: ({ path, filename }: { path: string; filename: string }) => downloadEvidence(path, filename) })
+  const cancel = useMutation({ onMutate: () => context, mutationFn: () => mutate<ExportJob>(`/exports/${encodeURIComponent(exportId)}/cancel`, undefined, cancelKey.current), onSuccess: (job, _variables, origin) => { if (!origin?.active || origin !== context) return; client.setQueryData(['export', job.id], job); cancelKey.current = crypto.randomUUID() } })
+  const download = useMutation({ onMutate: () => context, mutationFn: ({ path, filename }: { path: string; filename: string }) => downloadEvidence(path, filename) })
   const exportActive = job?.status === 'queued' || job?.status === 'running'
   const ready = available && hasIdentity && artifacts.isSuccess && !artifacts.isError
   const restoringExport = !!exportId && (!job || exportJob.isPending || exportJob.isError)
@@ -41,9 +46,9 @@ export function EvidenceActions({ attemptId, adapterId = FIFO, hasIdentity, onRe
     {artifacts.data?.items.length === 0 ? <p className="muted">No authorized artifacts were recorded for this attempt.</p> : null}
     <p className="meta">Exact replay queues a new campaign immediately using the stored stimulus, seed, budget and identities. It calls no model. A queued replay is not yet a reproduced finding.</p>
     <div className="actions"><button disabled={!ready || replay.isPending} onClick={() => replay.mutate()}>{replay.isPending ? 'Queuing replay…' : 'Replay exact stimulus'}</button><button disabled={!ready || prepare.isPending || restoringExport || exportActive || job?.status === 'completed'} onClick={() => prepare.mutate()}>{prepare.isPending ? 'Requesting export…' : job?.status === 'failed' || job?.status === 'cancelled' ? 'Prepare new evidence bundle' : 'Prepare evidence bundle'}</button></div>
-    <Failure error={replay.error}/><Failure error={prepare.error}/><Failure error={download.error}/>{download.isSuccess ? <p role="status" className="meta">Verified download requested.</p> : null}
+    <Failure error={replay.context === context ? replay.error : null}/><Failure error={prepare.context === context ? prepare.error : null}/><Failure error={download.context === context ? download.error : null}/>{download.isSuccess && download.context === context ? <p role="status" className="meta">Verified download requested.</p> : null}
     {exportId ? <div className="export-job"><h3>Evidence export</h3><code>{exportId}</code><Failure error={exportJob.error} retry={() => { void exportJob.refetch() }}/>{exportJob.isPending ? <p role="status">Restoring export status…</p> : null}{exportJob.data && !job ? <p role="alert" className="notice error">This export belongs to another attempt. Open the matching campaign to inspect it.</p> : null}{exportJob.isError || (exportJob.data && !job) ? <button onClick={() => { setExportId(''); const url = new URL(location.href); url.searchParams.delete('export'); history.replaceState(null, '', url) }}>Dismiss export view</button> : null}
-    {job ? <><p role="status">Export status: <strong>{humanize(job.status)}</strong></p>{job.error_type ? <p role="alert">Export could not complete: {job.error_type}. Original evidence is unchanged.</p> : null}{job.status === 'queued' ? <p className="meta">Waiting for the evidence worker. This job is saved durably.</p> : null}{job.status === 'completed' && job.sha256 && job.size_bytes !== null ? <><p className="meta">Verified bundle · {job.size_bytes.toLocaleString()} bytes</p><code>{job.sha256}</code><button disabled={!ready || download.isPending} onClick={() => download.mutate({ path: `/exports/${encodeURIComponent(job.id)}/download`, filename: `verifforge-${job.id}.zip` })}>Download evidence bundle</button></> : null}{exportActive ? <button disabled={!available || cancel.isPending} onClick={() => cancel.mutate()}>{cancel.isPending ? 'Cancelling export…' : 'Cancel export'}</button> : null}</> : null}<Failure error={cancel.error}/></div> : null}
+    {job ? <><p role="status">Export status: <strong>{humanize(job.status)}</strong></p>{job.error_type ? <p role="alert">Export could not complete: {job.error_type}. Original evidence is unchanged.</p> : null}{job.status === 'queued' ? <p className="meta">Waiting for the evidence worker. This job is saved durably.</p> : null}{job.status === 'completed' && job.sha256 && job.size_bytes !== null ? <><p className="meta">Verified bundle · {job.size_bytes.toLocaleString()} bytes</p><code>{job.sha256}</code><button disabled={!ready || download.isPending} onClick={() => download.mutate({ path: `/exports/${encodeURIComponent(job.id)}/download`, filename: `verifforge-${job.id}.zip` })}>Download evidence bundle</button></> : null}{exportActive ? <button disabled={!available || cancel.isPending} onClick={() => cancel.mutate()}>{cancel.isPending ? 'Cancelling export…' : 'Cancel export'}</button> : null}</> : null}<Failure error={cancel.context === context ? cancel.error : null}/></div> : null}
     <p className="meta">Only portable, server-verified files can be downloaded. Logs and private environment diagnostics remain metadata. The server rechecks evidence before replay or download.</p>
   </section>
 }

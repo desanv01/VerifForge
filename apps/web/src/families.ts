@@ -12,8 +12,18 @@ export const ARITHMETIC = 'rtl.arithmetic.v1'
 export const ARITHMETIC_TRACE_SCHEMA = 'arithmetic.trace.v1'
 export const ARITHMETIC_TRACE_ARTIFACT = 'arithmetic-trace.json'
 export const familyName = (adapter?: string | null) => adapter === FIFO ? 'FIFO' : adapter === ARITHMETIC ? 'Arithmetic pipeline' : adapter === AXI_LITE ? 'Bounded AXI-Lite' : 'Unsupported family'
+export function projectKind(project?: Project): 'rtl_fixture' | 'engineering_recorded' | null {
+  const identifier = (v: unknown) => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(v)
+  if (!project || !identifier(project.id) || typeof project.name !== 'string' || !project.name.trim() || project.name.length > 256) return null
+  if (project.kind === 'engineering_recorded') {
+    const fields = ['id', 'name', 'kind', 'contract_id', 'description', 'domains']
+    const domains = ['rtl', 'riscv', 'firmware', 'vivado', 'kicad', 'system']
+    return project.contract_id === null && Object.keys(project).every(key => fields.includes(key)) && typeof project.description === 'string' && project.description.length <= 1000 && Array.isArray(project.domains) && project.domains.length >= 1 && project.domains.length <= 6 && new Set(project.domains).size === project.domains.length && project.domains.every(domain => domains.includes(domain)) ? 'engineering_recorded' : null
+  }
+  return (project.kind === undefined || project.kind === 'rtl_fixture') && identifier(project.contract_id) && typeof project.family === 'string' && !!project.family.trim() && typeof project.support_level === 'string' && !!project.support_level.trim() ? 'rtl_fixture' : null
+}
 export function projectAdapter(project?: Project): string | null {
-  if (!project) return null
+  if (!project || projectKind(project) !== 'rtl_fixture') return null
   if (project.family === 'fifo' && (!project.adapter_id || project.adapter_id === FIFO) && (!project.experiment_schema_version || project.experiment_schema_version === '1')) return FIFO
   if (project.family === 'arithmetic' && project.adapter_id === ARITHMETIC && project.experiment_schema_version === 'arithmetic.v1' && project.trace_schema === ARITHMETIC_TRACE_SCHEMA && project.trace_artifact === ARITHMETIC_TRACE_ARTIFACT) return ARITHMETIC
   if (project.family === 'axi_lite' && project.adapter_id === AXI_LITE && project.experiment_schema_version === 'axi_lite.v1' && project.trace_schema === AXI_TRACE_SCHEMA && project.trace_artifact === AXI_TRACE_ARTIFACT && project.contract_id === 'axil-registers-v1' && axiScenario(project.id)) return AXI_LITE
