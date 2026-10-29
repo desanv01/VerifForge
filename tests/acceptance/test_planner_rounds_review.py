@@ -10,18 +10,18 @@ from types import SimpleNamespace
 from alembic import command
 from alembic.config import Config
 import pytest
-from sqlalchemy import func, select, text
+from sqlalchemy import MetaData, Table, func, select, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import CreateTable
 
-from veriforge.contracts import AttemptResult, Experiment
+from veriforge.adapters import get_adapter, registered_adapters
+from veriforge.contracts import AttemptResult, Experiment, canonical_hash
 from veriforge.core import planner_rounds as rounds, service
-from veriforge.core.catalog import seed_catalog
 from veriforge.core.database import (Base, Attempt, Campaign, Dispatch, ExperimentRecord, Finding,
     PlannerFeedback, PlannerIntent, PlannerModelCall, PlannerReservation, PlannerRound,
     PlannerState, make_engine, session_factory)
-from veriforge.core.planner_experiments import resolve_attempt_experiment
+from veriforge.core.planner_experiments import record_experiment, resolve_attempt_experiment
 from veriforge.planner.models import InvestigationLimits, ProviderCompletion
 
 AT = datetime(2026, 10, 29, 16, tzinfo=timezone.utc)
@@ -43,6 +43,48 @@ def completion():
         usage={"input_tokens": 10, "output_tokens": 10}, finish_reason="stop")
 
 
+def seed_historical_catalog(connection):
+    # Revision9 predates Project.kind. Seed its actual reflected tables, without
+    # invoking today's Project ORM or changing this historical migration target.
+    metadata = MetaData()
+    contracts = Table("contracts", metadata, autoload_with=connection)
+    projects = Table("projects", metadata, autoload_with=connection)
+    assert "kind" not in projects.c
+    seen = set()
+    for descriptor in registered_adapters():
+        reviewed = descriptor.reviewed_contract()
+        if reviewed.contract_id not in seen:
+            connection.execute(contracts.insert().values(id=reviewed.contract_id, data=reviewed.model_dump(mode="json"),
+                identity={"contract_hash": canonical_hash(reviewed), "checker_hash": reviewed.checker.sha256}))
+            seen.add(reviewed.contract_id)
+        schema_version = descriptor.experiment_schema()["properties"]["schema_version"]["const"]
+        for fixture in descriptor.fixture_ids:
+            source = descriptor.fixture_source(fixture)
+            connection.execute(projects.insert().values(id=fixture, owner="local", contract_id=reviewed.contract_id,
+                data={"id": fixture, "name": fixture.replace("_", " ").title(), "family": descriptor.target,
+                    "support_level": "experimental", "contract_id": reviewed.contract_id,
+                    "source_file_hash": source["source_file_hash"], "variant": source["variant"],
+                    "adapter_id": descriptor.adapter_id, "experiment_schema_version": schema_version,
+                    "trace_schema": descriptor.trace_schema, "trace_artifact": descriptor.trace_artifact}))
+
+
+def seed_historical_campaign(session, project_id, wire, key, *, completion_policy="sequential"):
+    # Historical test data setup only: no Project ORM query on revision9.
+    experiment = get_adapter("rtl.fifo.v1").validate_experiment(wire)
+    assert experiment.fixture_id == project_id
+    request_hash = service.digest({"project_id": project_id, "plan": wire})
+    if completion_policy != "single":
+        request_hash = service.digest({"request_hash": request_hash, "completion_policy": completion_policy})
+    parent = Campaign(project_id=project_id, contract_id=experiment.contract_id,
+        adapter_id="rtl.fifo.v1", completion_policy=completion_policy, create_key=key,
+        request_hash=request_hash, plan=wire, identity=get_adapter("rtl.fifo.v1").expected_identity(experiment))
+    session.add(parent)
+    session.flush()
+    record_experiment(session, parent, wire, "initial", origin="manual", initial=True)
+    service.emit(session, parent, "campaign.created")
+    return parent
+
+
 @pytest.fixture
 def db():
     engine = make_engine("sqlite:///:memory:")
@@ -50,13 +92,13 @@ def db():
     with engine.begin() as connection:
         config.attributes["connection"] = connection
         command.upgrade(config, "9u2rounds")
+        seed_historical_catalog(connection)
     sessions = session_factory(engine)
     with sessions.begin() as session:
-        seed_catalog(session)
         plan = Experiment(experiment_id="review-seed", fixture_id="fifo_correct",
             objective_ids=("FIFO_BEHAVIOR",), budget={"max_cycles": 8, "wall_time_seconds": 2.0},
             operations=({"op": "reset"}, {"op": "write", "value": 17}, {"op": "read"}))
-        parent = service.create_campaign(session, plan.fixture_id, plan.model_dump(mode="json"), "review-seed", completion_policy="sequential")
+        parent = seed_historical_campaign(session, plan.fixture_id, plan.model_dump(mode="json"), "review-seed", completion_policy="sequential")
         service.start(session, parent.id)
         attempt = session.scalar(select(Attempt).where(Attempt.campaign_id == parent.id))
         token, _, _ = service.claim(session, attempt.id)
@@ -195,7 +237,7 @@ def test_sqlite_composite_reservation_foreign_keys_reject_other_campaign(db):
     round_id = queue(db)
     with db[1].begin() as session:
         seed_record = session.scalar(select(ExperimentRecord).where(ExperimentRecord.campaign_id == db[2]))
-        other = service.create_campaign(session, "fifo_correct", seed_record.plan, "other-review-parent", completion_policy="sequential")
+        other = seed_historical_campaign(session, "fifo_correct", seed_record.plan, "other-review-parent", completion_policy="sequential")
         service.start(session, other.id)
         attempt = session.scalar(select(Attempt).where(Attempt.campaign_id == other.id))
         token, _, _ = service.claim(session, attempt.id)

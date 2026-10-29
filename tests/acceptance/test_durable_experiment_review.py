@@ -9,13 +9,12 @@ from alembic.config import Config
 import pytest
 from sqlalchemy import MetaData, Table, select, text
 from sqlalchemy.exc import IntegrityError
-from veriforge.adapters import get_adapter
-from veriforge.contracts import ArtifactReference, AttemptResult, Experiment
+from veriforge.adapters import get_adapter, registered_adapters
+from veriforge.contracts import ArtifactReference, AttemptResult, Experiment, canonical_hash
 from veriforge.core import artifacts, service
-from veriforge.core.catalog import seed_catalog
 from veriforge.core.database import (Attempt, AttemptExperiment, Campaign, Dispatch, EvidenceExport,
     ExperimentRecord, Finding, make_engine, now, session_factory)
-from veriforge.core.planner_experiments import admit_experiment, resolve_attempt_experiment, settle_sequence
+from veriforge.core.planner_experiments import admit_experiment, record_experiment, resolve_attempt_experiment, settle_sequence
 
 
 def migrate(engine, revision="8u2experiments"):
@@ -25,12 +24,59 @@ def migrate(engine, revision="8u2experiments"):
         command.upgrade(config, revision)
 
 
+def seed_historical_catalog(connection):
+    # Keep revision7/8 schemas literal; current Project ORM requires kind.
+    metadata = MetaData()
+    contracts = Table("contracts", metadata, autoload_with=connection)
+    projects = Table("projects", metadata, autoload_with=connection)
+    assert "kind" not in projects.c
+    seen = set()
+    for descriptor in registered_adapters():
+        reviewed = descriptor.reviewed_contract()
+        if reviewed.contract_id not in seen:
+            connection.execute(contracts.insert().values(id=reviewed.contract_id, data=reviewed.model_dump(mode="json"),
+                identity={"contract_hash": canonical_hash(reviewed), "checker_hash": reviewed.checker.sha256}))
+            seen.add(reviewed.contract_id)
+        schema_version = descriptor.experiment_schema()["properties"]["schema_version"]["const"]
+        for fixture in descriptor.fixture_ids:
+            source = descriptor.fixture_source(fixture)
+            connection.execute(projects.insert().values(id=fixture, owner="local", contract_id=reviewed.contract_id,
+                data={"id": fixture, "name": fixture.replace("_", " ").title(), "family": descriptor.target,
+                    "support_level": "experimental", "contract_id": reviewed.contract_id,
+                    "source_file_hash": source["source_file_hash"], "variant": source["variant"],
+                    "adapter_id": descriptor.adapter_id, "experiment_schema_version": schema_version,
+                    "trace_schema": descriptor.trace_schema, "trace_artifact": descriptor.trace_artifact}))
+
+
+def seed_historical_campaign(session, project_id, wire, key, *, completion_policy="sequential"):
+    # Historical setup only, equivalent raw plan/identity/event/snapshot fields.
+    descriptor = get_adapter("rtl.fifo.v1")
+    experiment = descriptor.validate_experiment(wire)
+    assert experiment.fixture_id == project_id
+    request_hash = service.digest({"project_id": project_id, "plan": wire})
+    if completion_policy != "single":
+        request_hash = service.digest({"request_hash": request_hash, "completion_policy": completion_policy})
+    parent = Campaign(project_id=project_id, contract_id=experiment.contract_id, adapter_id=descriptor.adapter_id,
+        completion_policy=completion_policy, create_key=key, request_hash=request_hash,
+        plan=wire, identity=descriptor.expected_identity(experiment))
+    session.add(parent)
+    session.flush()
+    record_experiment(session, parent, wire, "initial", origin="manual", initial=True)
+    service.emit(session, parent, "campaign.created")
+    return parent
+
+
 @pytest.fixture
-def state(tmp_path):
+def state(tmp_path, request):
     engine = make_engine("sqlite:///" + (tmp_path / "review.sqlite").as_posix())
     migrate(engine)
     sessions = session_factory(engine)
-    with sessions.begin() as session: seed_catalog(session)
+    with engine.begin() as connection: seed_historical_catalog(connection)
+    if getattr(request, "param", None) is not None:
+        # Only the current replay API integration requires Project.kind. The
+        # historical backfill/immutability/FK cases stay on literal revision8.
+        assert request.param == "13engineeringprojects"
+        migrate(engine, request.param)
     yield engine, sessions
     engine.dispose()
 
@@ -43,7 +89,7 @@ def plan(name="seed", value=17):
 
 def create(sessions, key="root", policy="sequential"):
     with sessions.begin() as session:
-        campaign = service.create_campaign(session, "fifo_correct", plan(), key, completion_policy=policy)
+        campaign = seed_historical_campaign(session, "fifo_correct", plan(), key, completion_policy=policy)
         service.start(session, campaign.id)
         attempt = session.scalar(select(Attempt).where(Attempt.campaign_id == campaign.id))
         return campaign.id, attempt.id
@@ -124,6 +170,7 @@ def test_missing_binding_cannot_claim_or_finalize_even_infrastructure_result(sta
         with state[1].begin() as session: service.finalize(session, orphan_id, lease, {"error_type": "fixture"}, infrastructure_error=True)
 
 
+@pytest.mark.parametrize("state", ["13engineeringprojects"], indirect=True)
 def test_second_child_selected_evidence_survives_parent_seed_changes_and_exports(state, tmp_path):
     campaign_id, seed_attempt = create(state[1])
     finish(state[1], seed_attempt, mismatch=True)
@@ -176,7 +223,7 @@ def test_raw_legacy_json_identity_dispatch_and_finding_survive_additive_backfill
     engine = make_engine("sqlite:///" + (tmp_path / "legacy.sqlite").as_posix())
     migrate(engine, "7bf054adapter")
     sessions = session_factory(engine)
-    with sessions.begin() as session: seed_catalog(session)
+    with engine.begin() as connection: seed_historical_catalog(connection)
     raw_plan = plan("legacy-omitted-defaults", 5)
     raw_json = json.dumps(raw_plan, indent=3)
     identity = get_adapter("rtl.fifo.v1").expected_identity(Experiment.model_validate(raw_plan))

@@ -23,10 +23,27 @@ class Base(DeclarativeBase):
 
 class Project(Base):
     __tablename__ = "projects"
+    __table_args__ = (CheckConstraint("(kind = 'rtl_fixture' AND contract_id IS NOT NULL) OR (kind = 'engineering_recorded' AND contract_id IS NULL)", name="ck_project_kind_contract"),)
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     owner: Mapped[str] = mapped_column(String(128), default="local")
     data: Mapped[dict] = mapped_column(JSON)
-    contract_id: Mapped[str] = mapped_column(ForeignKey("contracts.id"))
+    kind: Mapped[str] = mapped_column(String(32), default="rtl_fixture", server_default="rtl_fixture")
+    contract_id: Mapped[str | None] = mapped_column(ForeignKey("contracts.id"), nullable=True)
+
+
+@event.listens_for(Project, "before_update")
+def _project_identity(mapper, connection, target):
+    previous_ids = inspect(target).attrs.id.history.deleted
+    old = connection.execute(Project.__table__.select().where(Project.id == (previous_ids[0] if previous_ids else target.id))).mappings().first()
+    if old is not None and (old["kind"] != target.kind or old["kind"] == "engineering_recorded" and any(
+        old[name] != getattr(target, name) for name in ("id", "owner", "data", "contract_id"))):
+        raise ValueError("Canonical project kind and recorded engineering metadata are immutable")
+
+
+@event.listens_for(Project, "before_delete")
+def _recorded_project_no_delete(mapper, connection, target):
+    if target.kind == "engineering_recorded":
+        raise ValueError("Recorded engineering project is immutable")
 
 
 class Contract(Base):

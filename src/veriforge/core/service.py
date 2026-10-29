@@ -55,6 +55,12 @@ def emit(session, campaign: Campaign, kind: str, payload: dict | None = None):
 def create_campaign(session, project_id: str, plan: dict, key: str, *, require_new: bool = False, adapter_id: str = FIFO_ADAPTER, completion_policy: str = "single", experiment_origin: str = "manual") -> Campaign:
     if completion_policy not in {"single", "sequential"}:
         raise ValueError("Unknown campaign completion policy")
+    project = session.get(Project, project_id)
+    if not project or project.owner != "local":
+        raise NotFound(project_id)
+    from .engineering_catalog import project_view
+    if project_view(project)["kind"] != "rtl_fixture":
+        raise Conflict("Recorded engineering projects do not support RTL execution")
     request_hash = digest({"project_id": project_id, "plan": plan})
     if adapter_id != FIFO_ADAPTER:
         request_hash = digest({"adapter_id": adapter_id, "project_id": project_id, "plan": plan})
@@ -69,9 +75,6 @@ def create_campaign(session, project_id: str, plan: dict, key: str, *, require_n
         if prior.request_hash != request_hash or prior.adapter_id != adapter_id or prior.completion_policy != completion_policy:
             raise Conflict("Idempotency key already used for a different request")
         return prior
-    project = session.get(Project, project_id)
-    if not project or project.owner != "local":
-        raise NotFound(project_id)
     if plan.get("contract_id") != project.contract_id:
         raise Conflict("Plan must reference the project's reviewed contract")
     descriptor = project_adapter(project)
