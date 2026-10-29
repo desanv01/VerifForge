@@ -88,7 +88,8 @@ def fake_campaign(label):
     identity = dict(source_hash='test-source', checker_hash='test-checker', contract_hash='test-contract', experiment_hash=ci.jhash(plan))
     result = dict(identity=identity, usage={'cycles': cycles, 'wall_time_seconds': 0.1}, failure_signature=signature,
                   trace=[{}] if label == 'fifo' else [], tool_versions=[{'name': 'verilator', 'version': 'fabricated Verilator 5.042'}, {'name': 'cocotb', 'version': '2.0.1'}])
-    return dict(id='campaign-' + label, execution_status='completed', verdict='design_mismatch' if failure else 'pass_within_scope',
+    verdict = {'order': 'property_failure', 'strobe': 'design_mismatch', 'response': 'property_failure'}.get(label, 'pass_within_scope')
+    return dict(id='campaign-' + label, execution_status='completed', verdict=verdict,
                 plan=plan, identity=identity, attempts=[{'id': 'attempt-' + label, 'result': result}])
 
 
@@ -112,6 +113,37 @@ def test_fabricated_replay_requires_exact_plan_identity_lineage_and_signature():
         broken[mutation] = 'different'
         with pytest.raises(RuntimeError):
             ci.validate_case('replay', broken, source)
+
+
+@pytest.mark.parametrize('label,expected', [('order', 'property_failure'), ('strobe', 'design_mismatch'), ('response', 'property_failure')])
+def test_each_negative_requires_its_exact_historical_verdict_kind(label, expected):
+    campaign = fake_campaign(label)
+    assert campaign['verdict'] == expected
+    ci.validate_case(label, campaign)
+    campaign['verdict'] = 'design_mismatch' if expected == 'property_failure' else 'property_failure'
+    with pytest.raises(RuntimeError, match='unexpected checker result/cycles'):
+        ci.validate_case(label, campaign)
+
+
+@pytest.mark.parametrize('label', ['order', 'strobe', 'response'])
+@pytest.mark.parametrize('damage', ['cycles', 'first_cycle', 'requirement_id', 'failure_class'])
+def test_negative_class_correction_preserves_exact_cycle_and_semantic_fault(label, damage):
+    campaign = fake_campaign(label)
+    if damage == 'cycles':
+        campaign['attempts'][0]['result']['usage']['cycles'] += 1
+    else:
+        signature = campaign['attempts'][0]['result']['failure_signature']
+        signature[damage] = signature[damage] + 1 if damage == 'first_cycle' else 'wrong-kind'
+    with pytest.raises(RuntimeError):
+        ci.validate_case(label, campaign)
+
+
+def test_strobe_replay_rejects_property_failure_even_with_matching_signature():
+    source = fake_campaign('strobe')
+    replay = copy.deepcopy(source)
+    replay.update(source_attempt_id=source['attempts'][0]['id'], verdict='property_failure')
+    with pytest.raises(RuntimeError, match='replay failure changed'):
+        ci.validate_case('replay', replay, source)
 
 
 def test_immutability_keeps_bool_integer_and_bytes_distinct():
@@ -139,9 +171,22 @@ def test_fake_controller_finite_attempts_and_stop_on_unexpected_outcome(monkeypa
     monkeypatch.setattr(ci, 'effective_identity', lambda: (tmp_path.stat().st_uid, tmp_path.stat().st_gid))
     monkeypatch.setattr(ci.time, 'sleep', lambda _: None)
     monkeypatch.setattr(ci, 'fixture_plans', lambda: {k: {'label': k} for k in ci.CASES if k != 'replay'})
-    monkeypatch.setattr(ci, 'validate_package', lambda *_: None)
-    monkeypatch.setattr(ci, 'export_readback', lambda *_: {'id': 'fake-export'})
-    campaigns, submitted, cancelled = {}, [], []
+    campaigns, submitted, cancelled, checks, exported = {}, [], [], [], []
+    original_validate_case = ci.validate_case
+    def fake_package(campaign, destination):
+        destination.mkdir()
+        (destination / 'fake-evidence.txt').write_bytes(b'synthetic retained package, not simulator evidence')
+        checks.append(('package', campaign['id']))
+    def track_semantics(label, campaign, source=None):
+        assert checks[-1] == ('package', campaign['id'])
+        checks.append(('semantic', campaign['id']))
+        return original_validate_case(label, campaign, source)
+    def fake_export(*_):
+        exported.append('fake-export')
+        return {'id': 'fake-export'}
+    monkeypatch.setattr(ci, 'validate_package', fake_package)
+    monkeypatch.setattr(ci, 'validate_case', track_semantics)
+    monkeypatch.setattr(ci, 'export_readback', fake_export)
     def fake_api(method, path, body=None, key=None):
         if path == '/health':
             return {'evidence_adapters': ['rtl.fifo.v1', 'rtl.arithmetic.v1', 'rtl.axi_lite.v1']}
@@ -173,10 +218,20 @@ def test_fake_controller_finite_attempts_and_stop_on_unexpected_outcome(monkeypa
         with pytest.raises(RuntimeError, match='unexpected checker result'):
             ci.exercise(tmp_path / 'fake')
         assert submitted == ['fifo'] and cancelled == ['campaign-fifo']
+        assert (tmp_path / 'fake/fifo-attempt/fake-evidence.txt').exists()
+        assert json.loads((tmp_path / 'fake/fifo-validation-status.json').read_text()) == {
+            'package_validation': 'passed', 'semantic_expectation': 'pending',
+            'preservation': 'not_checked', 'acceptance': 'unaccepted'}
+        assert not exported and not (tmp_path / 'fake/application-summary.json').exists()
     else:
         ci.exercise(tmp_path / 'fake')
         assert submitted == list(ci.CASES) and not cancelled
         assert json.loads((tmp_path / 'fake/application-summary.json').read_text())['revision'] == 'fake-only'
+        assert exported == ['fake-export']
+        for label in ci.CASES:
+            assert json.loads((tmp_path / 'fake' / (label + '-validation-status.json')).read_text()) == {
+                'package_validation': 'passed', 'semantic_expectation': 'passed',
+                'preservation': 'passed', 'acceptance': 'accepted'}
 
 
 def test_workflow_manual_pinned_readonly_and_cleanup_before_upload():
@@ -546,3 +601,36 @@ def test_probe_cleanup_retains_exact_primary_exception_and_bounded_secondary_not
     assert 'PermissionError: secondary cleanup denied' in primary.__notes__[0]
     assert len(primary.__notes__[0]) < 600
     assert not (evidence / 'mount-preflight.json').exists()
+
+
+def test_package_validation_failure_stays_unaccepted_without_semantic_check_or_export(monkeypatch, tmp_path):
+    evidence = preflight_context(monkeypatch, tmp_path)
+    monkeypatch.setattr(ci.sys, 'platform', 'linux')
+    monkeypatch.setenv('VERIFORGE_CI_EPHEMERAL_PROJECT', 'vf-axi-ci-123-1')
+    monkeypatch.setattr(ci, 'fixture_plans', lambda: {'fifo': {'fake': 'request'}})
+    monkeypatch.setattr(ci, 'idle_snapshot', lambda: {'tables': {'campaigns': [], 'attempts': []}, 'files': {}, 'queues': {}})
+    campaign = fake_campaign('fifo')
+    calls = []
+    def fake_api(method, path, *args, **kwargs):
+        calls.append((method, path))
+        if path == '/health':
+            return {'evidence_adapters': ['rtl.fifo.v1', 'rtl.arithmetic.v1', 'rtl.axi_lite.v1']}
+        return copy.deepcopy(campaign)
+    primary = ValueError('fake package hash mismatch')
+    def fail_package(_, destination):
+        destination.mkdir()
+        (destination / 'partial-unaccepted.txt').write_bytes(b'fake incomplete bytes')
+        raise primary
+    monkeypatch.setattr(ci, 'api_json', fake_api)
+    monkeypatch.setattr(ci, 'validate_package', fail_package)
+    monkeypatch.setattr(ci, 'validate_case', lambda *_: pytest.fail('semantics after failed package validation'))
+    monkeypatch.setattr(ci, 'export_readback', lambda *_: pytest.fail('export after failed package validation'))
+    with pytest.raises(ValueError) as observed:
+        ci.exercise(evidence)
+    assert observed.value is primary
+    assert calls == [('GET', '/health'), ('POST', '/campaigns'),
+                     ('POST', '/campaigns/campaign-fifo/start'), ('POST', '/campaigns/campaign-fifo/cancel')]
+    assert json.loads((evidence / 'fifo-validation-status.json').read_text()) == {
+        'package_validation': 'pending', 'semantic_expectation': 'not_checked',
+        'preservation': 'not_checked', 'acceptance': 'unaccepted'}
+    assert not (evidence / 'application-summary.json').exists()

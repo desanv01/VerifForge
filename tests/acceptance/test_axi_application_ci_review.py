@@ -144,6 +144,7 @@ def test_owned_command_deadline_terminates_then_kills_if_needed(ci, monkeypatch,
 def test_cancel_failure_preserves_first_checker_failure(ci, monkeypatch, tmp_path):
     # This unit isolates cancellation after a checked result; mount safety has its own suite.
     monkeypatch.setattr(ci, "evidence_preflight", lambda *a: None)
+    monkeypatch.setattr(ci, "validate_package", lambda *a: None)
     monkeypatch.setattr(ci.sys, "platform", "linux")
     monkeypatch.setenv("VERIFORGE_CI_EPHEMERAL_PROJECT", "vf-axi-ci-314-2")
     monkeypatch.setattr(ci, "fixture_plans", lambda: {"fifo": {}})

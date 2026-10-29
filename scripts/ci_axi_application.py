@@ -121,9 +121,9 @@ def validate_case(label, campaign, source=None):
     result = campaign['attempts'][0]['result']
     expected = {'fifo': ('pass_within_scope', 5, None), 'arithmetic': ('pass_within_scope', 15, None),
                 'control': ('pass_within_scope', 149, None),
-                'order': ('design_mismatch', 11, (7, 'AXIL_PROGRESS', 'axil.response_bound')),
+                'order': ('property_failure', 11, (7, 'AXIL_PROGRESS', 'axil.response_bound')),
                 'strobe': ('design_mismatch', 9, (7, 'AXIL_READ', 'axil.read_value')),
-                'response': ('design_mismatch', 7, (4, 'AXIL_HANDSHAKE', 'axil.stalled_response'))}
+                'response': ('property_failure', 7, (4, 'AXIL_HANDSHAKE', 'axil.stalled_response'))}
     if label == 'replay':
         require(source is not None, 'replay source missing')
         require(campaign['source_attempt_id'] == source['attempts'][0]['id'], 'replay lineage changed')
@@ -412,10 +412,19 @@ def exercise(destination=None):
                 time.sleep(1)
                 campaign = api_json('GET', '/campaigns/' + active)
             write(destination / (label + '-campaign.json'), campaign)
-            validate_case(label, campaign, results.get('strobe') if label == 'replay' else None)
+            validation = {'package_validation': 'pending', 'semantic_expectation': 'not_checked',
+                          'preservation': 'not_checked', 'acceptance': 'unaccepted'}
+            write(destination / (label + '-validation-status.json'), validation)
+            # Retain an intact typed/hash-checked package before the gate's
+            # expected outcome is tested. A copied package is not acceptance.
             validate_package(campaign, destination / (label + '-attempt'))
+            validation.update(package_validation='passed', semantic_expectation='pending')
+            write(destination / (label + '-validation-status.json'), validation)
+            validate_case(label, campaign, results.get('strobe') if label == 'replay' else None)
             current = idle_snapshot()
             unchanged(baseline, current)
+            validation.update(semantic_expectation='passed', preservation='passed', acceptance='accepted')
+            write(destination / (label + '-validation-status.json'), validation)
             baseline = current
             results[label] = campaign
             active = None
