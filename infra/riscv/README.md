@@ -4,6 +4,8 @@ This experimental image builds the complete, unmodified pinned Spike reference a
 
 The Docker build context contains only this README and the Dockerfile. There is no COPY/ADD, source upload, registry login or image push. SPIKE_BUILD_JOBS accepts 2 or 4 (default 4). The upstream configure command and instruction implementation set are unchanged.
 
+The workload recipe assembles to the retained fixed-name `/output/smoke.o`, then links that object to `/output/smoke.elf`. This prevents GCC's random temporary object basename from entering ELF file-symbol metadata. Assembly and link commands, object bytes and separate phase logs are retained and hashed. No symbols/sections are stripped and the full ELF replay check remains mandatory. All compile/reference/simulation phases still share the same 120 second inner budget; a build or timeout failure cannot become a design verdict.
+
 | Component | Pin |
 | --- | --- |
 | Verilator base | v5.042@sha256:63e38d3b18ca8799d2821c2c254b36c449eb80ea7f38769e919849996f0b7cd7 |

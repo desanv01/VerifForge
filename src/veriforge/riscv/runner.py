@@ -16,7 +16,7 @@ from veriforge.contracts import (AttemptResult, ArtifactReference, EvidenceIdent
     FailureSignature, ResourceUsage, ToolVersion, canonical_hash)
 from veriforge.rtl.runner import _bounded, _environment
 from .contracts import RiscvExperiment, SimulationOutput
-from .profile import ROOT, PLATFORM, CORE_REVISION, REFERENCE_REVISION, compile_command, reference_command
+from .profile import ROOT, PLATFORM, CORE_REVISION, REFERENCE_REVISION, assemble_command, compile_command, reference_command
 from .trace import parse_spike_commits, normalize_rvfi, UnsupportedTrace, TraceFormatError
 from .checker import compare_retirements
 
@@ -81,7 +81,7 @@ def run_experiment(experiment: RiscvExperiment, output_dir: Path, *, cancel_even
         tools.extend((ToolVersion(name='spike-revision', version=revision),
             ToolVersion(name='cocotb', version=importlib.metadata.version('cocotb')),
             ToolVersion(name='python', version=platform.python_version())))
-        for name in ('compiler', 'objcopy', 'reference', 'dut'):
+        for name in ('assembler', 'compiler', 'objcopy', 'reference', 'dut'):
             (output / name).mkdir()
         with tempfile.TemporaryDirectory(prefix='veriforge-riscv-') as temporary:
             scratch = Path(temporary)
@@ -91,7 +91,9 @@ def run_experiment(experiment: RiscvExperiment, output_dir: Path, *, cancel_even
                 if remaining <= 0:
                     return None, 'timeout'
                 return _bounded(command, output / phase, env, remaining, cancel_event, 32*1024*1024)
-            code, reason = execute(list(compile_command(output)), 'compiler')
+            code, reason = execute(list(assemble_command(output)), 'assembler')
+            if not reason and code == 0:
+                code, reason = execute(list(compile_command(output)), 'compiler')
             if reason or code:
                 status, verdict = ('cancelled', 'inconclusive') if reason == 'cancelled' else ('completed', reason or 'build_error')
             else:
@@ -130,6 +132,8 @@ def run_experiment(experiment: RiscvExperiment, output_dir: Path, *, cancel_even
                             environment = {'tools': [t.model_dump(mode='json') for t in tools], 'reference_revision': revision,
                                 'reference_submodules': Path('/opt/spike/UPSTREAM_SUBMODULES').read_text(),
                                 'elf_hash': _hash((output/'smoke.elf').read_bytes()), 'binary_hash': _hash((output/'smoke.bin').read_bytes()),
+                                'object_hash': _hash((output/'smoke.o').read_bytes()),
+                                'assembly_command': list(assemble_command(output)),
                                 'compiler_command': list(compile_command(output)),
                                 'reference_command': list(reference_command(output/'smoke.elf', output/'reference'/'commit.log', experiment.max_retired)),
                                 'spike_binary_hash': _hash(Path(shutil.which('spike')).read_bytes()),

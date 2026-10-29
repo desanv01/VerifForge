@@ -26,7 +26,9 @@ def synthetic_attempt(path,mutant=False):
     checker = {name:source_hashes['src/veriforge/riscv/'+name] for name in ('checker.py','trace.py','contracts.py')}
     environment = {key:source_hashes['src/veriforge/riscv/'+name] for key,name in (
         ('driver_hash','sim_test.py'),('job_hash','sim_job.py'),('memory_hash','memory.py'))}
-    environment.update(reference_revision=ci.REFERENCE,elf_hash=ci.digest(b'synthetic ELF'),binary_hash=ci.digest(b'synthetic binary'))
+    from veriforge.riscv.profile import assemble_command, compile_command
+    environment.update(reference_revision=ci.REFERENCE,elf_hash=ci.digest(b'synthetic ELF'),binary_hash=ci.digest(b'synthetic binary'),
+        object_hash=ci.digest(b'synthetic object'),assembly_command=list(assemble_command(Path('/output'))),compiler_command=list(compile_command(Path('/output'))))
     profile = dict(profile_id='picorv32-rv32i-v1',isa='RV32I',ram_base=0x80000000,ram_bytes=0x10000,
         entry=0x80000000,completion=0x8000ff00,completion_value=1,stack_top=0x8000fef0,endian='little')
     plan = dict(schema_version='riscv.v1',experiment_id='synthetic-native-mutant' if mutant else 'synthetic-native-control',
@@ -64,6 +66,9 @@ def synthetic_attempt(path,mutant=False):
         reason='first architectural divergence' if mutant else 'architectural events agree through completion; no cycle comparison'))
     write(path/'dut/rvfi.json',dict(termination='completion_store_retired',cycles=31,events=raw))
     (path/'smoke.elf').write_bytes(b'synthetic ELF')
+    (path/'smoke.o').write_bytes(b'synthetic object')
+    (path/'assembler').mkdir()
+    (path/'assembler/execution.log').write_text('SYNTHETIC: no assembly tool ran')
     (path/'smoke.bin').write_bytes(b'synthetic binary')
     (path/'reference').mkdir()
     (path/'reference/commit.log').write_text(
@@ -106,9 +111,9 @@ def test_tampered_artifact_and_source_fail_before_acceptance(tmp_path):
     with pytest.raises(ci.GateError,match='program hash'): ci.validate_attempt(tmp_path,hashes)
 
 
-@pytest.mark.parametrize('field',['identity','pair_hash','elf_hash','binary_hash','cycles','compared'])
+@pytest.mark.parametrize('field',['identity','pair_hash','object_hash','elf_hash','binary_hash','cycles','compared'])
 def test_exact_replay_rejects_each_identity_or_trace_difference(field):
-    first=dict(identity={'source_hash':'a'*64},pair_hash='b'*64,elf_hash='c'*64,binary_hash='d'*64,cycles=50,compared=4)
+    first=dict(identity={'source_hash':'a'*64},pair_hash='b'*64,object_hash='e'*64,elf_hash='c'*64,binary_hash='d'*64,cycles=50,compared=4)
     second=deepcopy(first);second[field]='different'
     with pytest.raises(ci.GateError,match='replay'): ci.validate_replay(first,second)
 

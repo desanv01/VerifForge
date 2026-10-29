@@ -39,9 +39,9 @@ SOURCE_FILES = (
     'tests/riscv/test_ci_acceptance_plan.py',
 )
 ATTEMPT_FILES = (
-    'experiment.json','profile.json','smoke.elf','smoke.bin','job.json','result.json',
+    'experiment.json','profile.json','smoke.o','smoke.elf','smoke.bin','job.json','result.json',
     'comparison.json','retirement.json','source-manifest.json','checker-manifest.json',
-    'environment.json','compiler/execution.log','objcopy/execution.log',
+    'environment.json','assembler/execution.log','compiler/execution.log','objcopy/execution.log',
     'reference/execution.log','reference/commit.log','dut/built.marker',
     'dut/rvfi.json','dut/execution.log','dut/results.xml','dut/test.result.xml',
 )
@@ -54,7 +54,7 @@ META_FILES = ('summary.json','source-manifest.json','commands.json','host.json',
     'validate-control-replay.log','stop-validate-control.log','stop-validate-mutant.log','stop-validate-control-replay.log')
 REQUIRED = ('result.json','comparison.json','retirement.json','dut/rvfi.json',
     'source-manifest.json','checker-manifest.json','environment.json','profile.json',
-    'experiment.json','smoke.elf','smoke.bin','reference/commit.log','dut/built.marker')
+    'experiment.json','smoke.o','assembler/execution.log','smoke.elf','smoke.bin','reference/commit.log','dut/built.marker')
 CANCELLED = False
 
 
@@ -113,6 +113,7 @@ def validate_attempt(directory, source_hashes, mutant=False):
     from veriforge.riscv.trace import parse_spike_commits, normalize_rvfi
     from veriforge.riscv.checker import compare_retirements
     from veriforge.riscv.runner import _simulation_output
+    from veriforge.riscv.profile import assemble_command, compile_command
 
     class RetirementPair(WireModel):
         schema_version: Literal['riscv.retirement-pair.v1']
@@ -149,6 +150,8 @@ def validate_attempt(directory, source_hashes, mutant=False):
     require(plan['fixture_id'] == source['fixture_id'] == fixture and plan['max_cycles'] == 100000 and plan['max_retired'] == 256 and plan['wall_time_seconds'] == 120.0 and plan['program_id'] == 'rv32i-smoke-v1' and plan['profile_id'] == 'picorv32-rv32i-v1', 'experiment differs from fixed budget/fixture')
     require(env['reference_revision'] == REFERENCE, 'reference revision differs')
     require(env['elf_hash'] == digest((directory/'smoke.elf').read_bytes()) and env['binary_hash'] == digest((directory/'smoke.bin').read_bytes()), 'program hash differs')
+    require(env['object_hash'] == digest((directory/'smoke.o').read_bytes()),'assembled object hash differs')
+    require(env['assembly_command'] == list(assemble_command(Path('/output'))) and env['compiler_command'] == list(compile_command(Path('/output'))),'assembly/link commands differ from fixed recipe')
     artifact_paths = [a['path'] for a in result['artifacts']]
     require(len(set(artifact_paths)) == len(artifact_paths) and set(REQUIRED)-{'result.json'} <= set(artifact_paths),'missing/duplicate required artifact identity')
     for artifact in result['artifacts']:
@@ -190,12 +193,12 @@ def validate_attempt(directory, source_hashes, mutant=False):
     else:
         require(first is None and completed(got) and comparison['first_divergence'] is None and result['failure_signature'] is None, 'control architecture did not agree through completion')
     return {'identity':identity,'pair_hash':jhash(pair),'elf_hash':env['elf_hash'],
-        'binary_hash':env['binary_hash'],'first_divergence':comparison['first_divergence'],
+        'binary_hash':env['binary_hash'],'object_hash':env['object_hash'],'first_divergence':comparison['first_divergence'],
         'reference_hash':jhash(ref),'cycles':raw['cycles'],'compared':comparison['compared'],'verdict':expected}
 
 
 def validate_replay(control, replay):
-    require(all(control[k] == replay[k] for k in ('identity','pair_hash','elf_hash','binary_hash','cycles','compared')), 'exact control replay differs')
+    require(all(control[k] == replay[k] for k in ('identity','pair_hash','object_hash','elf_hash','binary_hash','cycles','compared')), 'exact control replay differs')
 
 
 def validation_mode(mutant):
@@ -378,7 +381,7 @@ def main():
             require(read_json(directory/'environment.json')['spike_binary_hash'] == metadata['spike_binary_hash'],'attempt reference binary differs from image metadata')
         validate_replay(summary['attempts']['control'],summary['attempts']['control-replay'])
         control,mutant = (summary['attempts'][k] for k in ('control','mutant'))
-        require(all(control[k] == mutant[k] for k in ('elf_hash','binary_hash','reference_hash')),'mutant stimulus/reference differs from control')
+        require(all(control[k] == mutant[k] for k in ('object_hash','elf_hash','binary_hash','reference_hash')),'mutant stimulus/reference differs from control')
         require(all(control['identity'][k] == mutant['identity'][k] for k in ('checker_hash','contract_hash','environment_hash')),'mutant changes checker/contract/environment')
         summary['accepted'] = True
     except (GateError,OSError,ValueError,KeyError,TypeError,AttributeError,IndexError,subprocess.SubprocessError) as exc:

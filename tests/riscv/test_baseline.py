@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from veriforge.riscv import (PLATFORM, RiscvExperiment, Retirement, RVFIEvent,
     parse_spike_commits, normalize_rvfi, compare_retirements, TraceFormatError, UnsupportedTrace)
 from veriforge.riscv.memory import Ram
-from veriforge.riscv.profile import ROOT, CORE_BLOB, compile_command, reference_command
+from veriforge.riscv.profile import ROOT, CORE_BLOB, assemble_command, compile_command, reference_command
 
 
 SYNTHETIC_SPIKE = """core   0: 3 0x80000000 (0x00100093) x1  0x00000001
@@ -226,3 +226,43 @@ def test_public_core_is_byte_identical_to_attributed_upstream_blob():
     data = (ROOT / 'targets/riscv/upstream/picorv32.v').read_bytes()
     assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest() == CORE_BLOB
     assert b'Permission to use, copy, modify' in data
+
+
+def test_fixed_object_stage_preserves_full_elf_and_exact_commands():
+    output = Path('/output')
+    assembly = assemble_command(output)
+    link = compile_command(output)
+    assert assembly[-2:] == ('-o', str(output/'smoke.o'))
+    assert '-c' in assembly and str(ROOT/'targets/riscv/smoke.S') in assembly
+    assert str(output/'smoke.o') in link and str(ROOT/'targets/riscv/smoke.S') not in link
+    assert link[-2:] == ('-o', str(output/'smoke.elf'))
+    assert '-Wl,--build-id=none' in link and '-Wl,--no-relax' in link
+    assert not any(flag in assembly+link for flag in ('-s','-Wl,-s','-Wl,--strip-all','-Wl,--discard-all'))
+
+
+@pytest.mark.parametrize('assembly_exit,expected',[(9,'build_error'),(0,'timeout')])
+def test_assembly_failure_or_expired_total_budget_never_links(tmp_path,monkeypatch,assembly_exit,expected):
+    """Synthetic process boundary only; no assembler/compiler/reference executes."""
+    from types import SimpleNamespace
+    from veriforge.riscv import runner
+    monkeypatch.setattr(runner.platform,'system',lambda:'Linux')
+    monkeypatch.setattr(runner.shutil,'which',lambda name:'synthetic-never-executed')
+    monkeypatch.setattr(runner.subprocess,'run',lambda *a,**kw:SimpleNamespace(stdout='synthetic version\n'))
+    temporary = runner.tempfile.TemporaryDirectory
+    monkeypatch.setattr(runner.tempfile,'TemporaryDirectory',lambda **kw:temporary(dir=tmp_path,**kw))
+    original=Path.read_text
+    monkeypatch.setattr(Path,'read_text',lambda path,*a,**kw:runner.REFERENCE_REVISION
+        if path.as_posix()=='/opt/spike/UPSTREAM_REVISION' else original(path,*a,**kw))
+    ticks=iter([0.0,0.0,121.0])
+    monkeypatch.setattr(runner.time,'monotonic',lambda:next(ticks,121.0))
+    calls=[]
+    def assemble(command,directory,env,seconds,cancel,limit):
+        calls.append((command,directory.name,seconds))
+        (directory/'execution.log').write_text('SYNTHETIC: no assembly ran')
+        if assembly_exit==0: (tmp_path/'attempt/smoke.o').write_bytes(b'synthetic object')
+        return assembly_exit,None
+    monkeypatch.setattr(runner,'_bounded',assemble)
+    output=tmp_path/'attempt'
+    result=runner.run_experiment(RiscvExperiment(experiment_id='synthetic-assembly-boundary'),output)
+    assert result.verdict==expected and result.failure_signature is None
+    assert calls==[(list(assemble_command(output)),'assembler',120.0)]
