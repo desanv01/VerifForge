@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { hasCompleteIdentity, request } from './api'
 import type { Campaign, DownloadableArtifact, Health, Result } from './api'
-import { ARITHMETIC, campaignAdapter, evidenceAvailable, FIFO } from './families'
+import { ARITHMETIC, AXI_LITE, campaignAdapter, evidenceAvailable, FIFO } from './families'
+import { AxiTrace } from './AxiLitePanels'
 import { readArithmeticTrace } from './arithmeticTrace'
 
 export function TraceView({ campaign, attemptId, result }: { campaign: Campaign; attemptId: string; result: Result }) {
   if (campaign.completion_policy && campaign.completion_policy !== 'single') return <p className="notice">This campaign contains multiple experiment records. Native trace inspection requires the selected attempt's authoritative experiment; the campaign seed plan is not used as a substitute.</p>
   const adapter = campaignAdapter(campaign)
+  if (adapter === AXI_LITE) return <AxiTrace key={attemptId} campaign={campaign} attemptId={attemptId} result={result}/>
   if (adapter === FIFO) return <><h3>FIFO transaction trace</h3><div className="table-scroll"><table><caption>Accepted transactions and independent observations (first 200 samples; large integer digits preserved)</caption><thead><tr><th>Cycle</th><th>Operation</th><th>Write / read accepted</th><th>Expected data</th><th>Observed data</th><th>Expected / observed flags</th></tr></thead><tbody>{result.trace.slice(0,200).map(t => <tr key={`${t.cycle}-${t.operation_index}`}><td>{t.cycle}</td><td>{t.operation_index}</td><td>{String(t.write_accepted)} / {String(t.read_accepted)}</td><td>{t.expected_data ?? '—'}</td><td>{t.observed_data ?? '—'}</td><td>Empty {String(t.expected_empty)} / {String(t.observed_empty)}; full {String(t.expected_full)} / {String(t.observed_full)}</td></tr>)}</tbody></table></div></>
   if (adapter === ARITHMETIC) return <ArithmeticTrace campaign={campaign} attemptId={attemptId} hasIdentity={hasCompleteIdentity(result.identity)}/>
   return <p className="notice">The saved family or trace schema is not supported. Common evidence remains inspectable; no FIFO trace was inferred.</p>

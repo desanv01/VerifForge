@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
-import type { Campaign, Contract, Project, SavedExperiment } from './api'
+import type { ArithmeticExperiment, Campaign, Contract, FifoExperiment, Project, SavedExperiment } from './api'
 import { createPlan } from './api'
 import { ARITHMETIC, campaignAdapter, evidenceAvailable, FIFO, projectAdapter, setupError } from './families'
 import { readArithmeticTrace } from './arithmeticTrace'
@@ -114,9 +114,9 @@ describe('family wire boundaries',()=>{
     expect(evidenceAvailable({status:'ok',evidence_api:'1',evidence_adapters:[FIFO]},ARITHMETIC)).toBe(false)
   })
   it('supports narrow FIFO widths and bounded 32-bit arithmetic operands without changing their schemas',()=>{
-    const small=createPlan(fifo,{...fifoContract,parameters:{width:1,depth:4}},0)
+    const small=createPlan(fifo,{...fifoContract,parameters:{width:1,depth:4}},0) as FifoExperiment
     expect(small.operations[1]).toEqual({op:'write',value:1})
-    const wide=createPlan(arithmetic,{...arithmeticContract,parameters:{width:32,latency:2}},0,120,{a:4294967295,b:4294967295})
+    const wide=createPlan(arithmetic,{...arithmeticContract,parameters:{width:32,latency:2}},0,120,{a:4294967295,b:4294967295}) as ArithmeticExperiment
     expect(wide.operations[1]).toEqual({op:'multiply',a:4294967295,b:4294967295})
     expect(()=>createPlan(arithmetic,arithmeticContract,0,120,{a:256,b:9})).toThrow()
   })
