@@ -95,7 +95,7 @@ def compose_plan(project, image):
     app = {'image': image, 'environment': environment, 'volumes': ['artifacts:/artifacts'],
            'labels': labels, 'restart': 'no', 'pids_limit': 128, 'cpus': 1,
            'mem_limit': '512m', 'cap_drop': ['ALL'], 'security_opt': ['no-new-privileges:true'],
-           'logging': {'driver': 'local', 'options': {'max-size': '2m', 'max-file': '1'}}}
+           'logging': {'driver': 'local', 'options': {'max-size': '2m', 'max-file': '1', 'compress': 'false'}}}
     services = {
         'postgres': {'image': 'postgres:16-alpine', 'environment': {'POSTGRES_USER': 'veriforge',
                      'POSTGRES_DB': 'veriforge', 'POSTGRES_HOST_AUTH_METHOD': 'trust'},

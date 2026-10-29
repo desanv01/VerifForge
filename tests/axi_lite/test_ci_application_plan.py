@@ -45,6 +45,12 @@ def test_ephemeral_plan_has_loopback_only_and_finite_separate_caps():
                         'PYTHONDONTWRITEBYTECODE', 'VERIFORGE_CI_EPHEMERAL_PROJECT'}
     assert '${' not in json.dumps(plan) and '.env' not in json.dumps(plan)
     assert all(v['labels'][ci.OWNER] == 'vf-axi-ci-123-1' for v in plan['volumes'].values())
+    # Actual hosted run40934406068 failed before migration: Docker's local
+    # driver rejects default compression when only one log file is retained.
+    for role in ('api', 'worker', 'reconciler'):
+        logging = plan['services'][role]['logging']
+        assert logging['driver'] == 'local'
+        assert logging['options'] == {'max-size': '2m', 'max-file': '1', 'compress': 'false'}
 
 
 def test_migration_target_is_explicit_complete_literal_chain():
