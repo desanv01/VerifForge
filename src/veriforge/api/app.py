@@ -90,7 +90,7 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None,
         with sessions() as session:
             session.execute(text("SELECT 1"))
         from veriforge.core.artifacts import EVIDENCE_ADAPTERS
-        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "investigation_api": "1", "evidence_adapters": sorted(EVIDENCE_ADAPTERS), "planner_api": "1", "planner_admission_enabled": planner_policy.enabled}
+        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "investigation_api": "1", "investigation_admission_schemas": ["engineering.admission.v1", "engineering.admission.v2"], "investigation_report_kinds": ["riscv.recorded-report.v1", "firmware.recorded-report.v1"], "evidence_adapters": sorted(EVIDENCE_ADAPTERS), "planner_api": "1", "planner_admission_enabled": planner_policy.enabled}
 
     @app.get("/api/projects")
     def projects():

@@ -6,16 +6,67 @@ route. Every detail/download re-admits the exact stored envelope and blob graph.
 from datetime import datetime, timezone
 import hashlib
 import json
+from pathlib import Path
+
+from pydantic import TypeAdapter
 
 from sqlalchemy import func, select, update
 
 from veriforge.contracts import AttemptResult, canonical_hash
 from veriforge.contracts.engineering import EvidenceReference
+from veriforge.contracts.native_tools import RecordedToolReport
 from veriforge.system_investigation import records
+from veriforge.system_investigation import native_tool_records as native
 from . import service
 from .database import (Attempt, Investigation, InvestigationArtifact, InvestigationExecutionLink,
     InvestigationVersion, Project)
 from .planner_experiments import resolve_attempt_experiment
+
+ADMISSION_SCHEMAS = ('engineering.admission.v1', 'engineering.admission.v2')
+NATIVE_REPORT_KINDS = ('riscv.recorded-report.v1', 'firmware.recorded-report.v1')
+_REPORT = TypeAdapter(RecordedToolReport)
+
+
+def _schemas(selector):
+    if type(selector) is not str or selector not in {'v1', 'v2', 'all'}:
+        raise ValueError('Unsupported admission schema selector')
+    return {'v1': (ADMISSION_SCHEMAS[0],), 'v2': (ADMISSION_SCHEMAS[1],), 'all': ADMISSION_SCHEMAS}[selector]
+
+
+def _installed_native_validator_hash():
+    """Fresh fixed installed source identity, never a stored/client hash fallback."""
+    try:
+        path = Path(native.__file__)
+        if path.suffix != '.py':
+            raise ValueError('Installed native validator source is unavailable')
+        with path.open('rb') as source:
+            data = source.read(1_048_577)
+        if not data or len(data) > 1_048_576:
+            raise ValueError('Installed native validator source is unavailable')
+        return _digest(data)
+    except (OSError, TypeError):
+        raise ValueError('Installed native validator source is unavailable') from None
+
+
+def _native_project(session, project_id):
+    from .engineering_catalog import get_engineering_project
+    return get_engineering_project(session, project_id)
+
+
+def _external_authority(envelope, artifacts):
+    record = envelope.record
+    installed_hash = _installed_native_validator_hash()
+    if envelope.validation.implementation_hash != installed_hash:
+        raise ValueError('Stored native validator implementation differs')
+    raw = next(item.data for item in artifacts if item.reference == record.report_ref)
+    report = _REPORT.validate_json(raw)
+    # Reports are canonical derived wrappers; producer input bytes remain exact.
+    if raw != _encode(report.model_dump(mode='json')) or report.schema_version != record.report_kind:
+        raise ValueError('Stored native report differs')
+    return native.create_external_admission_authority(project_id=record.project_id,
+        revision_id=record.revision_id, project_revision_ref=record.project_revision_ref,
+        manifest_ref=record.manifest_ref, report_kind=record.report_kind, report_ref=record.report_ref,
+        locators=tuple(case.locator for case in report.cases), validator_implementation_hash=installed_hash)
 
 
 def _digest(data):
@@ -107,7 +158,7 @@ def _version(session, investigation_id, version_id):
 def _envelope(row):
     if _digest(row.content) != row.content_hash or len(row.content) > records.MAX_ENVELOPE_BYTES:
         raise ValueError('Stored envelope hash differs')
-    envelope = records.AdmissionEnvelope.model_validate_json(row.content)
+    envelope = records.decode_admission_envelope(row.content)
     record = envelope.record
     if (row.schema_version != envelope.schema_version or row.project_id != record.project_id or
         row.revision_id != record.revision_id or row.revision_hash != record.project_revision_ref.sha256 or
@@ -121,12 +172,21 @@ def _summary(row):
         envelope = _envelope(row)
     except (ValueError, TypeError):
         raise service.Conflict('Investigation evidence is unavailable or changed') from None
-    return dict(id=row.id, investigation_id=row.investigation_id, project_id=row.project_id,
+    result = dict(id=row.id, investigation_id=row.investigation_id, project_id=row.project_id,
         ordinal=row.ordinal, content_hash=row.content_hash, revision_id=row.revision_id,
         revision_hash=row.revision_hash, manifest_hash=row.manifest_hash, schema_version=row.schema_version,
         scope=row.scope, execution_status=row.execution_status, created_at=_utc(row.created_at),
         domains=sorted({item.domain for item in envelope.record.native_records}),
         native_investigation_id=envelope.record.investigation_id)
+    if type(envelope) is native.AdmissionEnvelopeV2:
+        result['report_kind'] = envelope.record.report_kind
+    return result
+
+
+def _validated_summary(session, row):
+    if row.schema_version == ADMISSION_SCHEMAS[1]:
+        _load(session, row)
+    return _summary(row)
 
 
 def _load(session, row):
@@ -143,9 +203,14 @@ def _load(session, row):
                 raise ValueError('Stored artifact metadata differs')
             artifacts.append(records.ArtifactBytes(reference=reference, data=blob.data))
         record = envelope.record
-        authority = records.create_admission_authority(project_id=record.project_id, revision_id=record.revision_id,
-            project_revision_ref=record.project_revision_ref, manifest_ref=record.manifest_ref,
-            bridge_report_ref=record.bridge_report_ref, attempts=record.attempts)
+        is_native = type(envelope) is native.AdmissionEnvelopeV2
+        if is_native:
+            _native_project(session, row.project_id)
+            authority = _external_authority(envelope, artifacts)
+        else:
+            authority = records.create_admission_authority(project_id=record.project_id, revision_id=record.revision_id,
+                project_revision_ref=record.project_revision_ref, manifest_ref=record.manifest_ref,
+                bridge_report_ref=record.bridge_report_ref, attempts=record.attempts)
         admitted = records.read_investigation(row.content, tuple(artifacts), authority=authority)
         verified = {_key(item.reference): item for item in admitted.envelope.artifacts}
         for blob in blobs:
@@ -153,11 +218,15 @@ def _load(session, row):
             if blob.role != ','.join(item.roles) or blob.media_type != 'application/octet-stream':
                 raise ValueError('Stored artifact role differs')
         links = list(session.scalars(select(InvestigationExecutionLink).where(InvestigationExecutionLink.version_id == row.id)))
+        if is_native:
+            if links:
+                raise ValueError('Native recorded evidence cannot have local execution links')
+            return admitted, blobs
         if len(links) != len(record.attempts):
             raise ValueError('Stored DB evidence link coverage differs')
         links = {item.attempt_id: item for item in links}
-        for binding, native in zip(record.attempts, admitted.attempt_results):
-            experiment, result_hash = _db_context(session, row.project_id, binding, native)
+        for binding, result in zip(record.attempts, admitted.attempt_results):
+            experiment, result_hash = _db_context(session, row.project_id, binding, result)
             link = links.get(binding.db_attempt_id)
             if (link is None or link.project_id != row.project_id or link.campaign_id != binding.campaign_id or
                 link.experiment_id != experiment.id or link.result_hash != result_hash or _digest(link.content) != link.association_hash):
@@ -166,7 +235,7 @@ def _load(session, row):
             if context != dict(binding=binding.model_dump(mode='json'), origin_at_admission=context.get('origin_at_admission')) or context['origin_at_admission'] not in {'context_only', 'retained_execution_bytes'}:
                 raise ValueError('Stored DB evidence context differs')
         return admitted, blobs
-    except (ValueError, TypeError, KeyError):
+    except (ValueError, TypeError, KeyError, StopIteration):
         raise service.Conflict('Investigation evidence is unavailable or changed') from None
 
 
@@ -180,19 +249,31 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
     if type(idempotency_key) is not str or not 1 <= len(idempotency_key) <= 128:
         raise ValueError('Bounded idempotency key required')
     admitted = records.admit_investigation(record, artifacts, authority=authority)
+    is_native = type(admitted) is native.AdmittedNativeInvestigation
+    if is_native:
+        try:
+            if admitted.envelope.validation.implementation_hash != _installed_native_validator_hash():
+                raise ValueError('Installed native validator implementation differs')
+        except ValueError:
+            raise service.Conflict('Installed native validator implementation is unavailable or differs') from None
     record = admitted.envelope.record
     content = records.serialize_investigation(admitted)
     digest = _digest(content)
     project_id = admitted.envelope.record.project_id
     _project(session, project_id)
+    if is_native:
+        _native_project(session, project_id)
     # Serializes append/idempotency writers without mutating immutable history.
     session.execute(update(Project).where(Project.id == project_id, Project.owner == 'local').values(id=Project.id))
     session.expire_all()
+    if is_native:
+        _native_project(session, project_id)
+    attempt_pairs = () if is_native else tuple(zip(record.attempts, admitted.attempt_results))
     contexts = []
     try:
-        for binding, native in zip(admitted.envelope.record.attempts, admitted.attempt_results):
+        for binding, result in attempt_pairs:
             service.lock(session, binding.campaign_id)
-            experiment, result_hash = _db_context(session, project_id, binding, native)
+            experiment, result_hash = _db_context(session, project_id, binding, result)
             contexts.append((binding, experiment.id, result_hash))
     except (ValueError, TypeError):
         raise service.Conflict('DB evidence association is unavailable or differs') from None
@@ -209,8 +290,14 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
         if parent.project_id != project_id:
             raise service.Conflict('Investigation belongs to another project')
         first = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id, InvestigationVersion.ordinal == 1))
-        if _envelope(first).record.investigation_id != admitted.envelope.record.investigation_id:
+        original = _envelope(first)
+        if (original.schema_version != admitted.envelope.schema_version or
+            type(original) is native.AdmissionEnvelopeV2 and original.record.report_kind != record.report_kind):
+            raise service.Conflict('Investigation report family changed')
+        if original.record.investigation_id != admitted.envelope.record.investigation_id:
             raise service.Conflict('Native investigation identity changed')
+        if is_native:
+            _load(session, first)
         prior = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id, InvestigationVersion.admission_key == idempotency_key))
         if prior is not None:
             if prior.content_hash != digest:
@@ -228,9 +315,9 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
         manifest_hash=record.manifest_ref.sha256, content_hash=digest, content=content, created_at=at)
     session.add(row)
     session.flush()
-    for (binding, experiment_id, result_hash), native in zip(contexts, admitted.attempt_results):
+    for (binding, experiment_id, result_hash), (_, result) in zip(contexts, attempt_pairs):
         context = _encode(dict(binding=binding.model_dump(mode='json'),
-            origin_at_admission=_origin(session, binding, native, artifact_root=artifact_root)))
+            origin_at_admission=_origin(session, binding, result, artifact_root=artifact_root)))
         session.add(InvestigationExecutionLink(version_id=row.id, project_id=project_id, campaign_id=binding.campaign_id,
             attempt_id=binding.db_attempt_id, experiment_id=experiment_id, result_hash=result_hash,
             association_hash=_digest(context), content=context))
@@ -245,32 +332,43 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
     return _summary(row)
 
 
-def list_investigations(session, project_id, *, after='', limit=20):
+def list_investigations(session, project_id, *, after='', limit=20, admission_schema='v1'):
     _project(session, project_id)
+    eligible = select(InvestigationVersion.id).where(InvestigationVersion.investigation_id == Investigation.id,
+        InvestigationVersion.schema_version.in_(_schemas(admission_schema))).exists()
     rows = session.scalars(select(Investigation).where(Investigation.owner == 'local', Investigation.project_id == project_id,
-        Investigation.id > after).order_by(Investigation.id).limit(limit + 1)).all()
-    items = [investigation_view(session, row.id) for row in rows[:limit]]
+        Investigation.id > after, eligible).order_by(Investigation.id).limit(limit + 1)).all()
+    items = [investigation_view(session, row.id, admission_schema=admission_schema) for row in rows[:limit]]
     return dict(items=items, next_cursor=rows[limit - 1].id if len(rows) > limit else None)
 
 
-def investigation_view(session, investigation_id):
+def investigation_view(session, investigation_id, *, admission_schema='v1'):
     parent = owned(session, investigation_id)
-    latest = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id).order_by(InvestigationVersion.ordinal.desc()).limit(1))
+    latest = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id,
+        InvestigationVersion.schema_version.in_(_schemas(admission_schema))).order_by(InvestigationVersion.ordinal.desc()).limit(1))
     if latest is None:
-        raise service.Conflict('Investigation has no admitted version')
-    return dict(id=parent.id, project_id=parent.project_id, created_at=_utc(parent.created_at), latest_version=_summary(latest))
+        if session.scalar(select(InvestigationVersion.id).where(InvestigationVersion.investigation_id == parent.id).limit(1)) is None:
+            raise service.Conflict('Investigation has no admitted version')
+        raise service.NotFound(investigation_id)
+    return dict(id=parent.id, project_id=parent.project_id, created_at=_utc(parent.created_at), latest_version=_validated_summary(session, latest))
 
 
-def list_versions(session, investigation_id, *, after=0, limit=20):
+def list_versions(session, investigation_id, *, after=0, limit=20, admission_schema='v1'):
     owned(session, investigation_id)
     rows = session.scalars(select(InvestigationVersion).where(InvestigationVersion.investigation_id == investigation_id,
+        InvestigationVersion.schema_version.in_(_schemas(admission_schema)),
         InvestigationVersion.ordinal > after).order_by(InvestigationVersion.ordinal).limit(limit + 1)).all()
-    return dict(items=[_summary(row) for row in rows[:limit]], next_cursor=rows[limit - 1].ordinal if len(rows) > limit else None)
+    return dict(items=[_validated_summary(session, row) for row in rows[:limit]], next_cursor=rows[limit - 1].ordinal if len(rows) > limit else None)
 
 
 def version_view(session, investigation_id, version_id):
     row = _version(session, investigation_id, version_id)
     admitted, _ = _load(session, row)
+    if type(admitted) is native.AdmittedNativeInvestigation:
+        return {**_summary(row), 'envelope': admitted.envelope.model_dump(mode='json'),
+            'project_revision': admitted.project_revision.model_dump(mode='json'),
+            'manifest': admitted.manifest.model_dump(mode='json'),
+            'native_report': admitted.native_report.model_dump(mode='json')}
     links = session.scalars(select(InvestigationExecutionLink).where(InvestigationExecutionLink.version_id == row.id)).all()
     return {**_summary(row), 'envelope': admitted.envelope.model_dump(mode='json'),
         'execution_contexts': [json.loads(link.content) for link in links],

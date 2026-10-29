@@ -10,7 +10,7 @@ import json
 from types import MappingProxyType
 from typing import Annotated, Literal
 
-from pydantic import Field, StrictBytes, StrictInt, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBytes, StrictInt, ValidationError, model_validator
 
 from veriforge.contracts import AttemptResult, Identifier, Sha256, WireModel, canonical_hash
 from veriforge.contracts.engineering import Domain, EvidenceReference, SystemManifest
@@ -232,6 +232,10 @@ def admit_investigation(record, artifacts, *, authority):
     No filesystem, DB, process, network or execution action is performed. All
     hashes are consistency identities; authenticity comes from host authority.
     """
+    if not isinstance(record, EngineeringInvestigation):
+        from .native_tool_records import EngineeringInvestigationV2, admit_native_investigation
+        if type(record) is EngineeringInvestigationV2:
+            return admit_native_investigation(record, artifacts, authority=authority)
     if type(authority) is not TrustedAdmissionAuthority or getattr(authority, "_seal", None) is not _AUTHORITY_SEAL:
         raise ValueError("trusted service admission authority required")
     if not isinstance(record, EngineeringInvestigation):
@@ -365,6 +369,10 @@ def admit_investigation(record, artifacts, *, authority):
 
 def serialize_investigation(admitted):
     """Safe metadata only. Transactional persistence stores artifacts separately."""
+    if type(admitted) is not AdmittedInvestigation:
+        from .native_tool_records import AdmittedNativeInvestigation, serialize_native_investigation
+        if type(admitted) is AdmittedNativeInvestigation:
+            return serialize_native_investigation(admitted)
     if type(admitted) is not AdmittedInvestigation or getattr(admitted, "_seal", None) is not _ADMISSION_SEAL:
         raise ValueError("unsealed/unadmitted investigation")
     encoded = _encode(admitted.envelope)
@@ -373,9 +381,29 @@ def serialize_investigation(admitted):
     return encoded
 
 
+class _EnvelopeVersion(BaseModel):
+    model_config = ConfigDict(extra="ignore", allow_inf_nan=False)
+    # Preserve v1's existing default when the version field was omitted.
+    schema_version: Annotated[str, Field(strict=True)] = "engineering.admission.v1"
+
+
+def decode_admission_envelope(envelope_bytes):
+    """Strict bounded duplicate-safe version dispatch; no unknown fallback."""
+    version = _decode(envelope_bytes, _EnvelopeVersion, MAX_ENVELOPE_BYTES).schema_version
+    if version == "engineering.admission.v1":
+        return _decode(envelope_bytes, AdmissionEnvelope, MAX_ENVELOPE_BYTES)
+    if version == "engineering.admission.v2":
+        from .native_tool_records import AdmissionEnvelopeV2
+        return _decode(envelope_bytes, AdmissionEnvelopeV2, MAX_ENVELOPE_BYTES)
+    raise ValueError("unsupported engineering admission schema")
+
+
 def read_investigation(envelope_bytes, artifacts, *, authority):
     """Always re-admit exact dependencies, never trust a persisted receipt alone."""
-    envelope = _decode(envelope_bytes, AdmissionEnvelope, MAX_ENVELOPE_BYTES)
+    envelope = decode_admission_envelope(envelope_bytes)
+    if type(envelope) is not AdmissionEnvelope:
+        from .native_tool_records import read_native_investigation
+        return read_native_investigation(envelope_bytes, artifacts, authority=authority)
     admitted = admit_investigation(envelope.record, artifacts, authority=authority)
     if admitted.envelope != envelope:
         raise ValueError("serialized admission metadata differs from fully resolved bytes")
@@ -385,4 +413,4 @@ def read_investigation(envelope_bytes, artifacts, *, authority):
 __all__ = ["EngineeringProjectRevision", "NativeAttachment", "CampaignAttemptEvidence", "EngineeringInvestigation",
            "ArtifactBytes", "VerifiedArtifact", "AdmissionEnvelope", "TrustedAdmissionAuthority", "AdmittedInvestigation",
            "NATIVE_SCHEMA_ALLOWLIST", "create_admission_authority", "admit_investigation", "serialize_investigation",
-           "read_investigation"]
+           "read_investigation", "decode_admission_envelope"]
