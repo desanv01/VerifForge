@@ -1,0 +1,1 @@
+[{"operation_index":0,"read":false,"reset":true,"value":0,"write":false},{"operation_index":1,"read":false,"reset":false,"value":17,"write":true},{"operation_index":2,"read":false,"reset":true,"value":0,"write":false},{"operation_index":3,"read":false,"reset":false,"value":42,"write":true},{"operation_index":4,"read":true,"reset":false,"value":0,"write":false}]

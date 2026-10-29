@@ -1,0 +1,19 @@
+{
+  "schema_version": "axi_lite.check.v1",
+  "verdict": "property_failure",
+  "failure": {
+    "cycle": 4,
+    "requirement_id": "AXIL_HANDSHAKE",
+    "failure_class": "axil.stalled_response",
+    "expected": "stable VALID/payload",
+    "observed": "b"
+  },
+  "checked_cycles": 5,
+  "registers": [
+    37,
+    0,
+    0,
+    0
+  ],
+  "uncertainties": []
+}

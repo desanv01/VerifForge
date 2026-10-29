@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "experiment_id": "ci-application-fifo",
+  "fixture_id": "fifo_correct",
+  "contract_id": "fifo-v1",
+  "target": "fifo",
+  "objective_ids": [
+    "FIFO_BEHAVIOR"
+  ],
+  "seed": 0,
+  "operations": [
+    {
+      "op": "reset",
+      "cycles": 1
+    },
+    {
+      "op": "write",
+      "value": 17
+    },
+    {
+      "op": "reset",
+      "cycles": 1
+    },
+    {
+      "op": "write",
+      "value": 42
+    },
+    {
+      "op": "read"
+    }
+  ],
+  "parameters": {
+    "width": 8,
+    "depth": 4
+  },
+  "budget": {
+    "max_cycles": 10000,
+    "wall_time_seconds": 120.0,
+    "max_artifact_bytes": 4194304
+  }
+}

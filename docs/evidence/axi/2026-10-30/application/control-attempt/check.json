@@ -1,0 +1,13 @@
+{
+  "schema_version": "axi_lite.check.v1",
+  "verdict": "pass_within_scope",
+  "failure": null,
+  "checked_cycles": 149,
+  "registers": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "uncertainties": []
+}

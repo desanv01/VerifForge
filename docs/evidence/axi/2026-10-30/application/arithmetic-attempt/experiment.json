@@ -1,0 +1,77 @@
+{
+  "schema_version": "arithmetic.v1",
+  "experiment_id": "ci-application-arithmetic",
+  "fixture_id": "multiplier_correct",
+  "contract_id": "unsigned-multiplier-v1",
+  "target": "arithmetic",
+  "adapter": "rtl.arithmetic.v1",
+  "objective_ids": [
+    "ARITH_PRODUCT",
+    "ARITH_LATENCY",
+    "ARITH_RESET"
+  ],
+  "seed": 0,
+  "parameters": {
+    "width": 8,
+    "latency": 2
+  },
+  "operations": [
+    {
+      "op": "reset",
+      "cycles": 1
+    },
+    {
+      "op": "multiply",
+      "a": 0,
+      "b": 255
+    },
+    {
+      "op": "multiply",
+      "a": 1,
+      "b": 255
+    },
+    {
+      "op": "idle",
+      "cycles": 1
+    },
+    {
+      "op": "multiply",
+      "a": 255,
+      "b": 255
+    },
+    {
+      "op": "idle",
+      "cycles": 2
+    },
+    {
+      "op": "multiply",
+      "a": 255,
+      "b": 2
+    },
+    {
+      "op": "cycle",
+      "reset": true,
+      "valid": true,
+      "a": 255,
+      "b": 255
+    },
+    {
+      "op": "idle",
+      "cycles": 3
+    },
+    {
+      "op": "multiply",
+      "a": 255,
+      "b": 1
+    },
+    {
+      "op": "idle",
+      "cycles": 2
+    }
+  ],
+  "budget": {
+    "max_cycles": 10000,
+    "wall_time_seconds": 120.0,
+    "max_artifact_bytes": 4194304
+  }
+}

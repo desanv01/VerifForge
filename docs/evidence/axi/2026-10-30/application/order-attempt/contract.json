@@ -1,0 +1,58 @@
+{
+  "schema_version": "axi_lite.contract.v1",
+  "contract_id": "axil-registers-v1",
+  "target": "axi_lite",
+  "review_status": "reviewed",
+  "parameters": {
+    "data_width": 32,
+    "address_width": 8,
+    "register_count": 4,
+    "max_outstanding_writes": 1,
+    "max_outstanding_reads": 1,
+    "request_ready_bound": 4,
+    "response_bound": 4,
+    "write_pair_bound": 8,
+    "max_response_stall": 8
+  },
+  "checker": {
+    "checker_id": "axil-handshake-register-ledger",
+    "version": "1",
+    "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060"
+  },
+  "requirements": [
+    {
+      "requirement_id": "AXIL_HANDSHAKE",
+      "description": "VALID and response payload persist until transfer or reset."
+    },
+    {
+      "requirement_id": "AXIL_ORDER",
+      "description": "Independent AW/W pairing, bounded outstanding work, no unsolicited/duplicate responses."
+    },
+    {
+      "requirement_id": "AXIL_STROBE",
+      "description": "Per-byte masked writes at mapped aligned addresses; invalid writes have no effect."
+    },
+    {
+      "requirement_id": "AXIL_READ",
+      "description": "AR snapshots register before same-edge write; invalid reads return SLVERR and zero."
+    },
+    {
+      "requirement_id": "AXIL_RESET",
+      "description": "Reset clears registers and responses, cancels partial and paired requests."
+    },
+    {
+      "requirement_id": "AXIL_PROGRESS",
+      "description": "Product-specific bounded READY and response assertion under documented assumptions."
+    }
+  ],
+  "sampling": "settled_pre_rising_edge",
+  "read_write_collision": "read_before_write",
+  "invalid_access": "slverr_no_write_read_zero",
+  "reset": "clear_registers_cancel_all_pending",
+  "assumptions": [
+    "Manager holds VALID and payload until actual handshake or reset.",
+    "One accepted outstanding write and one read; AW and W independent.",
+    "Finite write-half gap and response stalls as bounded in parameters.",
+    "Reset asserted before sample, deasserted synchronously; no asynchronous timing claim."
+  ]
+}

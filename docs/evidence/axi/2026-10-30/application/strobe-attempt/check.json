@@ -1,0 +1,19 @@
+{
+  "schema_version": "axi_lite.check.v1",
+  "verdict": "design_mismatch",
+  "failure": {
+    "cycle": 7,
+    "requirement_id": "AXIL_READ",
+    "failure_class": "axil.read_value",
+    "expected": "(0, 297481181)",
+    "observed": "(0, 2864434397)"
+  },
+  "checked_cycles": 8,
+  "registers": [
+    297481181,
+    0,
+    0,
+    0
+  ],
+  "uncertainties": []
+}

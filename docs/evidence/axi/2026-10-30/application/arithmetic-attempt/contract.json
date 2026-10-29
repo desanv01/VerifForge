@@ -1,0 +1,37 @@
+{
+  "schema_version": "arithmetic.contract.v1",
+  "contract_id": "unsigned-multiplier-v1",
+  "target": "arithmetic",
+  "version": "1",
+  "review_status": "reviewed",
+  "parameters": {
+    "width": 8,
+    "latency": 2
+  },
+  "checker": {
+    "checker_id": "scheduled-integer-multiplier",
+    "version": "1",
+    "sha256": "7e927b441b5d4ab9e4262d114f7372bf508b04d5a02cdc189c3694ed56dd628e"
+  },
+  "requirements": [
+    {
+      "requirement_id": "ARITH_PRODUCT",
+      "description": "Full unsigned 2*WIDTH-bit product, in accepted order."
+    },
+    {
+      "requirement_id": "ARITH_LATENCY",
+      "description": "Valid exactly two edges after each accepted input; bubbles preserved."
+    },
+    {
+      "requirement_id": "ARITH_RESET",
+      "description": "Reset clears valid/data and cancels every in-flight product."
+    }
+  ],
+  "timing": "Input accepted at rising edge n produces valid full-width unsigned a*b after edge n+2.",
+  "reset": "Synchronous active-high reset overrides valid, cancels all in-flight products and clears output valid/data.",
+  "bubbles": "No backpressure; accepts every valid non-reset edge. Output valid exactly tracks accepted inputs delayed two edges; invalid output data is unspecified.",
+  "assumptions": [
+    "First edge resets; inputs stable before rising edge; sample settled post-edge outputs.",
+    "Operands are unsigned WIDTH bits; product is 2*WIDTH bits; drain or reset before experiment end."
+  ]
+}

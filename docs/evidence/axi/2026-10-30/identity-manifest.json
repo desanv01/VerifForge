@@ -1,0 +1,1942 @@
+{
+  "schema_version": "veriforge.public-axi-evidence.v1",
+  "run_id": 40948230223,
+  "source_commit": "19e08ef7c968811eb0148b2eb5197373608d926a",
+  "actions_url": "https://github.com/desanv01/VerifForge/actions/runs/40948230223",
+  "artifact_id": 12931210028,
+  "transport_zip_sha256": {
+    "value": "22846ffd355a5ae964234e7f37a530938ebe85421474e8541335476bff13db32",
+    "bytes": 188244,
+    "basis": "GitHub-reported outer transport digest, not locally recomputed; this differs from the separately retained API export ZIP whose bytes are included and rehashed."
+  },
+  "full_extracted_inventory_digest": {
+    "sha256": "fae8ae582a25974dba2365ba415ac726b9b0bcd87d3df2f4855502fc929f2e52",
+    "encoding": "SHA256 of sorted compact UTF8 JSON relativepath->{bytes,sha256}; matches accepted complete artifact audit"
+  },
+  "original_full_inventory": [
+    {
+      "origin_relative_path": "actual-application.log",
+      "bytes": 134,
+      "sha256": "65e938bdc8a5e45e7d6d71afff38f1110bf7a3037d412e294bc85dfe71c76faf",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "actual-revision.log",
+      "bytes": 22,
+      "sha256": "8c971c0bd0eeccc1c5098666e245001ec49f780c785dc5d8f95b9b0bef9182ea",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "api-loopback.log",
+      "bytes": 16,
+      "sha256": "592c37d7c53f7980cb3b0e164c27b094a753d13a9663b81bc9899e3ec6356a2e",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "app-image.log",
+      "bytes": 72,
+      "sha256": "a1753ba3ee7409f59503f123156c015bccc80e381ff134cdf30a7191239c1545",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/application-summary.json",
+      "bytes": 9645,
+      "sha256": "f0f3f4ab98a099b134c17436360f925400d2b250c8d4b3c4c517be9ca45aa34e",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/arithmetic-trace.json",
+      "bytes": 1761,
+      "sha256": "0e0ee02ef99d167e232ede3ba53af803cc6c548ab861dd4297ce1e8070397dc0",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/built.marker",
+      "bytes": 32,
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/checker.py",
+      "bytes": 2184,
+      "sha256": "7e927b441b5d4ab9e4262d114f7372bf508b04d5a02cdc189c3694ed56dd628e",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/contract.json",
+      "bytes": 1444,
+      "sha256": "b3121fd9f34584c70a7398811615e2749de3f2bb7dbaa4ef1fbe4245df6ca759",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/dump.vcd",
+      "bytes": 2809,
+      "sha256": "74ac5ee7dbde72b023fb14ef91d059c169e50092fbe75f94990a6d9dc6682df9",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/environment.json",
+      "bytes": 563,
+      "sha256": "5ec12d501566ca4f3ad9faa4db51608640f25ff7931c827606eb902ab6b171ad",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/execution.log",
+      "bytes": 7844,
+      "sha256": "36bd57231369803a74c53c45e728006bd7e5e25a993e9d3c32637b9b3f25ee35",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/experiment.json",
+      "bytes": 1210,
+      "sha256": "370484f486cb22d90f61ec13dcb5bf296b3dbb4491152ebea7088769694008d4",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/job.json",
+      "bytes": 376,
+      "sha256": "89278dbfa04e8e00519ed379c88cdedc137250c603c527b37d7df18ec5290fea",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/multiplier.sv",
+      "bytes": 1000,
+      "sha256": "5501b6cd0106d9028451bb298ea89c78547ca8207985fc2e4ce2b92a14ec559a",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/observed.json",
+      "bytes": 669,
+      "sha256": "6df35b57ac747377bef9a73ae0143d1f90679757da703c03bec6110d42b19186",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/result.json",
+      "bytes": 4228,
+      "sha256": "db6ca11f940580e6bc1c0544d9211a45946ec76c2d166c3380855feee81a7890",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/results.xml",
+      "bytes": 371,
+      "sha256": "c3e333ab71a35051c2e20e4811e9d02e4db1bbccf21c7610d24846e0a334a475",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt/stimulus.json",
+      "bytes": 941,
+      "sha256": "1929fcd55d3cfe563f1eade388686b1d4bdf3bd9767f32fd18c15746858ab317",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/arithmetic-attempt-artifact-list.json",
+      "bytes": 3312,
+      "sha256": "c0c1e6b3e13c959ef53786838e646b726aaddad3d0238b5a0f3b9633b818691a",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-campaign.json",
+      "bytes": 9274,
+      "sha256": "a205bb85f239c9bcdd8dce51ebb73e2b9058a444324f6a92a635f53d2715c125",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/arithmetic-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/axi-export.zip",
+      "bytes": 10791,
+      "sha256": "b2c9e675284499eaa126b87c37a2c0abbe445f577e229859e5606979d77859f9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/built.marker",
+      "bytes": 32,
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-attempt/check.json",
+      "bytes": 193,
+      "sha256": "aa960c089fe03dea07361930471db74212cb9c63066a065041cd3214a15bbc80",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/environment.json",
+      "bytes": 653,
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-attempt/execution.log",
+      "bytes": 6474,
+      "sha256": "a59cd1181916469807867740affd165139700ccb71b22584c6c94b898cce2200",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-attempt/experiment.json",
+      "bytes": 41819,
+      "sha256": "0a68d94c10ed522807079bae1835d97463e7e44150d7f61cb35787622082c0d5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/job.json",
+      "bytes": 347,
+      "sha256": "dc12eb942f65224b918c7d6106601adf06bc8dcb663f52606b27e8132429e995",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-attempt/observed.json",
+      "bytes": 22316,
+      "sha256": "23d631cfa97d753266059e6953424088bf143d529a8b47d3c2d5faa4a7e0c483",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/result.json",
+      "bytes": 4230,
+      "sha256": "822519fd62b1d96e25c17eba3de0356c506b1ab1bfe56e33d2970edfbc9ca820",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt/results.xml",
+      "bytes": 367,
+      "sha256": "7d1eb1bf3f4cac08b246312a83a1ccae0d6f1e42799295084a96b382ad55ddcf",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-attempt/stimulus.json",
+      "bytes": 25258,
+      "sha256": "ca208d2e4319f80fc7ad1206b643bfe11f5b11af05b22daf9e5a9f83bba9fd2a",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/control-attempt-artifact-list.json",
+      "bytes": 3315,
+      "sha256": "50888f303613cb13d42fefb16454b7a2c45223a485c62def0be250c78cbdbb80",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-campaign.json",
+      "bytes": 54609,
+      "sha256": "aed295117f8665ae2ce3c57454adf135dad23dcd5c22dbb53f71b9919d52b230",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/control-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/export.json",
+      "bytes": 257,
+      "sha256": "94b1f372b2f553680f0adfebabe29a41823f3531dbcaf0708ce760979c21adde",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/built.marker",
+      "bytes": 43,
+      "sha256": "e43276febbe5f45de1db8cd5da191ad131c90d095f4cd539b44320c855a93dca",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/checker.py",
+      "bytes": 2270,
+      "sha256": "f5d70acf0d1c6244559c72c2af8bad60ef55af26f6a313f9972de97d9c1a2884",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/contract.json",
+      "bytes": 1113,
+      "sha256": "d453be1a24f0940a517a8d3e2376e439e8268a1c9886153b9660509c32c649bb",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/dump.vcd",
+      "bytes": 2030,
+      "sha256": "12dc2e11d196c89951ac08ebe5a13fb1240e71427fb2c5fd9244446c328381d8",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/environment.json",
+      "bytes": 485,
+      "sha256": "71e2ecfa288f39696d1398701eaeaa9ad2d0faf9cf80c5687c37451599bdae2e",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/execution.log",
+      "bytes": 7111,
+      "sha256": "44f0e3d46b37f1c767398a1998f1a22c15a98e6d8150a8e54c85993fd8d928d6",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/experiment.json",
+      "bytes": 634,
+      "sha256": "bfda6742a3c2f6dcb04520c1946a17a1f3286c39553d07ed65d2d34c5177d3af",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/fifo.sv",
+      "bytes": 927,
+      "sha256": "a1c2f90987d423b9003f064638840bfb1e468cf0005906d4e76f1b0a81184cf5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/job.json",
+      "bytes": 370,
+      "sha256": "7e2c8997ff0517dfccfbc03b6970ebbac762c307809ba171f6dad40aa3a8049e",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/observed.json",
+      "bytes": 390,
+      "sha256": "76c7bba30c173cfe5408e1caf75d53a03292c58bba3e1f1fef5b4588086bf3db",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/result.json",
+      "bytes": 5459,
+      "sha256": "c585586bd0ba8c147d388eb1af20082008edeff3beec6aeb61a0e83f50d7a23e",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/results.xml",
+      "bytes": 356,
+      "sha256": "b6ecdc9e509626bfdb22c05de60790e16e2c4cb91e29ec0e5c19f41ff84261fe",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt/stimulus.json",
+      "bytes": 363,
+      "sha256": "99489f389db0152160838d2e5f7d9ff30292d7ff18def998cc85dcd34f6456fe",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/fifo-attempt-artifact-list.json",
+      "bytes": 3039,
+      "sha256": "2bc5de5167fce4f4c625afa5d5840e9be53ea830db0ca175858c398be3b6507d",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-campaign.json",
+      "bytes": 9775,
+      "sha256": "a3232ba618d8153505a2a1ebdc8aea4dbc4afdb096beb1c620fd1ab40a454c55",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/fifo-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/final-state.json",
+      "bytes": 302252,
+      "sha256": "58937ceb8413adc8c7fac959f9187319f73dd0a8885ed69c607cebed0fa72a9c",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/frozen-replay-request.json",
+      "bytes": 540,
+      "sha256": "7758ca796692797b9cf6445ef5b6bf47b0020505543c75d87535fb238e6a20f9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/frozen-requests.json",
+      "bytes": 70932,
+      "sha256": "8aea01163ba4ceb177a2f98700de708474c4d096b4a55e6120c6b401f0c03c09",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/installed-source-vector.json",
+      "bytes": 17505,
+      "sha256": "54a9adecdf1a51d0ccca55d87b0635da8184c1d3da05b016db5d4619be50a79f",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/mount-preflight.json",
+      "bytes": 198,
+      "sha256": "2d4a178d420a64e64f8f496128837a37a11e04996216055ef2ca8578d143eee9",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-attempt/built.marker",
+      "bytes": 32,
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-attempt/check.json",
+      "bytes": 359,
+      "sha256": "951714ef5fe5428f9668358fb5062b02eb1346a517eabee965200f900cec5f35",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/environment.json",
+      "bytes": 653,
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-attempt/execution.log",
+      "bytes": 6474,
+      "sha256": "4bc1a8dc260617d2d7e1bc8961eeea0562e762368e366868ec0ee4d8c1170352",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-attempt/experiment.json",
+      "bytes": 3783,
+      "sha256": "4d3d7fb319a3faec85abc13e35225161b17bff7a546a0933db4e063bb65c1da7",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/job.json",
+      "bytes": 347,
+      "sha256": "c70ab8df92207f26f908a353dda74152e8438a35a67da7a4cff1aabcf9bf7551",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-attempt/observed.json",
+      "bytes": 1638,
+      "sha256": "165cc40f4aa2758929e356ea9ad1ad15a631fb45211ff7ea752673dc9ff8e550",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/result.json",
+      "bytes": 4478,
+      "sha256": "a4c671b7fe7d612aee7d838f46a4b2f5731c72e54853b35be1040cb8306d56db",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt/results.xml",
+      "bytes": 366,
+      "sha256": "d8ff98dae91bc055be760cef40bddcb0348d92dcc7d2981ac8e9ecb0db254ced",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-attempt/stimulus.json",
+      "bytes": 1855,
+      "sha256": "87f13f14b16d2af40810e53030150245a9502dc2d1734fba9d0e55982d234894",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/order-attempt-artifact-list.json",
+      "bytes": 3312,
+      "sha256": "6ee83fbb69d5cc298a2f98502b58d62475efc7b13d1633431ab29953c983bd35",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-campaign.json",
+      "bytes": 18744,
+      "sha256": "684a1730ed7b77962225322f4b6e479edbd0533b5663a89db2483a0ede998549",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/order-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/built.marker",
+      "bytes": 32,
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/check.json",
+      "bytes": 357,
+      "sha256": "3be6182cd4d6074372f6b98ca70180ecf540312dcb42ab03e24a7157e4d2aeca",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/environment.json",
+      "bytes": 653,
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/execution.log",
+      "bytes": 6474,
+      "sha256": "e3241477cbfe190f3f0067e9486e41492f9f32ac95dfcff23633f9e7c548ecac",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/experiment.json",
+      "bytes": 3238,
+      "sha256": "2b514b62eaf3b4a2a7e55ad69cdf6f88d1c9ac7f0eaf53925951b59736a576fa",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/job.json",
+      "bytes": 347,
+      "sha256": "2feb6e06c8745cc43cff7390dbcf83b6bedf8a02468c7deaa35120e469a6b014",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/observed.json",
+      "bytes": 1358,
+      "sha256": "e586fcb5aa02f19f2883bac38b9788998322bca764a2d3b5708722bac9a6c96c",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/result.json",
+      "bytes": 4477,
+      "sha256": "2dc39e8b5f68853d1756a2d6427dea82095bf23822bbf6c59c7815941bf7eae5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/results.xml",
+      "bytes": 366,
+      "sha256": "9ffa45e0c895129485c249149f33b533a1847083319ab322f755d1407761ada2",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-attempt/stimulus.json",
+      "bytes": 1525,
+      "sha256": "e856b08dc9e1fe4d309dabe097d6752aa3bc4cd2d1ded4a79a7f17c03d21ce54",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/replay-attempt-artifact-list.json",
+      "bytes": 3312,
+      "sha256": "697f5c36e9a593a70caa21b41528e1d48c348d1b83a54019861c4150b1545840",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-campaign.json",
+      "bytes": 18168,
+      "sha256": "4a10c845f30f636625e6850a6b80586fde9e30f463f02de5c1eec49e98ec156c",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/replay-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/built.marker",
+      "bytes": 32,
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-attempt/check.json",
+      "bytes": 354,
+      "sha256": "395f8ad8fbb16a43e569e9f3cea9ef0fb1012aea579b436ab268edd6d5b36163",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/environment.json",
+      "bytes": 653,
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-attempt/execution.log",
+      "bytes": 6474,
+      "sha256": "d4db1441f62f98214f7ff95842bd4cff44f057312182ec35042636c0591fbcd6",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-attempt/experiment.json",
+      "bytes": 2694,
+      "sha256": "a4f13542cb195f86f53e2dd4c6d79ebb5262947d3b48370ce2c386ceb5b1aa76",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/job.json",
+      "bytes": 347,
+      "sha256": "e06e3f165a6575ad4418937429e32809b7d93d754bf2086fbe2204520f3c8d30",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-attempt/observed.json",
+      "bytes": 1055,
+      "sha256": "0d4b6a4849c0116e27107f1e5e61b79da2b07e36687f93205e7fbe8b11ba1b9b",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/result.json",
+      "bytes": 4483,
+      "sha256": "9bdee3e7b441cdf362320b8d9b174b2e9ca9c1a55bac230a38443f662bdcc872",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt/results.xml",
+      "bytes": 365,
+      "sha256": "0c039e2d5b45befa8ab4ae3dbf3ba09fcf17143420ab50fba5e812e7be4560e2",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-attempt/stimulus.json",
+      "bytes": 1179,
+      "sha256": "43043689379773a6a58f25d2a106eab8c2fc3d9b1929b0f905769b79c5d7f45e",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/response-attempt-artifact-list.json",
+      "bytes": 3312,
+      "sha256": "9b2dca6ae4926e6c20035659006e6bedd65e2744a345bfdc506be35607b6e8ca",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-campaign.json",
+      "bytes": 17561,
+      "sha256": "456529b57b34706eb2bf7d4a2481592ace70ccf33299bca1b6d000977bc93a3b",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/response-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/built.marker",
+      "bytes": 32,
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/check.json",
+      "bytes": 357,
+      "sha256": "3be6182cd4d6074372f6b98ca70180ecf540312dcb42ab03e24a7157e4d2aeca",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/environment.json",
+      "bytes": 653,
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/execution.log",
+      "bytes": 6474,
+      "sha256": "6b6f8551070b43904eaa95d290ad5ea0f1c38960759e3f634993118f993c0c13",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/experiment.json",
+      "bytes": 3238,
+      "sha256": "2b514b62eaf3b4a2a7e55ad69cdf6f88d1c9ac7f0eaf53925951b59736a576fa",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/job.json",
+      "bytes": 347,
+      "sha256": "be621aecd6705cfbcabe3bae4cadfde009bd2eb275b5236410829af2dfc7a9e6",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/observed.json",
+      "bytes": 1358,
+      "sha256": "e586fcb5aa02f19f2883bac38b9788998322bca764a2d3b5708722bac9a6c96c",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/result.json",
+      "bytes": 4477,
+      "sha256": "5bbd43cc518ad3f3766ab05fcc20f75f14168eb803d38a8bcb1e60d2fa89b2fc",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/results.xml",
+      "bytes": 367,
+      "sha256": "ddf1d9c066ea0d65dd4f91e11788ca3d4ecc69e5cd642962fd726223a1a3b2b4",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt/stimulus.json",
+      "bytes": 1525,
+      "sha256": "e856b08dc9e1fe4d309dabe097d6752aa3bc4cd2d1ded4a79a7f17c03d21ce54",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "application/strobe-attempt-artifact-list.json",
+      "bytes": 3312,
+      "sha256": "4489f3f6409b590adcde77156f4c2a14b2d3f74b18caf27ddbd41e1a652a47e2",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-campaign.json",
+      "bytes": 18134,
+      "sha256": "272a383f654a7bd18f7e3b4d23447733a36b91d6d8145205215473ac02cb860b",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "application/strobe-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "build-app.log",
+      "bytes": 27133,
+      "sha256": "b0b400bbbdf6beec5548a8d45062ca6c71b156c6037f9d1993a69bda86851ca8",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "builder-stopped.log",
+      "bytes": 6,
+      "sha256": "2ed27c1421e6928dbe13dbfdb5c59e1045b30341fe7ebe05700006bc5ac572c0",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "builders-before.log",
+      "bytes": 16,
+      "sha256": "5f34a8e9237717c98448ed9d815f699932670e40320e19749dfffae7f8ef872a",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "cleanup.json",
+      "bytes": 108,
+      "sha256": "3beb7ba77565ecc315a55514cc4c011ee92c983d5a972e3c26b99ae11c5fb6a9",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "commands.json",
+      "bytes": 2872,
+      "sha256": "153f73865e0c8c3ec6dd6841a338f181f4c6c1d37da11237154fb0d3b3016b6d",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "create-builder.log",
+      "bytes": 32,
+      "sha256": "077cc76b7d48ca5b53dde93666c87c5cd7611775d23603f10c21e24cf85493b7",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "empty-db.log",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "evidence-mount.json",
+      "bytes": 111,
+      "sha256": "faf36691876d318b9d8bf5f591f84803e5834130fc3e061b97eea89600b823be",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "postgres-image.log",
+      "bytes": 72,
+      "sha256": "cf2762d90430702d3f05e005bd053f4156af32be6cd65c373da0ebb94fd80e05",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "qualify-migrations.log",
+      "bytes": 107,
+      "sha256": "7a6d9b2fe523bf8bd733bd94fae3bdda059bd529507bb91a837336e18f2c0f65",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "qualify-model-schema.log",
+      "bytes": 36,
+      "sha256": "43d345b67ace77ab8c4cbf575a3baddf66e8623cf7d1e0b78e602b1d641ecf50",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "source-manifest.json",
+      "bytes": 17986,
+      "sha256": "e79dd2ad909d5e24edf40b9eabd423443922faa01e93da55a2a3b1c48ac6bcc2",
+      "selected_raw": true
+    },
+    {
+      "origin_relative_path": "start-application.log",
+      "bytes": 646,
+      "sha256": "99a67e53af48684d75e3d5b1e59f8a61111b7e5959beebe18d9339963a1b7b0e",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "start-storage.log",
+      "bytes": 11448,
+      "sha256": "75ed769507a1bd2cfefe75ec6a74efaca9cbb8cd96822adcfdb9035791c0dfb9",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "stop-builder.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "summary.json",
+      "bytes": 11191,
+      "sha256": "738a719da0f67f46db16247130f104a0210a56071fdb1a5063a2a47a31d4a684",
+      "selected_raw": false
+    },
+    {
+      "origin_relative_path": "valkey-image.log",
+      "bytes": 72,
+      "sha256": "8ade4185f3dc844986ae706e2a7c661b80cf2c5410c1ceac3cf3dfcd5eb367ef",
+      "selected_raw": false
+    }
+  ],
+  "full_bundle": {
+    "files": 147,
+    "bytes": 982942,
+    "availability": "Complete extracted artifact retained locally; this public slice intentionally excludes DB/queue/host/runtime data and is not the whole bundle."
+  },
+  "file_records": [
+    {
+      "path": "source-manifest.json",
+      "origin_relative_path": "source-manifest.json",
+      "bytes": 17986,
+      "sha256": "e79dd2ad909d5e24edf40b9eabd423443922faa01e93da55a2a3b1c48ac6bcc2",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/frozen-replay-request.json",
+      "origin_relative_path": "application/frozen-replay-request.json",
+      "bytes": 540,
+      "sha256": "7758ca796692797b9cf6445ef5b6bf47b0020505543c75d87535fb238e6a20f9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/export.json",
+      "origin_relative_path": "application/export.json",
+      "bytes": 257,
+      "sha256": "94b1f372b2f553680f0adfebabe29a41823f3531dbcaf0708ce760979c21adde",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/axi-export.zip",
+      "origin_relative_path": "application/axi-export.zip",
+      "bytes": 10791,
+      "sha256": "b2c9e675284499eaa126b87c37a2c0abbe445f577e229859e5606979d77859f9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/checker.py",
+      "origin_relative_path": "application/fifo-attempt/checker.py",
+      "bytes": 2270,
+      "sha256": "f5d70acf0d1c6244559c72c2af8bad60ef55af26f6a313f9972de97d9c1a2884",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/contract.json",
+      "origin_relative_path": "application/fifo-attempt/contract.json",
+      "bytes": 1113,
+      "sha256": "d453be1a24f0940a517a8d3e2376e439e8268a1c9886153b9660509c32c649bb",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/experiment.json",
+      "origin_relative_path": "application/fifo-attempt/experiment.json",
+      "bytes": 634,
+      "sha256": "bfda6742a3c2f6dcb04520c1946a17a1f3286c39553d07ed65d2d34c5177d3af",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/observed.json",
+      "origin_relative_path": "application/fifo-attempt/observed.json",
+      "bytes": 390,
+      "sha256": "76c7bba30c173cfe5408e1caf75d53a03292c58bba3e1f1fef5b4588086bf3db",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/result.json",
+      "origin_relative_path": "application/fifo-attempt/result.json",
+      "bytes": 5459,
+      "sha256": "c585586bd0ba8c147d388eb1af20082008edeff3beec6aeb61a0e83f50d7a23e",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/stimulus.json",
+      "origin_relative_path": "application/fifo-attempt/stimulus.json",
+      "bytes": 363,
+      "sha256": "99489f389db0152160838d2e5f7d9ff30292d7ff18def998cc85dcd34f6456fe",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-attempt/fifo.sv",
+      "origin_relative_path": "application/fifo-attempt/fifo.sv",
+      "bytes": 927,
+      "sha256": "a1c2f90987d423b9003f064638840bfb1e468cf0005906d4e76f1b0a81184cf5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/fifo-validation-status.json",
+      "origin_relative_path": "application/fifo-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/checker.py",
+      "origin_relative_path": "application/arithmetic-attempt/checker.py",
+      "bytes": 2184,
+      "sha256": "7e927b441b5d4ab9e4262d114f7372bf508b04d5a02cdc189c3694ed56dd628e",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/contract.json",
+      "origin_relative_path": "application/arithmetic-attempt/contract.json",
+      "bytes": 1444,
+      "sha256": "b3121fd9f34584c70a7398811615e2749de3f2bb7dbaa4ef1fbe4245df6ca759",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/experiment.json",
+      "origin_relative_path": "application/arithmetic-attempt/experiment.json",
+      "bytes": 1210,
+      "sha256": "370484f486cb22d90f61ec13dcb5bf296b3dbb4491152ebea7088769694008d4",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/observed.json",
+      "origin_relative_path": "application/arithmetic-attempt/observed.json",
+      "bytes": 669,
+      "sha256": "6df35b57ac747377bef9a73ae0143d1f90679757da703c03bec6110d42b19186",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/result.json",
+      "origin_relative_path": "application/arithmetic-attempt/result.json",
+      "bytes": 4228,
+      "sha256": "db6ca11f940580e6bc1c0544d9211a45946ec76c2d166c3380855feee81a7890",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/stimulus.json",
+      "origin_relative_path": "application/arithmetic-attempt/stimulus.json",
+      "bytes": 941,
+      "sha256": "1929fcd55d3cfe563f1eade388686b1d4bdf3bd9767f32fd18c15746858ab317",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/multiplier.sv",
+      "origin_relative_path": "application/arithmetic-attempt/multiplier.sv",
+      "bytes": 1000,
+      "sha256": "5501b6cd0106d9028451bb298ea89c78547ca8207985fc2e4ce2b92a14ec559a",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-attempt/arithmetic-trace.json",
+      "origin_relative_path": "application/arithmetic-attempt/arithmetic-trace.json",
+      "bytes": 1761,
+      "sha256": "0e0ee02ef99d167e232ede3ba53af803cc6c548ab861dd4297ce1e8070397dc0",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/arithmetic-validation-status.json",
+      "origin_relative_path": "application/arithmetic-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/checker.py",
+      "origin_relative_path": "application/control-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/contract.json",
+      "origin_relative_path": "application/control-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/experiment.json",
+      "origin_relative_path": "application/control-attempt/experiment.json",
+      "bytes": 41819,
+      "sha256": "0a68d94c10ed522807079bae1835d97463e7e44150d7f61cb35787622082c0d5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/observed.json",
+      "origin_relative_path": "application/control-attempt/observed.json",
+      "bytes": 22316,
+      "sha256": "23d631cfa97d753266059e6953424088bf143d529a8b47d3c2d5faa4a7e0c483",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/result.json",
+      "origin_relative_path": "application/control-attempt/result.json",
+      "bytes": 4230,
+      "sha256": "822519fd62b1d96e25c17eba3de0356c506b1ab1bfe56e33d2970edfbc9ca820",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/stimulus.json",
+      "origin_relative_path": "application/control-attempt/stimulus.json",
+      "bytes": 25258,
+      "sha256": "ca208d2e4319f80fc7ad1206b643bfe11f5b11af05b22daf9e5a9f83bba9fd2a",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/registers.sv",
+      "origin_relative_path": "application/control-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/checker-contracts.py",
+      "origin_relative_path": "application/control-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-attempt/check.json",
+      "origin_relative_path": "application/control-attempt/check.json",
+      "bytes": 193,
+      "sha256": "aa960c089fe03dea07361930471db74212cb9c63066a065041cd3214a15bbc80",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/control-validation-status.json",
+      "origin_relative_path": "application/control-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/checker.py",
+      "origin_relative_path": "application/order-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/contract.json",
+      "origin_relative_path": "application/order-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/experiment.json",
+      "origin_relative_path": "application/order-attempt/experiment.json",
+      "bytes": 3783,
+      "sha256": "4d3d7fb319a3faec85abc13e35225161b17bff7a546a0933db4e063bb65c1da7",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/observed.json",
+      "origin_relative_path": "application/order-attempt/observed.json",
+      "bytes": 1638,
+      "sha256": "165cc40f4aa2758929e356ea9ad1ad15a631fb45211ff7ea752673dc9ff8e550",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/result.json",
+      "origin_relative_path": "application/order-attempt/result.json",
+      "bytes": 4478,
+      "sha256": "a4c671b7fe7d612aee7d838f46a4b2f5731c72e54853b35be1040cb8306d56db",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/stimulus.json",
+      "origin_relative_path": "application/order-attempt/stimulus.json",
+      "bytes": 1855,
+      "sha256": "87f13f14b16d2af40810e53030150245a9502dc2d1734fba9d0e55982d234894",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/registers.sv",
+      "origin_relative_path": "application/order-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/checker-contracts.py",
+      "origin_relative_path": "application/order-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-attempt/check.json",
+      "origin_relative_path": "application/order-attempt/check.json",
+      "bytes": 359,
+      "sha256": "951714ef5fe5428f9668358fb5062b02eb1346a517eabee965200f900cec5f35",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/order-validation-status.json",
+      "origin_relative_path": "application/order-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/checker.py",
+      "origin_relative_path": "application/strobe-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/contract.json",
+      "origin_relative_path": "application/strobe-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/experiment.json",
+      "origin_relative_path": "application/strobe-attempt/experiment.json",
+      "bytes": 3238,
+      "sha256": "2b514b62eaf3b4a2a7e55ad69cdf6f88d1c9ac7f0eaf53925951b59736a576fa",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/observed.json",
+      "origin_relative_path": "application/strobe-attempt/observed.json",
+      "bytes": 1358,
+      "sha256": "e586fcb5aa02f19f2883bac38b9788998322bca764a2d3b5708722bac9a6c96c",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/result.json",
+      "origin_relative_path": "application/strobe-attempt/result.json",
+      "bytes": 4477,
+      "sha256": "5bbd43cc518ad3f3766ab05fcc20f75f14168eb803d38a8bcb1e60d2fa89b2fc",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/stimulus.json",
+      "origin_relative_path": "application/strobe-attempt/stimulus.json",
+      "bytes": 1525,
+      "sha256": "e856b08dc9e1fe4d309dabe097d6752aa3bc4cd2d1ded4a79a7f17c03d21ce54",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/registers.sv",
+      "origin_relative_path": "application/strobe-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/checker-contracts.py",
+      "origin_relative_path": "application/strobe-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-attempt/check.json",
+      "origin_relative_path": "application/strobe-attempt/check.json",
+      "bytes": 357,
+      "sha256": "3be6182cd4d6074372f6b98ca70180ecf540312dcb42ab03e24a7157e4d2aeca",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/strobe-validation-status.json",
+      "origin_relative_path": "application/strobe-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/checker.py",
+      "origin_relative_path": "application/response-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/contract.json",
+      "origin_relative_path": "application/response-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/experiment.json",
+      "origin_relative_path": "application/response-attempt/experiment.json",
+      "bytes": 2694,
+      "sha256": "a4f13542cb195f86f53e2dd4c6d79ebb5262947d3b48370ce2c386ceb5b1aa76",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/observed.json",
+      "origin_relative_path": "application/response-attempt/observed.json",
+      "bytes": 1055,
+      "sha256": "0d4b6a4849c0116e27107f1e5e61b79da2b07e36687f93205e7fbe8b11ba1b9b",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/result.json",
+      "origin_relative_path": "application/response-attempt/result.json",
+      "bytes": 4483,
+      "sha256": "9bdee3e7b441cdf362320b8d9b174b2e9ca9c1a55bac230a38443f662bdcc872",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/stimulus.json",
+      "origin_relative_path": "application/response-attempt/stimulus.json",
+      "bytes": 1179,
+      "sha256": "43043689379773a6a58f25d2a106eab8c2fc3d9b1929b0f905769b79c5d7f45e",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/registers.sv",
+      "origin_relative_path": "application/response-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/checker-contracts.py",
+      "origin_relative_path": "application/response-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-attempt/check.json",
+      "origin_relative_path": "application/response-attempt/check.json",
+      "bytes": 354,
+      "sha256": "395f8ad8fbb16a43e569e9f3cea9ef0fb1012aea579b436ab268edd6d5b36163",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/response-validation-status.json",
+      "origin_relative_path": "application/response-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/checker.py",
+      "origin_relative_path": "application/replay-attempt/checker.py",
+      "bytes": 9252,
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/contract.json",
+      "origin_relative_path": "application/replay-attempt/contract.json",
+      "bytes": 2053,
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/experiment.json",
+      "origin_relative_path": "application/replay-attempt/experiment.json",
+      "bytes": 3238,
+      "sha256": "2b514b62eaf3b4a2a7e55ad69cdf6f88d1c9ac7f0eaf53925951b59736a576fa",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/observed.json",
+      "origin_relative_path": "application/replay-attempt/observed.json",
+      "bytes": 1358,
+      "sha256": "e586fcb5aa02f19f2883bac38b9788998322bca764a2d3b5708722bac9a6c96c",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/result.json",
+      "origin_relative_path": "application/replay-attempt/result.json",
+      "bytes": 4477,
+      "sha256": "2dc39e8b5f68853d1756a2d6427dea82095bf23822bbf6c59c7815941bf7eae5",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/stimulus.json",
+      "origin_relative_path": "application/replay-attempt/stimulus.json",
+      "bytes": 1525,
+      "sha256": "e856b08dc9e1fe4d309dabe097d6752aa3bc4cd2d1ded4a79a7f17c03d21ce54",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/registers.sv",
+      "origin_relative_path": "application/replay-attempt/registers.sv",
+      "bytes": 3453,
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/checker-contracts.py",
+      "origin_relative_path": "application/replay-attempt/checker-contracts.py",
+      "bytes": 6184,
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-attempt/check.json",
+      "origin_relative_path": "application/replay-attempt/check.json",
+      "bytes": 357,
+      "sha256": "3be6182cd4d6074372f6b98ca70180ecf540312dcb42ab03e24a7157e4d2aeca",
+      "byte_preserved": true
+    },
+    {
+      "path": "application/replay-validation-status.json",
+      "origin_relative_path": "application/replay-validation-status.json",
+      "bytes": 129,
+      "sha256": "5df842933a08696c25c92a0015c745d2ed747ee9ae63de4ce307e58e96c709b5",
+      "byte_preserved": true
+    }
+  ],
+  "omitted_paths": [
+    "actual-application.log",
+    "actual-revision.log",
+    "api-loopback.log",
+    "app-image.log",
+    "application/application-summary.json",
+    "application/arithmetic-attempt/built.marker",
+    "application/arithmetic-attempt/dump.vcd",
+    "application/arithmetic-attempt/environment.json",
+    "application/arithmetic-attempt/execution.log",
+    "application/arithmetic-attempt/job.json",
+    "application/arithmetic-attempt/results.xml",
+    "application/arithmetic-attempt-artifact-list.json",
+    "application/arithmetic-campaign.json",
+    "application/control-attempt/built.marker",
+    "application/control-attempt/environment.json",
+    "application/control-attempt/execution.log",
+    "application/control-attempt/job.json",
+    "application/control-attempt/results.xml",
+    "application/control-attempt-artifact-list.json",
+    "application/control-campaign.json",
+    "application/fifo-attempt/built.marker",
+    "application/fifo-attempt/dump.vcd",
+    "application/fifo-attempt/environment.json",
+    "application/fifo-attempt/execution.log",
+    "application/fifo-attempt/job.json",
+    "application/fifo-attempt/results.xml",
+    "application/fifo-attempt-artifact-list.json",
+    "application/fifo-campaign.json",
+    "application/final-state.json",
+    "application/frozen-requests.json",
+    "application/installed-source-vector.json",
+    "application/mount-preflight.json",
+    "application/order-attempt/built.marker",
+    "application/order-attempt/environment.json",
+    "application/order-attempt/execution.log",
+    "application/order-attempt/job.json",
+    "application/order-attempt/results.xml",
+    "application/order-attempt-artifact-list.json",
+    "application/order-campaign.json",
+    "application/replay-attempt/built.marker",
+    "application/replay-attempt/environment.json",
+    "application/replay-attempt/execution.log",
+    "application/replay-attempt/job.json",
+    "application/replay-attempt/results.xml",
+    "application/replay-attempt-artifact-list.json",
+    "application/replay-campaign.json",
+    "application/response-attempt/built.marker",
+    "application/response-attempt/environment.json",
+    "application/response-attempt/execution.log",
+    "application/response-attempt/job.json",
+    "application/response-attempt/results.xml",
+    "application/response-attempt-artifact-list.json",
+    "application/response-campaign.json",
+    "application/strobe-attempt/built.marker",
+    "application/strobe-attempt/environment.json",
+    "application/strobe-attempt/execution.log",
+    "application/strobe-attempt/job.json",
+    "application/strobe-attempt/results.xml",
+    "application/strobe-attempt-artifact-list.json",
+    "application/strobe-campaign.json",
+    "build-app.log",
+    "builder-stopped.log",
+    "builders-before.log",
+    "cleanup.json",
+    "commands.json",
+    "create-builder.log",
+    "empty-db.log",
+    "evidence-mount.json",
+    "postgres-image.log",
+    "qualify-migrations.log",
+    "qualify-model-schema.log",
+    "start-application.log",
+    "start-storage.log",
+    "stop-builder.log",
+    "summary.json",
+    "valkey-image.log"
+  ],
+  "selection_policy": "Raw exact source manifest, native source/checker/contracts/experiments/stimuli/observations/checks/results, arithmetic trace, validation status, replay request and inspected safe export. Exclude all DB snapshots/campaign rows, queue metadata, host/runtime environment/job/logs, waveforms and unchecked files. No raw summary/application-summary copied because they mix omitted runtime/queue data.",
+  "derived_execution_summary": {
+    "kind": "AUTHORED_DERIVED_SAFE_SUMMARY_NOT_RAW_PRODUCER_RECEIPT",
+    "origin_summary_sha256": "738a719da0f67f46db16247130f104a0210a56071fdb1a5063a2a47a31d4a684",
+    "status": "actual_hosted_gate_passed",
+    "source_commit": "19e08ef7c968811eb0148b2eb5197373608d926a",
+    "image_id": "sha256:c88253fa78f6d2a93ef1c25cce9af74720520a4131f4d22219cf93e6fd76b678",
+    "qualified_empty_postgres_revision": "13engineeringprojects",
+    "local_adoption": false,
+    "acceptance": "Main confirmed independent seven-outcome/replay/export bounded ephemeral API gate audit; no new execution by curation.",
+    "cases": [
+      {
+        "label": "fifo",
+        "result_path": "application/fifo-attempt/result.json",
+        "wire_attempt_id": "attempt-3dd9e7660be54977a53e8a7c2e3527c0",
+        "execution_status": "completed",
+        "verdict": "pass_within_scope",
+        "cycles": 5,
+        "failure_signature": null,
+        "identity": {
+          "source_hash": "29b2acd08b9f60f82a42e4d76735d2269e4129cbcb528d73ccd7b3b374112893",
+          "checker_hash": "f5d70acf0d1c6244559c72c2af8bad60ef55af26f6a313f9972de97d9c1a2884",
+          "contract_hash": "cf3c44875918a5543e8580294dbbe6bebb67fd7f7932d2c150a27221954af40d",
+          "experiment_hash": "68467428aec11b318589d7d3ae6c02271bf956b0b50ed2a76e19fcc9091bd341",
+          "environment_hash": "71e2ecfa288f39696d1398701eaeaa9ad2d0faf9cf80c5687c37451599bdae2e"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "7e2c8997ff0517dfccfbc03b6970ebbac762c307809ba171f6dad40aa3a8049e",
+          "selected_parameters": {
+            "DEPTH": 4,
+            "RESET_BUG": 0,
+            "WIDTH": 8
+          },
+          "source_basename": "fifo.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          }
+        ],
+        "withheld_environment_sha256": "71e2ecfa288f39696d1398701eaeaa9ad2d0faf9cf80c5687c37451599bdae2e",
+        "raw_checker_result_path": null
+      },
+      {
+        "label": "arithmetic",
+        "result_path": "application/arithmetic-attempt/result.json",
+        "wire_attempt_id": "attempt-6adeaa96ef5d4044b7d52e68a8f7dbe5",
+        "execution_status": "completed",
+        "verdict": "pass_within_scope",
+        "cycles": 15,
+        "failure_signature": null,
+        "identity": {
+          "source_hash": "9a26cbb691e692540fa9d403b8bbd86cb72e2d66c0a0de0e8e62da82610c2ba2",
+          "checker_hash": "7e927b441b5d4ab9e4262d114f7372bf508b04d5a02cdc189c3694ed56dd628e",
+          "contract_hash": "c0d4141269fec5a2c191fc50339caaf99a9341cd68277abc24d0738317ced003",
+          "experiment_hash": "a5284aaa74c29a7b705bf96019f4090f96716636d3d55716f8bbf030e3cf1d97",
+          "environment_hash": "5ec12d501566ca4f3ad9faa4db51608640f25ff7931c827606eb902ab6b171ad"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "89278dbfa04e8e00519ed379c88cdedc137250c603c527b37d7df18ec5290fea",
+          "selected_parameters": {
+            "LATENCY": 2,
+            "MUTANT": 0,
+            "WIDTH": 8
+          },
+          "source_basename": "multiplier.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          }
+        ],
+        "withheld_environment_sha256": "5ec12d501566ca4f3ad9faa4db51608640f25ff7931c827606eb902ab6b171ad",
+        "raw_checker_result_path": null
+      },
+      {
+        "label": "control",
+        "result_path": "application/control-attempt/result.json",
+        "wire_attempt_id": "attempt-499a699f175b4bd3970a46ded13b82d5",
+        "execution_status": "completed",
+        "verdict": "pass_within_scope",
+        "cycles": 149,
+        "failure_signature": null,
+        "identity": {
+          "source_hash": "7089968dd17cb16274b3f43b61e4c05dccc57060af51df78de51ffcf58bcfbc9",
+          "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+          "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+          "experiment_hash": "52d3d56fc3179b375da4c3a827e7e63ed39b1b425471afb2007dda847b905f60",
+          "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "dc12eb942f65224b918c7d6106601adf06bc8dcb663f52606b27e8132429e995",
+          "selected_parameters": {
+            "MUTANT": 0
+          },
+          "source_basename": "registers.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          }
+        ],
+        "withheld_environment_sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+        "raw_checker_result_path": "application/control-attempt/check.json"
+      },
+      {
+        "label": "order",
+        "result_path": "application/order-attempt/result.json",
+        "wire_attempt_id": "attempt-1a7420febb8d469c99ce589d88bbcb91",
+        "execution_status": "completed",
+        "verdict": "property_failure",
+        "cycles": 11,
+        "failure_signature": {
+          "requirement_id": "AXIL_PROGRESS",
+          "failure_class": "axil.response_bound",
+          "first_cycle": 7,
+          "expected": "bVALID within 4 edges",
+          "observed": "4",
+          "signature_hash": "61fdee04f2d08d1d2c5e997f61932ef5cce268bf39c08e3c3542e9813b6d220d"
+        },
+        "identity": {
+          "source_hash": "06e36be08e8f81e455eee89155bf8bee810b02ddd7f74608a933a4213df311b3",
+          "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+          "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+          "experiment_hash": "9d62debb8798545b9d2bc86f7656ffa7d163a8793b8e6f6af3175adf5c70beeb",
+          "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "c70ab8df92207f26f908a353dda74152e8438a35a67da7a4cff1aabcf9bf7551",
+          "selected_parameters": {
+            "MUTANT": 1
+          },
+          "source_basename": "registers.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          }
+        ],
+        "withheld_environment_sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+        "raw_checker_result_path": "application/order-attempt/check.json"
+      },
+      {
+        "label": "strobe",
+        "result_path": "application/strobe-attempt/result.json",
+        "wire_attempt_id": "attempt-7d754a04427a43bda67eb22b5760c749",
+        "execution_status": "completed",
+        "verdict": "design_mismatch",
+        "cycles": 9,
+        "failure_signature": {
+          "requirement_id": "AXIL_READ",
+          "failure_class": "axil.read_value",
+          "first_cycle": 7,
+          "expected": "(0, 297481181)",
+          "observed": "(0, 2864434397)",
+          "signature_hash": "94a92ca3c042d3481c194c6a1220017ac61df37eebdcc4428165d3a50789aa69"
+        },
+        "identity": {
+          "source_hash": "8bb7323614ad7aee879150885eccdcb792fc2f74dbf5de4d584493a8a77d222b",
+          "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+          "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+          "experiment_hash": "a9549965bf3c0edadde2c93aa887c433d20697eaf8fc15875446edd6bb455ccf",
+          "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "be621aecd6705cfbcabe3bae4cadfde009bd2eb275b5236410829af2dfc7a9e6",
+          "selected_parameters": {
+            "MUTANT": 2
+          },
+          "source_basename": "registers.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          }
+        ],
+        "withheld_environment_sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+        "raw_checker_result_path": "application/strobe-attempt/check.json"
+      },
+      {
+        "label": "response",
+        "result_path": "application/response-attempt/result.json",
+        "wire_attempt_id": "attempt-14c8668f986c40cbbf02067da6f22726",
+        "execution_status": "completed",
+        "verdict": "property_failure",
+        "cycles": 7,
+        "failure_signature": {
+          "requirement_id": "AXIL_HANDSHAKE",
+          "failure_class": "axil.stalled_response",
+          "first_cycle": 4,
+          "expected": "stable VALID/payload",
+          "observed": "b",
+          "signature_hash": "656ee4d1081da4e7ec2c8b3ef43ca33f9d5019fa2880eb5cd79ecbaf9cb3eac3"
+        },
+        "identity": {
+          "source_hash": "9ef09f9042d9d3c5be43dd71af5c55fd96695282b4c35db8bc70bab97756e25d",
+          "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+          "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+          "experiment_hash": "eb00201e3962559ccabf76b773a710b83f02c6b458538c7e7a952b7d1211bc2b",
+          "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "e06e3f165a6575ad4418937429e32809b7d93d754bf2086fbe2204520f3c8d30",
+          "selected_parameters": {
+            "MUTANT": 3
+          },
+          "source_basename": "registers.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          }
+        ],
+        "withheld_environment_sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+        "raw_checker_result_path": "application/response-attempt/check.json"
+      },
+      {
+        "label": "replay",
+        "result_path": "application/replay-attempt/result.json",
+        "wire_attempt_id": "attempt-3f91858931a54b85bb54ddb62dee3dee",
+        "execution_status": "completed",
+        "verdict": "design_mismatch",
+        "cycles": 9,
+        "failure_signature": {
+          "requirement_id": "AXIL_READ",
+          "failure_class": "axil.read_value",
+          "first_cycle": 7,
+          "expected": "(0, 297481181)",
+          "observed": "(0, 2864434397)",
+          "signature_hash": "94a92ca3c042d3481c194c6a1220017ac61df37eebdcc4428165d3a50789aa69"
+        },
+        "identity": {
+          "source_hash": "8bb7323614ad7aee879150885eccdcb792fc2f74dbf5de4d584493a8a77d222b",
+          "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+          "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+          "experiment_hash": "a9549965bf3c0edadde2c93aa887c433d20697eaf8fc15875446edd6bb455ccf",
+          "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+        },
+        "source_configuration": {
+          "origin_job_sha256": "2feb6e06c8745cc43cff7390dbcf83b6bedf8a02468c7deaa35120e469a6b014",
+          "selected_parameters": {
+            "MUTANT": 2
+          },
+          "source_basename": "registers.sv",
+          "transformation": "Only parameters and source basename projected from omitted runtime job; build/output/host or container paths excluded."
+        },
+        "tool_versions": [
+          {
+            "name": "verilator",
+            "version": "Verilator 5.042 2025-11-02 rev v5.042"
+          },
+          {
+            "name": "gcc",
+            "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+          },
+          {
+            "name": "make",
+            "version": "GNU Make 4.3"
+          },
+          {
+            "name": "cocotb",
+            "version": "2.0.1"
+          },
+          {
+            "name": "python",
+            "version": "3.12.3"
+          }
+        ],
+        "withheld_environment_sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+        "raw_checker_result_path": "application/replay-attempt/check.json"
+      }
+    ],
+    "preservation_cleanup_limit": "Prior independent full-artifact audit accepted recorded API-row/file preservation and owned cleanup. DB snapshots, queues and cleanup/runtime metadata are omitted; this subset alone cannot independently reconstruct those complete claims."
+  },
+  "exact_replay": {
+    "origin_case": "strobe",
+    "replay_case": "replay",
+    "retained_byte_identical_paths": [
+      "registers.sv",
+      "checker.py",
+      "checker-contracts.py",
+      "experiment.json",
+      "contract.json",
+      "stimulus.json",
+      "observed.json",
+      "check.json"
+    ],
+    "additional_withheld_equal_file": "environment.json",
+    "withheld_equal_sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+    "request_path": "application/frozen-replay-request.json",
+    "operation": "Actual reexecution of the same curated native plan; not saved-compiled-executable reuse, a candidate repair or model/provider action."
+  },
+  "api_export": {
+    "path": "application/axi-export.zip",
+    "bytes": 10791,
+    "sha256": "b2c9e675284499eaa126b87c37a2c0abbe445f577e229859e5606979d77859f9",
+    "transport_receipt_path": "application/export.json",
+    "entry_inventory": [
+      {
+        "path": "manifest.json",
+        "bytes": 6735,
+        "sha256": "d2427370c3081c7a4bb12fa757a78504293d76271a58b7fbe647d6548827be48"
+      },
+      {
+        "path": "experiment.json",
+        "bytes": 3238,
+        "sha256": "2b514b62eaf3b4a2a7e55ad69cdf6f88d1c9ac7f0eaf53925951b59736a576fa"
+      },
+      {
+        "path": "REPORT.txt",
+        "bytes": 251,
+        "sha256": "78ee3a7350a1a69604e4efd1a59003c062e00f64e5f68206d6b66c635b56e855"
+      },
+      {
+        "path": "artifacts/check.json",
+        "bytes": 357,
+        "sha256": "3be6182cd4d6074372f6b98ca70180ecf540312dcb42ab03e24a7157e4d2aeca"
+      },
+      {
+        "path": "artifacts/checker-contracts.py",
+        "bytes": 6184,
+        "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb"
+      },
+      {
+        "path": "artifacts/checker.py",
+        "bytes": 9252,
+        "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060"
+      },
+      {
+        "path": "artifacts/contract.json",
+        "bytes": 2053,
+        "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3"
+      },
+      {
+        "path": "artifacts/observed.json",
+        "bytes": 1358,
+        "sha256": "e586fcb5aa02f19f2883bac38b9788998322bca764a2d3b5708722bac9a6c96c"
+      },
+      {
+        "path": "artifacts/registers.sv",
+        "bytes": 3453,
+        "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9"
+      },
+      {
+        "path": "artifacts/stimulus.json",
+        "bytes": 1525,
+        "sha256": "e856b08dc9e1fe4d309dabe097d6752aa3bc4cd2d1ded4a79a7f17c03d21ce54"
+      }
+    ],
+    "review": "All10 entries reviewed before raw ZIP copy; CRC/noabsolute/traversal/backslash/encryption/symlink;7exported artifacts and experiment match selected rawstrobe bytes. No job/environment/log included. Manifest failure is a four-field projection; full expected/observed in check.json/result.json.",
+    "reproduction_limit": "Portable evidence ZIP needs matching installed curated runner and pinned dependencies; not a self-contained execution environment."
+  }
+}

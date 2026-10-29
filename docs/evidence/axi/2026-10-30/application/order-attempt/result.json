@@ -1,0 +1,145 @@
+{
+  "schema_version": "1",
+  "attempt_id": "attempt-1a7420febb8d469c99ce589d88bbcb91",
+  "experiment_id": "ci-application-order",
+  "execution_status": "completed",
+  "verdict": "property_failure",
+  "identity": {
+    "source_hash": "06e36be08e8f81e455eee89155bf8bee810b02ddd7f74608a933a4213df311b3",
+    "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+    "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+    "experiment_hash": "9d62debb8798545b9d2bc86f7656ffa7d163a8793b8e6f6af3175adf5c70beeb",
+    "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+  },
+  "tool_versions": [
+    {
+      "name": "verilator",
+      "version": "Verilator 5.042 2025-11-02 rev v5.042"
+    },
+    {
+      "name": "gcc",
+      "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "name": "make",
+      "version": "GNU Make 4.3"
+    },
+    {
+      "name": "cocotb",
+      "version": "2.0.1"
+    },
+    {
+      "name": "python",
+      "version": "3.12.3"
+    }
+  ],
+  "trace": [],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-0",
+      "path": "built.marker",
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "size_bytes": 32,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-1",
+      "path": "check.json",
+      "sha256": "951714ef5fe5428f9668358fb5062b02eb1346a517eabee965200f900cec5f35",
+      "size_bytes": 359,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-2",
+      "path": "checker-contracts.py",
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "size_bytes": 6184,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-3",
+      "path": "checker.py",
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "size_bytes": 9252,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-4",
+      "path": "contract.json",
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "size_bytes": 2053,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-5",
+      "path": "environment.json",
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "size_bytes": 653,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-6",
+      "path": "execution.log",
+      "sha256": "4bc1a8dc260617d2d7e1bc8961eeea0562e762368e366868ec0ee4d8c1170352",
+      "size_bytes": 6474,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-7",
+      "path": "experiment.json",
+      "sha256": "4d3d7fb319a3faec85abc13e35225161b17bff7a546a0933db4e063bb65c1da7",
+      "size_bytes": 3783,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-8",
+      "path": "job.json",
+      "sha256": "c70ab8df92207f26f908a353dda74152e8438a35a67da7a4cff1aabcf9bf7551",
+      "size_bytes": 347,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-9",
+      "path": "observed.json",
+      "sha256": "165cc40f4aa2758929e356ea9ad1ad15a631fb45211ff7ea752673dc9ff8e550",
+      "size_bytes": 1638,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-10",
+      "path": "registers.sv",
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "size_bytes": 3453,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-11",
+      "path": "results.xml",
+      "sha256": "d8ff98dae91bc055be760cef40bddcb0348d92dcc7d2981ac8e9ecb0db254ced",
+      "size_bytes": 366,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-12",
+      "path": "stimulus.json",
+      "sha256": "87f13f14b16d2af40810e53030150245a9502dc2d1734fba9d0e55982d234894",
+      "size_bytes": 1855,
+      "media_type": "application/json"
+    }
+  ],
+  "failure_signature": {
+    "requirement_id": "AXIL_PROGRESS",
+    "failure_class": "axil.response_bound",
+    "first_cycle": 7,
+    "expected": "bVALID within 4 edges",
+    "observed": "4",
+    "signature_hash": "61fdee04f2d08d1d2c5e997f61932ef5cce268bf39c08e3c3542e9813b6d220d"
+  },
+  "requirement_coverage": [],
+  "usage": {
+    "cycles": 11,
+    "wall_time_seconds": 9.30978348100001,
+    "artifact_bytes": 36449
+  },
+  "uncertainties": []
+}

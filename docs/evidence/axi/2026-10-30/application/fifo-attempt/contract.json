@@ -1,0 +1,31 @@
+{
+  "schema_version": "1",
+  "contract_id": "fifo-v1",
+  "version": "1",
+  "target": "fifo",
+  "review_status": "reviewed",
+  "checker": {
+    "checker_id": "fifo-deque-oracle",
+    "version": "1",
+    "sha256": "f5d70acf0d1c6244559c72c2af8bad60ef55af26f6a313f9972de97d9c1a2884"
+  },
+  "parameters": {
+    "width": 8,
+    "depth": 4
+  },
+  "requirements": [
+    {
+      "requirement_id": "FIFO_BEHAVIOR",
+      "description": "fifo-v1; synchronous active high; clears queue and output; pre-edge occupancy; no fallthrough or full replacement; registered oldest item; retains output when no accepted read; post-edge occupancy; reset overrides read/write"
+    }
+  ],
+  "reset_priority": "reset_over_read_write",
+  "acceptance": "pre_edge_flags",
+  "read_semantics": "oldest_on_accepted_edge",
+  "assumptions": [
+    "Synchronous active-high reset clears queue and registered read output to zero.",
+    "Unsigned inputs fit width; reset precedes traffic.",
+    "Rejected reads retain read output; flags describe post-edge occupancy.",
+    "Full rejects write even with read; empty rejects read even with write."
+  ]
+}
