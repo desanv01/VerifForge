@@ -1,4 +1,6 @@
 """Read-only views of server-admitted recorded evidence. No execution routes."""
+from typing import Literal
+
 from fastapi import APIRouter, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
@@ -10,19 +12,21 @@ def investigations_router(sessions):
     router = APIRouter(prefix='/api')
 
     @router.get('/projects/{project_id}/investigations')
-    def project_investigations(project_id: str, after: str = Query('', max_length=128), limit: int = Query(20, ge=1, le=50)):
+    def project_investigations(project_id: str, after: str = Query('', max_length=128), limit: int = Query(20, ge=1, le=50),
+                              admission_schema: Literal['v1', 'v2', 'all'] = 'v1'):
         with sessions() as session:
-            return investigations.list_investigations(session, project_id, after=after, limit=limit)
+            return investigations.list_investigations(session, project_id, after=after, limit=limit, admission_schema=admission_schema)
 
     @router.get('/investigations/{investigation_id}')
-    def investigation(investigation_id: str):
+    def investigation(investigation_id: str, admission_schema: Literal['v1', 'v2', 'all'] = 'v1'):
         with sessions() as session:
-            return investigations.investigation_view(session, investigation_id)
+            return investigations.investigation_view(session, investigation_id, admission_schema=admission_schema)
 
     @router.get('/investigations/{investigation_id}/versions')
-    def versions(investigation_id: str, after: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=50)):
+    def versions(investigation_id: str, after: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=50),
+                 admission_schema: Literal['v1', 'v2', 'all'] = 'v1'):
         with sessions() as session:
-            return investigations.list_versions(session, investigation_id, after=after, limit=limit)
+            return investigations.list_versions(session, investigation_id, after=after, limit=limit, admission_schema=admission_schema)
 
     @router.get('/investigations/{investigation_id}/versions/{version_id}')
     def version(investigation_id: str, version_id: str, request: Request):
