@@ -61,7 +61,13 @@ def attempt(directory, mutant=False):
              ('verilator', 'spike', 'riscv64-unknown-elf-gcc')]
     environment.update(reference_revision=ci.REFERENCE, reference_submodules='', tools=tools,
         elf_hash=sha(b'NOT AN ELF: synthetic review'), binary_hash=sha(b'synthetic binary'),
-        compiler_command=['synthetic-review-only'], reference_command=['synthetic-review-only'],
+        object_hash=sha(b'NOT AN OBJECT: synthetic review'),
+        assembly_command=['riscv64-unknown-elf-gcc','-march=rv32i','-mabi=ilp32','-mno-relax',
+            '-ffreestanding','-c',str(ROOT/'targets/riscv/smoke.S'),'-o',str(Path('/output')/'smoke.o')],
+        compiler_command=['riscv64-unknown-elf-gcc','-march=rv32i','-mabi=ilp32','-mno-relax',
+            '-nostdlib','-nostartfiles','-ffreestanding','-Wl,--no-relax','-Wl,--build-id=none',
+            '-T',str(ROOT/'targets/riscv/link.ld'),str(Path('/output')/'smoke.o'),'-o',str(Path('/output')/'smoke.elf')],
+        reference_command=['synthetic-review-only'],
         spike_binary_hash='a'*64, image_package_hash='b'*64)
     records = dict(zip(('source-manifest','checker-manifest','profile','experiment','environment'),
                        (source,checker,profile,plan,environment)))
@@ -100,6 +106,9 @@ def attempt(directory, mutant=False):
     put(directory/'comparison.json',dict(verdict=verdict,compared=2 if mutant else 3,
         first_divergence=difference,reason='first architectural divergence' if mutant else 'architectural events agree through completion; no cycle comparison'))
     (directory/'smoke.elf').write_bytes(b'NOT AN ELF: synthetic review')
+    (directory/'smoke.o').write_bytes(b'NOT AN OBJECT: synthetic review')
+    (directory/'assembler').mkdir()
+    (directory/'assembler/execution.log').write_text('SYNTHETIC: no assembler process ran')
     (directory/'smoke.bin').write_bytes(b'synthetic binary')
     (directory/'reference').mkdir()
     (directory/'reference/commit.log').write_text(
@@ -158,6 +167,40 @@ def test_each_native_identity_is_required_exactly(tmp_path,field):
     hashes=attempt(tmp_path/'attempt')
     path=tmp_path/'attempt/result.json'; data=json.loads(path.read_text());data['identity'][field]='0'*64;put(path,data)
     with pytest.raises(ci.GateError): ci.validate_attempt(path.parent,hashes)
+
+
+@pytest.mark.parametrize('kind',['missing-object','changed-object','missing-assembler-log','wrong-assembly','wrong-link'])
+def test_stable_object_and_exact_recipe_are_required(tmp_path,kind):
+    directory=tmp_path/'attempt';hashes=attempt(directory)
+    if kind=='missing-object': (directory/'smoke.o').unlink()
+    elif kind=='missing-assembler-log': (directory/'assembler/execution.log').unlink()
+    elif kind=='changed-object':
+        (directory/'smoke.o').write_bytes(b'object tamper with otherwise unchanged binary and ELF')
+        rebind(directory)
+    else:
+        path=directory/'environment.json';data=json.loads(path.read_text())
+        data['assembly_command' if kind=='wrong-assembly' else 'compiler_command']=['wrong-recipe']
+        put(path,data)
+        result=json.loads((directory/'result.json').read_text())
+        result['identity']['environment_hash']=canonical(data);put(directory/'result.json',result);rebind(directory)
+    with pytest.raises(ci.GateError): ci.validate_attempt(directory,hashes)
+
+
+@pytest.mark.parametrize('field',['object_hash','elf_hash','binary_hash'])
+def test_exact_replay_never_relaxes_full_object_elf_or_binary_identity(tmp_path,field):
+    hashes=attempt(tmp_path/'control')
+    control=ci.validate_attempt(tmp_path/'control',hashes)
+    changed=deepcopy(control);changed[field]='0'*64
+    with pytest.raises(ci.GateError,match='replay'): ci.validate_replay(control,changed)
+
+
+def test_control_mutant_comparison_requires_exact_object_and_full_elf():
+    tree=ast.parse(SCRIPT.read_text())
+    checks=[n for n in ast.walk(tree) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name)
+            and n.func.id=='require' and any(isinstance(a,ast.Constant) and a.value=='mutant stimulus/reference differs from control' for a in n.args)]
+    assert len(checks)==1
+    keys=next(n for n in ast.walk(checks[0]) if isinstance(n,ast.Tuple))
+    assert set(ast.literal_eval(keys))=={'object_hash','elf_hash','binary_hash','reference_hash'}
 
 
 def test_export_uses_finite_public_allowlists_and_aggregate_cap(tmp_path):

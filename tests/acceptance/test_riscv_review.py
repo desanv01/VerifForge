@@ -106,15 +106,19 @@ def fake_tools(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "read_text", read)
     monkeypatch.setattr(Path, "read_bytes", lambda path: b"synthetic packages" if path.as_posix() == "/opt/veriforge/PACKAGE_VERSIONS" else original_bytes(path))
 
-    def run(envelope):
+    def run(envelope, *, fail_phase=None):
         output = tmp_path / "attempt"
         calls = []
 
         def execute(command, directory, env, seconds, cancel, byte_limit):
             phase = directory.name
-            calls.append((phase, seconds, byte_limit))
+            calls.append((phase, seconds, byte_limit, command))
             (directory / "execution.log").write_text("SYNTHETIC: no tool process ran")
-            if phase == "compiler":
+            if phase == fail_phase:
+                return 1, None
+            if phase == "assembler":
+                (output / "smoke.o").write_bytes(b"synthetic stable object")
+            elif phase == "compiler":
                 (output / "smoke.elf").write_bytes(b"synthetic ELF")
             elif phase == "objcopy":
                 (output / "smoke.bin").write_bytes(b"synthetic instructions")
@@ -136,7 +140,7 @@ def test_runner_synthetic_evidence_identity_and_partial_trace(fake_tools):
     result, output, calls = fake_tools({"termination": "cycle_limit", "cycles": 100000, "events": rows()[:1]})
     assert result.verdict == "resource_limit" and result.failure_signature is None
     assert result.identity is not None
-    assert [c[0] for c in calls] == ["compiler", "objcopy", "reference", "dut"]
+    assert [c[0] for c in calls] == ["assembler", "compiler", "objcopy", "reference", "dut"]
     assert all(0 < c[1] <= 120 and c[2] == 32 * 1024 * 1024 for c in calls)
     for artifact in result.artifacts:
         data = (output / artifact.path).read_bytes()
@@ -169,3 +173,38 @@ def test_expired_total_deadline_never_dispatches_another_phase(fake_tools, monke
     result, _, calls = fake_tools({"termination": "completion_store_retired", "cycles": 21, "events": rows()})
     assert not calls
     assert result.verdict == "timeout" and result.failure_signature is None
+
+
+def test_all_five_phases_share_one_120_second_budget(fake_tools,monkeypatch):
+    ticks=iter([0.0,10.0,30.0,60.0,90.0,110.0,115.0])
+    monkeypatch.setattr(runner.time,'monotonic',lambda:next(ticks,115.0))
+    result,output,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()))
+    assert result.verdict=='pass_within_scope'
+    assert [c[0] for c in calls]==['assembler','compiler','objcopy','reference','dut']
+    assert [c[1] for c in calls]==[110.0,90.0,60.0,30.0,10.0]
+    assembly=calls[0][3];link=calls[1][3]
+    assert assembly==['riscv64-unknown-elf-gcc','-march=rv32i','-mabi=ilp32','-mno-relax',
+        '-ffreestanding','-c',str(runner.ROOT/'targets/riscv/smoke.S'),'-o',str(output/'smoke.o')]
+    assert link==['riscv64-unknown-elf-gcc','-march=rv32i','-mabi=ilp32','-mno-relax',
+        '-nostdlib','-nostartfiles','-ffreestanding','-Wl,--no-relax','-Wl,--build-id=none',
+        '-T',str(runner.ROOT/'targets/riscv/link.ld'),str(output/'smoke.o'),'-o',str(output/'smoke.elf')]
+    environment=json.loads((output/'environment.json').read_text())
+    assert environment['assembly_command']==assembly and environment['compiler_command']==link
+    assert environment['object_hash']==hashlib.sha256((output/'smoke.o').read_bytes()).hexdigest()
+    assert {'smoke.o','assembler/execution.log'}<={a.path for a in result.artifacts}
+
+
+@pytest.mark.parametrize('completed_phases',[1,2,3,4])
+def test_expired_shared_budget_stops_before_each_remaining_phase(fake_tools,monkeypatch,completed_phases):
+    ticks=iter([0.0]+[10.0]*completed_phases+[121.0])
+    monkeypatch.setattr(runner.time,'monotonic',lambda:next(ticks,121.0))
+    result,_,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()))
+    assert [c[0] for c in calls]==['assembler','compiler','objcopy','reference','dut'][:completed_phases]
+    assert result.verdict=='timeout' and result.failure_signature is None
+
+
+@pytest.mark.parametrize('phase',['assembler','compiler'])
+def test_failed_assembly_or_link_never_dispatches_later_phase(fake_tools,phase):
+    result,_,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()),fail_phase=phase)
+    assert [c[0] for c in calls]==(['assembler'] if phase=='assembler' else ['assembler','compiler'])
+    assert result.verdict=='build_error' and result.failure_signature is None

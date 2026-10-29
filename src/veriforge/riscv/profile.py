@@ -24,12 +24,19 @@ class Platform:
 PLATFORM = Platform()
 COMPILER_FLAGS = ("-march=rv32i", "-mabi=ilp32", "-mno-relax", "-nostdlib", "-nostartfiles",
                   "-ffreestanding", "-Wl,--no-relax", "-Wl,--build-id=none")
+ASSEMBLER_FLAGS = ("-march=rv32i", "-mabi=ilp32", "-mno-relax", "-ffreestanding")
+
+
+def assemble_command(output_dir: Path) -> tuple[str, ...]:
+    """Give the linker a stable object basename instead of GCC's random cc*.o."""
+    return ("riscv64-unknown-elf-gcc", *ASSEMBLER_FLAGS, "-c",
+            str(ROOT / "targets/riscv/smoke.S"), "-o", str(Path(output_dir) / "smoke.o"))
 
 
 def compile_command(output_dir: Path) -> tuple[str, ...]:
     """Recipe only. output_dir is controller-selected, never a planner source path."""
     return ("riscv64-unknown-elf-gcc", *COMPILER_FLAGS,
-            "-T", str(ROOT / "targets/riscv/link.ld"), str(ROOT / "targets/riscv/smoke.S"),
+            "-T", str(ROOT / "targets/riscv/link.ld"), str(Path(output_dir) / "smoke.o"),
             "-o", str(Path(output_dir) / "smoke.elf"))
 
 
