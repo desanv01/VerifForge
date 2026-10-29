@@ -1,8 +1,9 @@
 import { useEffect, useId, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { humanize } from './api'
-import { artifactHref, identifier, investigationGet, parseArtifacts, parseDetail, parseInvestigations, parseVersions, referenceKey, versionPath } from './engineeringInvestigationApi'
-import type { Artifact, Investigation, InvestigationDetail, Reference, VersionSummary } from './engineeringInvestigationApi'
+import { artifactHref, identifier, investigationGet, parseArtifacts, parseDetail, parseInvestigations, parseVersions, parseInvestigationCapabilities, parseNativeDetail, referenceKey, versionPath } from './engineeringInvestigationApi'
+import type { Artifact, Investigation, InvestigationDetail, Reference, VersionSummary, DiscoveryMode } from './engineeringInvestigationApi'
+import { NativeToolInvestigation } from './NativeToolInvestigation'
 
 const styles = `.engineering-investigation{display:grid;gap:20px;min-width:0}.engineering-investigation .ei-heading{display:flex;justify-content:space-between;align-items:start;gap:16px;flex-wrap:wrap}.engineering-investigation .ei-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:18px}.engineering-investigation .ei-record{padding:16px 0;border-top:1px solid var(--line)}.engineering-investigation .ei-record:target{outline:2px solid var(--teal);outline-offset:4px}.engineering-investigation dd,.engineering-investigation a{overflow-wrap:anywhere}.engineering-investigation .ei-tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.engineering-investigation .ei-links{display:flex;gap:12px;flex-wrap:wrap;padding-left:20px}.engineering-investigation .ei-download{display:inline-flex;align-items:center;min-height:44px}.engineering-investigation .artifact-list li{flex-wrap:wrap}.engineering-investigation .ei-record summary{overflow-wrap:anywhere}.engineering-investigation .ei-heading h2{margin-bottom:8px}.engineering-investigation .ei-pagination{margin-top:12px}`
 
@@ -18,38 +19,55 @@ function Paging({ previous, next, busy }: { previous?: () => void; next?: () => 
 /** Mount under the existing QueryClientProvider. Project changes discard selection. */
 export function EngineeringInvestigation({ projectId }: { projectId: string }) {
   try { identifier(projectId) } catch { return <div className="notice error" role="alert">Select an existing project to inspect engineering investigations.</div> }
-  return <ProjectInvestigations key={projectId} projectId={projectId} />
+  return <InvestigationCapability key={projectId} projectId={projectId} />
 }
-function ProjectInvestigations({ projectId }: { projectId: string }) {
+function InvestigationCapability({ projectId }: { projectId: string }) {
+  const [scope] = useState(() => crypto.randomUUID())
+  const health = useQuery({ queryKey: ['native-investigation-health', projectId, scope], queryFn: ({ signal }) => investigationGet('/health', parseInvestigationCapabilities, signal), retry: false, gcTime: 0, staleTime: 0, refetchOnMount: 'always', refetchInterval: 15000 })
+  // Old runtimes retain v1 discovery. Only a fresh closed capability union can
+  // select all; a revoked or failed marker cannot keep a cached native view.
+  const mode: DiscoveryMode = health.isSuccess && health.isFetchedAfterMount && health.data.mode === 'all' ? 'all' : 'v1'
+  const active = mode === 'v1' || !health.isFetching
+  return <><p className="meta">{mode === 'all' ? health.isFetching ? 'Revalidating native recorded-view capability…' : 'Native recorded views supported. This capability does not establish tool or model readiness.' : 'Using v1 recorded views. Native views require a fresh, supported capability response.'} <button disabled={health.isFetching} onClick={() => void health.refetch()}>Check native view availability</button></p><ProjectInvestigations key={`${scope}:${mode}`} projectId={projectId} mode={mode} scope={scope} active={active}/></>
+}
+function ProjectInvestigations({ projectId, mode, scope, active }: { projectId: string; mode: DiscoveryMode; scope: string; active: boolean }) {
   const uid = useId(), client = useQueryClient()
-  const base = ['engineering-investigations', projectId]
+  const base = ['engineering-investigations', projectId, scope, mode]
   const [pages, setPages] = useState(['']), [selectedId, setSelectedId] = useState('')
   const [version, setVersion] = useState<VersionSummary | null>(null)
   const after = pages.at(-1)!
-  const query = useQuery({ queryKey: [...base, 'list', after], queryFn: ({ signal }) => investigationGet(`/projects/${encodeURIComponent(projectId)}/investigations?after=${encodeURIComponent(after)}&limit=20`, v => parseInvestigations(v, projectId), signal), retry: false })
+  const query = useQuery({ queryKey: [...base, 'list', after], queryFn: ({ signal }) => investigationGet(`/projects/${encodeURIComponent(projectId)}/investigations?after=${encodeURIComponent(after)}&limit=20${mode === 'all' ? '&admission_schema=all' : ''}`, v => {
+    const page = parseInvestigations(v, projectId, mode)
+    if (page.items.length > 20 || (mode === 'all' && (page.items.some((item,i) => item.id <= (i ? page.items[i-1].id : after)) || (page.next !== null && (page.items.length !== 20 || page.next !== page.items.at(-1)?.id))))) throw new Error('Invalid investigation pagination.')
+    return page
+  }, signal), enabled: active, retry: false, gcTime: 0, refetchOnMount: 'always' })
   const selected = query.data?.items.find(item => item.id === selectedId) ?? (!selectedId ? query.data?.items[0] : undefined)
   function page(next?: string) { setSelectedId(''); setVersion(null); setPages(old => next === undefined ? old.slice(0, -1) : [...old, next]) }
   return <section className="engineering-investigation" aria-labelledby={`${uid}-heading`}>
     <style>{styles}</style>
     <div className="panel">
-      <div className="ei-heading"><div><span className="eyebrow">Project evidence</span><h2 id={`${uid}-heading`}>Engineering investigations</h2><p className="muted">Recorded investigations for <strong>{projectId}</strong></p></div><button disabled={query.isFetching} onClick={() => { void client.invalidateQueries({ queryKey: base }) }}>Refresh investigations</button></div>
+      <div className="ei-heading"><div><span className="eyebrow">Project evidence</span><h2 id={`${uid}-heading`}>Engineering investigations</h2><p className="muted">Recorded investigations for <strong>{projectId}</strong></p></div><button disabled={query.isFetching || !active} onClick={() => { void client.invalidateQueries({ queryKey: base }) }}>Refresh investigations</button></div>
       <p className="notice">Read-only recorded evidence. Admission checks stored bytes and typed consistency; it does not run a design, establish correctness or validate a repair.</p>
-      {query.isFetching || query.isPending ? <Loading label="Loading investigations…" /> : query.isError ? <Failure error={query.error} retry={() => void query.refetch()} /> : !query.data.items.length ? <div className="empty small"><h3>No investigations on this page</h3><p>This project has no recorded investigation here. Refresh after evidence has been admitted.</p></div> : <><label htmlFor={`${uid}-select`}>Recorded investigation</label><select id={`${uid}-select`} value={selected?.id ?? ''} onChange={event => { setSelectedId(event.target.value); setVersion(null) }}>{!selected && <option value="">Select an investigation</option>}{query.data.items.map(item => <option key={item.id} value={item.id}>{item.id} · latest v{item.latest.ordinal} · {item.latest.domains.join(', ')}</option>)}</select></>}
-      <Paging busy={query.isFetching} previous={pages.length > 1 ? () => page() : undefined} next={query.data?.next && !query.isError ? () => page(query.data!.next!) : undefined} />
+      {!active || query.isFetching || query.isPending ? <Loading label="Loading investigations…" /> : query.isError ? <Failure error={query.error} retry={() => void query.refetch()} /> : !query.data.items.length ? <div className="empty small"><h3>No investigations on this page</h3><p>This project has no recorded investigation here. Refresh after evidence has been admitted.</p></div> : <><label htmlFor={`${uid}-select`}>Recorded investigation</label><select id={`${uid}-select`} value={selected?.id ?? ''} onChange={event => { setSelectedId(event.target.value); setVersion(null) }}>{!selected && <option value="">Select an investigation</option>}{query.data.items.map(item => <option key={item.id} value={item.id}>{item.id} · latest v{item.latest.ordinal} · {item.latest.domains.join(', ')}</option>)}</select></>}
+      <Paging busy={query.isFetching || !active} previous={pages.length > 1 ? () => page() : undefined} next={pages.length < 20 && query.data?.next && !query.isError ? () => page(query.data!.next!) : undefined} />
     </div>
-    {!query.isFetching && !query.isError && selected ? <InvestigationVersions key={selected.id} investigation={selected} base={[...base, selected.id]} chosen={version?.investigationId === selected.id ? version : null} choose={setVersion} /> : null}
+    {active && !query.isFetching && !query.isError && selected ? <InvestigationVersions key={selected.id} investigation={selected} mode={mode} base={[...base, selected.id]} chosen={version?.investigationId === selected.id ? version : null} choose={setVersion} /> : null}
   </section>
 }
-function InvestigationVersions({ investigation, base, chosen, choose }: { investigation: Investigation; base: string[]; chosen: VersionSummary | null; choose: (version: VersionSummary) => void }) {
+function InvestigationVersions({ investigation, mode, base, chosen, choose }: { investigation: Investigation; mode: DiscoveryMode; base: string[]; chosen: VersionSummary | null; choose: (version: VersionSummary) => void }) {
   const uid = useId(), [pages, setPages] = useState([0])
   const after = pages.at(-1)!, selected = chosen ?? investigation.latest
-  const query = useQuery({ queryKey: [...base, 'versions', after], queryFn: ({ signal }) => investigationGet(`/investigations/${encodeURIComponent(investigation.id)}/versions?after=${after}&limit=20`, v => parseVersions(v, investigation.projectId, investigation.id), signal), retry: false })
+  const query = useQuery({ queryKey: [...base, 'versions', after], queryFn: ({ signal }) => investigationGet(`/investigations/${encodeURIComponent(investigation.id)}/versions?after=${after}&limit=20${mode === 'all' ? '&admission_schema=all' : ''}`, v => {
+    const page = parseVersions(v, investigation.projectId, investigation.id, mode)
+    if (page.items.length > 20 || (mode === 'all' && (page.items.some(row => row.ordinal <= after || row.schemaVersion !== investigation.latest.schemaVersion || row.reportKind !== investigation.latest.reportKind) || (page.next !== null && (page.items.length !== 20 || page.next !== page.items.at(-1)?.ordinal))))) throw new Error('Invalid immutable version history.')
+    return page
+  }, signal), retry: false, gcTime: 0, refetchOnMount: 'always' })
   const options = [selected, ...(query.data?.items.filter(v => v.id !== selected.id) ?? [])]
   return <>
     <div className="panel">
       <h3>Immutable version history</h3><p className="muted">Latest recorded version: {investigation.latest.ordinal}. Selecting a version preserves its exact evidence identity.</p>
       {query.isFetching || query.isPending ? <Loading label="Loading versions…" /> : query.isError ? <Failure error={query.error} retry={() => void query.refetch()} /> : <><label htmlFor={`${uid}-version`}>Investigation version</label><select id={`${uid}-version`} value={selected.id} onChange={event => choose(options.find(v => v.id === event.target.value)!)}>{options.map(v => <option key={v.id} value={v.id}>Version {v.ordinal} · {v.createdAt} · {v.id}</option>)}</select>{!query.data.items.length && <p role="status">No versions on this page. Refresh the investigation list if the selected version is unavailable.</p>}</>}
-      <Paging busy={query.isFetching} previous={pages.length > 1 ? () => setPages(old => old.slice(0, -1)) : undefined} next={query.data?.next && !query.isError ? () => setPages(old => [...old, query.data!.next!]) : undefined} />
+      <Paging busy={query.isFetching} previous={pages.length > 1 ? () => setPages(old => old.slice(0, -1)) : undefined} next={pages.length < 20 && query.data?.next && !query.isError ? () => setPages(old => [...old, query.data!.next!]) : undefined} />
     </div>
     {!query.isFetching && !query.isError ? <VersionDetail key={`${selected.id}:${selected.contentHash}`} selected={selected} base={[...base, selected.id]} /> : null}
   </>
@@ -58,7 +76,7 @@ function VersionDetail({ selected, base }: { selected: VersionSummary; base: str
   const client = useQueryClient()
   const query = useQuery({ queryKey: [...base, 'detail', selected.contentHash], queryFn: async ({ signal }) => {
     const path = versionPath(selected.investigationId, selected.id)
-    const detail = await investigationGet(path, v => parseDetail(v, selected), signal)
+    const detail = await investigationGet(path, v => selected.reportKind ? parseNativeDetail(v, selected) : parseDetail(v, selected), signal)
     const artifacts = await investigationGet(`${path}/artifacts`, v => parseArtifacts(v, detail), signal)
     return { detail, artifacts }
   }, retry: false })
@@ -71,7 +89,7 @@ function VersionDetail({ selected, base }: { selected: VersionSummary; base: str
   }, [query.isError, client, ...base]) // base is a fixed-length immutable route key.
   if (query.isFetching || query.isPending) return <div className="panel"><Loading label="Validating recorded version…" /></div>
   if (query.isError) return <Failure error={query.error} retry={() => void query.refetch()} />
-  return <EvidenceDetail detail={query.data.detail} artifacts={query.data.artifacts} />
+  return 'kind' in query.data.detail ? <NativeToolInvestigation key={`${selected.id}:${selected.contentHash}`} detail={query.data.detail} artifacts={query.data.artifacts}/> : <EvidenceDetail detail={query.data.detail} artifacts={query.data.artifacts} />
 }
 function EvidenceDetail({ detail, artifacts }: { detail: InvestigationDetail; artifacts: Artifact[] }) {
   const uid = useId(), factAnchor = (id: string) => `${uid}-fact-${id}`
