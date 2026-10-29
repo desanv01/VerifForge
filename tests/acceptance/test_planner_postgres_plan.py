@@ -541,3 +541,91 @@ def test_marked_controller_proof_requires_both_ordered_mounts():
     payload['mounts'].reverse()
     with pytest.raises(RuntimeError, match='association'):
         host.parse_mount_proof(marked_proof(payload), 'controller', '1001:1001', ['/evidence', '/controls'])
+
+
+
+def resource_graph(chain=False):
+    barrier = {'pid': 900, 'xid': '77', 'page': 0, 'tuple': 1}
+    expected = {'intent-a': 'round-a', 'intent-b': 'round-b'}
+    relation = {'locktype': 'relation', 'mode': 'RowShareLock', 'granted': True,
+                'xid': None, 'resource_relation': True, 'page': None, 'tuple': None}
+    xid = {'locktype': 'transactionid', 'mode': 'ShareLock', 'granted': False,
+           'xid': '77', 'resource_relation': None, 'page': None, 'tuple': None}
+    holder = {'pid': 900, 'application_name': 'pg-ci-controller', 'state': 'idle in transaction',
+              'xid': '77', 'blockers': [], 'locks': [dict(relation), {**xid, 'mode': 'ExclusiveLock', 'granted': True}]}
+    nodes = [holder]
+    for index, role in enumerate(('runtime-a', 'runtime-b')):
+        waiting = {**xid, 'locktype': 'tuple', 'resource_relation': True, 'page': 0, 'tuple': 1} if chain and index else dict(xid)
+        nodes.append({'pid': 901 + index, 'application_name': 'pg-ci-' + role, 'state': 'active', 'xid': None,
+                      'wait_event_type': 'Lock', 'wait_event': 'tuple' if chain and index else 'transactionid',
+                      'blockers': [901 if chain and index else 900], 'locks': [dict(relation), waiting]})
+    observation = {'backends': nodes,
+        'pending': [{'intent': key, 'round': value, 'status': 'queued', 'started_at': None, 'outcome': None} for key, value in expected.items()],
+        'jobs': {role: {'job_id': 'job-' + key, 'intent': 'intent-' + key, 'queue': 'veriforge-planner'}
+                 for role, key in [('runtime-a', 'a'), ('runtime-b', 'b')]},
+        'deliveries': {'job-a': 'intent-a', 'job-b': 'intent-b'}, 'completed_intents': []}
+    return observation, expected, barrier
+
+
+@pytest.mark.parametrize('chain', [False, True])
+def test_resource_graph_proves_two_exact_owned_waiters_direct_or_chained(chain):
+    observation, expected, barrier = resource_graph(chain)
+    assert fixture.validate_resource_graph(observation, expected, barrier)
+
+
+@pytest.mark.parametrize('bad', ['missing_role', 'wrong_role', 'unblocked', 'cycle', 'foreign', 'disconnected',
+    'wrong_resource', 'wrong_tuple', 'wrong_xid', 'barrier_released', 'barrier_stale', 'barrier_wrong_resource',
+    'wrong_job', 'wrong_intent', 'wrong_round', 'stale_job', 'completed_job', 'call_started', 'duplicate_intent',
+    'backend_cap', 'lock_cap'])
+def test_resource_graph_rejects_unrelated_stale_or_adversarial_waits(bad):
+    observation, expected, barrier = resource_graph(True)
+    node = observation['backends'][2]
+    job = observation['jobs']['runtime-b']
+    if bad == 'missing_role': observation['backends'].pop()
+    elif bad == 'wrong_role': node['application_name'] = 'foreign'
+    elif bad == 'unblocked': node['wait_event_type'] = 'Client'
+    elif bad == 'cycle': observation['backends'][1]['blockers'] = [902]
+    elif bad == 'foreign': node['blockers'] = [999]
+    elif bad == 'disconnected': node['blockers'] = []
+    elif bad == 'wrong_resource': node['locks'][-1]['resource_relation'] = False
+    elif bad == 'wrong_tuple': node['locks'][-1]['tuple'] = 2
+    elif bad == 'wrong_xid': observation['backends'][1]['locks'][-1]['xid'] = '88'
+    elif bad == 'barrier_released': observation['backends'][0]['state'] = 'idle'
+    elif bad == 'barrier_stale': observation['backends'][0]['xid'] = '88'
+    elif bad == 'barrier_wrong_resource': observation['backends'][0]['locks'][0]['resource_relation'] = False
+    elif bad == 'wrong_job': job['job_id'] = 'foreign-job'
+    elif bad == 'wrong_intent': job['intent'] = 'foreign-intent'
+    elif bad == 'wrong_round': observation['pending'][1]['round'] = 'foreign-round'
+    elif bad == 'stale_job': job['queue'] = 'veriforge'
+    elif bad == 'completed_job': observation['completed_intents'] = ['intent-b']
+    elif bad == 'call_started': observation['pending'][1]['started_at'] = 'already-started'
+    elif bad == 'duplicate_intent': job.update(observation['jobs']['runtime-a'])
+    elif bad == 'backend_cap': observation['backends'] *= 4
+    else: node['locks'] *= 33
+    with pytest.raises(RuntimeError):
+        fixture.validate_resource_graph(observation, expected, barrier)
+
+
+def test_resource_graph_last_observation_retained_on_timeout_without_relaxing_deadline(monkeypatch, tmp_path):
+    observation, expected, barrier = resource_graph(True)
+    observation['backends'][2]['blockers'] = [999]
+    controller = fixture.Qualification.__new__(fixture.Qualification)
+    controller.deliveries = [{'job_id': key, 'args': (value,)} for key, value in observation['deliveries'].items()]
+    class Connection:
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+        def scalar(self, query, params):
+            assert 'pg_locks' in str(query) and 'query' not in str(query).split('FROM pg_stat_activity')[0]
+            return {key: observation[key] for key in ('backends', 'pending')}
+    controller.engine = SimpleNamespace(connect=lambda: Connection())
+    monkeypatch.setattr(fixture, 'OUT', tmp_path)
+    for role in ('runtime-a', 'runtime-b'):
+        fixture.write(tmp_path / (role + '-active-job.json'), observation['jobs'][role])
+    values = tuple({'intent': key, 'round': value} for key, value in expected.items())
+    assert controller.resource_waiters(values, barrier) is None
+    saved = json.loads((tmp_path / 'actual-pg-resource-last-observation.json').read_text())
+    assert 'foreign/disconnected/cyclic' in saved['validation'] and saved['backends'][2]['blockers'] == [999]
+    source = (ROOT / 'tests/integration/planner_process_fixture.py').read_text()
+    assert 'wait_for(lambda: self.resource_waiters((a, b), identity), 2)' in source
+    assert 'CASE_DEADLINE = time.monotonic() + 45' in source
+    assert "len(self.requests(a)) + len(self.requests(b)) == 1" in source

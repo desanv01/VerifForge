@@ -19,7 +19,7 @@ def controller(monkeypatch, tmp_path):
     path = ROOT / 'scripts/ci_planner_postgres.py'
     # Source identity is portable across checkouts; tool evidence is never normalized.
     assert hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest() == '3dd41e80bd492ad0ac53ad8e02d5c07c718fc181cfe8d8ed1bee76f9933b9694'
-    assert hashlib.sha256((ROOT / 'tests/acceptance/test_planner_postgres_plan.py').read_bytes().replace(b'\r\n', b'\n')).hexdigest() == 'ffbbd5fb68e2e22df37aac2db071732743e222d39e87373c863d1305ac54af90'
+    assert hashlib.sha256((ROOT / 'tests/acceptance/test_planner_postgres_plan.py').read_bytes().replace(b'\r\n', b'\n')).hexdigest() == 'd914f057c142f511a791d156063abe1caa9465272ae2183edea92947b39a9e70'
     def forbidden(*args, **kwargs): pytest.fail('no external operation during mount review')
     for name in ('run', 'Popen', 'check_output'): monkeypatch.setattr(subprocess, name, forbidden)
     spec = importlib.util.spec_from_file_location('independent_pg_mount', path)
