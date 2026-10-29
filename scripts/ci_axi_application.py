@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -286,10 +287,93 @@ def export_readback(source, directory):
     return job
 
 
+def effective_identity():
+    uid, gid = os.geteuid(), os.getegid()
+    require(type(uid) is int and type(gid) is int and 0 <= uid < 2**32 - 1 and 0 <= gid < 2**32 - 1,
+            'invalid effective numeric identity')
+    return uid, gid
+
+
+def directory_identity(path):
+    info = path.stat()
+    return {'uid': info.st_uid, 'gid': info.st_gid, 'mode': format(stat.S_IMODE(info.st_mode), '04o')}
+
+
+def prepare_evidence_mount():
+    """Only a newly created fixed child of this checkout's owned output tree."""
+    uid, gid = effective_identity()
+    require(uid != 0, 'hosted exercise requires non-root runner identity')
+    output = OUT.resolve()
+    require(not OUT.is_symlink() and output.is_relative_to(ROOT.resolve()), 'unsafe evidence output root')
+    evidence = OUT / 'application'
+    require(not evidence.exists() and not evidence.is_symlink(), 'evidence directory already exists')
+    require(evidence.resolve() == output / 'application', 'unsafe evidence mount')
+    evidence.mkdir(mode=0o700)  # No chmod/chown, existing directory, or shared volume changes.
+    observed = directory_identity(evidence)
+    require(observed == {'uid': uid, 'gid': gid, 'mode': '0700'}, 'evidence directory identity/mode differs')
+    write(OUT / 'evidence-mount.json', {'container_user': f'{uid}:{gid}', 'directory': observed})
+    return evidence.resolve(), f'{uid}:{gid}'
+
+
+def exercise_command(prefix, evidence, user):
+    require(bool(re.fullmatch(r'[0-9]{1,10}:[0-9]{1,10}', user)), 'unsafe exercise numeric identity')
+    uid, gid = (int(part) for part in user.split(':'))
+    require(0 < uid < 2**32 - 1 and 0 <= gid < 2**32 - 1, 'invalid exercise numeric identity')
+    require(evidence == OUT.resolve() / 'application' and not evidence.is_symlink() and evidence.is_dir(), 'unsafe evidence mount')
+    return prefix + ['run', '--rm', '--no-deps', '--user', user, '-v', str(evidence) + ':/evidence',
+                     'api', 'python', '/workspace/scripts/ci_axi_application.py', '--exercise']
+
+
+def evidence_preflight(destination):
+    """Verify this controller's bind mount before source writes or any POST."""
+    require(destination.is_dir() and not destination.is_symlink(), 'unsafe evidence directory')
+    uid, gid = effective_identity()
+    observed = directory_identity(destination)
+    # Numeric-only diagnostics survive in the bounded command log even when
+    # the bind mount cannot retain its own failure receipt.
+    print(json.dumps({'evidence_mount_preflight': {'effective_uid': uid, 'effective_gid': gid,
+          'directory': observed}}, sort_keys=True), flush=True)
+    require((observed['uid'], observed['gid']) == (uid, gid), 'evidence directory owner differs from exercise identity')
+    probe = destination / '.veriforge-mount-probe'
+    payload = b'veriforge-owned-evidence-preflight\n'
+    created, first_failure = None, None
+    try:
+        with probe.open('xb') as stream:
+            created = os.fstat(stream.fileno())
+            stream.write(payload)
+        with probe.open('rb') as stream:
+            current = os.fstat(stream.fileno())
+            require((current.st_dev, current.st_ino) == (created.st_dev, created.st_ino), 'evidence probe replaced')
+            require(stream.read(len(payload) + 1) == payload, 'evidence probe readback differs')
+    except BaseException as error:
+        first_failure = error
+        raise
+    finally:
+        if created is not None:
+            try:
+                current = probe.lstat()
+                require(not probe.is_symlink() and (current.st_dev, current.st_ino) == (created.st_dev, created.st_ino), 'refuse removal of replaced evidence probe')
+                probe.unlink()
+                require(not probe.exists(), 'evidence probe removal failed')
+            except BaseException as cleanup_error:
+                if first_failure is None:
+                    raise
+                first_failure.add_note('Evidence probe cleanup also failed: ' +
+                                       type(cleanup_error).__name__ + ': ' + str(cleanup_error)[:500])
+    # A non-root exercise needs read/traverse access to the service-owned volume.
+    # Completed package bytes are independently read/validated later as before.
+    artifacts = Path('/artifacts')
+    require(artifacts.is_dir() and not artifacts.is_symlink(), 'artifact volume unavailable')
+    next(artifacts.iterdir(), None)
+    write(destination / 'mount-preflight.json', {'effective_uid': uid, 'effective_gid': gid,
+          'directory': observed, 'probe': 'write_read_remove_passed', 'artifact_root': 'readable'})
+
+
 def exercise(destination=None):
     require(sys.platform == 'linux' and bool(re.fullmatch(r'vf-axi-ci-[0-9]+-[0-9]+', os.environ.get('VERIFORGE_CI_EPHEMERAL_PROJECT', ''))), 'ephemeral controller only')
     destination = Path('/evidence') if destination is None else Path(destination)
     destination.mkdir(exist_ok=True)
+    evidence_preflight(destination)
     installed = Path('/workspace/ci-source-manifest.json')
     if installed.exists():
         metadata = json.loads(installed.read_text())
@@ -560,10 +644,8 @@ def hosted_main():
             except (OSError, URLError):
                 require(time.monotonic() < deadline and not STOP, 'API startup deadline')
                 time.sleep(1)
-        evidence = OUT / 'application'
-        evidence.mkdir()
-        require(str(evidence.resolve()).startswith(str(OUT.resolve())), 'unsafe evidence mount')
-        host.run(host.prefix + ['run', '--rm', '--no-deps', '-v', str(evidence.resolve()) + ':/evidence', 'api', 'python', '/workspace/scripts/ci_axi_application.py', '--exercise'], 'actual-application', 1350)
+        evidence, user = prepare_evidence_mount()
+        host.run(exercise_command(host.prefix, evidence, user), 'actual-application', 1350)
         application = json.loads((evidence / 'application-summary.json').read_text())
         require(application['status'] == 'actual_seven_attempts_and_export_passed' and len(application['cases']) == MAX_ATTEMPTS, 'incomplete application result')
         summary.update(status='application_checks_passed_pending_cleanup', application=application)

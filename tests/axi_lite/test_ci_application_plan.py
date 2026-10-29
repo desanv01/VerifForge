@@ -132,6 +132,11 @@ def test_immutability_keeps_bool_integer_and_bytes_distinct():
 def test_fake_controller_finite_attempts_and_stop_on_unexpected_outcome(monkeypatch, tmp_path, fail_first, cancel_error):
     monkeypatch.setattr(ci.sys, 'platform', 'linux')
     monkeypatch.setenv('VERIFORGE_CI_EPHEMERAL_PROJECT', 'vf-axi-ci-123-1')
+    artifacts = tmp_path / 'artifacts'
+    artifacts.mkdir()
+    real_path = Path
+    monkeypatch.setattr(ci, 'Path', lambda value: artifacts if value == '/artifacts' else real_path(value))
+    monkeypatch.setattr(ci, 'effective_identity', lambda: (tmp_path.stat().st_uid, tmp_path.stat().st_gid))
     monkeypatch.setattr(ci.time, 'sleep', lambda _: None)
     monkeypatch.setattr(ci, 'fixture_plans', lambda: {k: {'label': k} for k in ci.CASES if k != 'replay'})
     monkeypatch.setattr(ci, 'validate_package', lambda *_: None)
@@ -378,3 +383,166 @@ def test_fake_export_matches_original_native_bytes_and_refuses_family_tamper(mon
     else:
         assert ci.export_readback(source, tmp_path) == job
         assert (tmp_path / 'axi-export.zip').read_bytes() == raw
+
+
+def mount_context(monkeypatch, tmp_path):
+    """Fake Linux identity/mode; temporary files do not prove Docker/Linux DAC."""
+    monkeypatch.setattr(ci, 'ROOT', tmp_path)
+    monkeypatch.setattr(ci, 'OUT', tmp_path / 'ci-artifacts/axi-application')
+    ci.OUT.mkdir(parents=True)
+    monkeypatch.setattr(ci, 'effective_identity', lambda: (1001, 1002))
+    monkeypatch.setattr(ci, 'directory_identity', lambda _: {'uid': 1001, 'gid': 1002, 'mode': '0700'})
+
+
+def test_owned_new_evidence_mount_uses_numeric_host_identity_for_exercise_only(monkeypatch, tmp_path):
+    mount_context(monkeypatch, tmp_path)
+    evidence, user = ci.prepare_evidence_mount()
+    assert user == '1001:1002' and evidence == ci.OUT.resolve() / 'application'
+    assert json.loads((ci.OUT / 'evidence-mount.json').read_text()) == {
+        'container_user': user, 'directory': {'uid': 1001, 'gid': 1002, 'mode': '0700'}}
+    prefix = ['docker', 'compose', '-f', '/owned/compose.json', '-p', 'vf-axi-ci-123-1']
+    args = ci.exercise_command(prefix, evidence, user)
+    assert args == prefix + ['run', '--rm', '--no-deps', '--user', user, '-v', str(evidence) + ':/evidence',
+                             'api', 'python', '/workspace/scripts/ci_axi_application.py', '--exercise']
+    plan = ci.compose_plan('vf-axi-ci-123-1', 'sha256:' + 'a' * 64)
+    for role in ('api', 'worker', 'reconciler'):
+        service = plan['services'][role]
+        assert 'user' not in service and 'privileged' not in service and 'cap_add' not in service
+        assert service['cap_drop'] == ['ALL'] and service['security_opt'] == ['no-new-privileges:true']
+    assert plan['services']['api']['mem_limit'] == '512m'
+    assert plan['services']['worker']['mem_limit'] == '2g'
+    assert plan['services']['reconciler']['mem_limit'] == '256m'
+    source = (ROOT / 'scripts/ci_axi_application.py').read_text()
+    assert "'actual-application', 1350" in source
+    assert 'evidence.chmod' not in source and 'os.chown' not in source
+    with pytest.raises(RuntimeError, match='already exists'):
+        ci.prepare_evidence_mount()
+
+
+@pytest.mark.parametrize('user', ['root', '0:0', '1001:1002;id', '1:4294967295', '-1:1', '1:2:3', 'true:1'])
+def test_exercise_user_is_bounded_numeric_nonroot(monkeypatch, tmp_path, user):
+    mount_context(monkeypatch, tmp_path)
+    evidence, _ = ci.prepare_evidence_mount()
+    with pytest.raises(RuntimeError, match='identity'):
+        ci.exercise_command(['FAKE-NO-EXECUTION'], evidence, user)
+
+
+@pytest.mark.parametrize('damage', ['outside_root', 'foreign_owner', 'wrong_mode', 'root_runner', 'sibling_prefix'])
+def test_mount_refuses_unowned_permissions_and_noncontained_path(monkeypatch, tmp_path, damage):
+    mount_context(monkeypatch, tmp_path)
+    if damage == 'outside_root':
+        monkeypatch.setattr(ci, 'ROOT', tmp_path / 'different-checkout')
+    elif damage == 'foreign_owner':
+        monkeypatch.setattr(ci, 'directory_identity', lambda _: {'uid': 1003, 'gid': 1002, 'mode': '0700'})
+    elif damage == 'wrong_mode':
+        monkeypatch.setattr(ci, 'directory_identity', lambda _: {'uid': 1001, 'gid': 1002, 'mode': '0755'})
+    elif damage == 'root_runner':
+        monkeypatch.setattr(ci, 'effective_identity', lambda: (0, 0))
+    else:
+        evidence = ci.OUT.parent / (ci.OUT.name + '-foreign') / 'application'
+        evidence.mkdir(parents=True)
+        with pytest.raises(RuntimeError, match='unsafe evidence mount'):
+            ci.exercise_command(['FAKE-NO-EXECUTION'], evidence, '1001:1002')
+        return
+    with pytest.raises(RuntimeError):
+        ci.prepare_evidence_mount()
+    assert not (ci.OUT / 'evidence-mount.json').exists()
+
+
+def preflight_context(monkeypatch, tmp_path):
+    artifacts = tmp_path / 'artifacts'
+    artifacts.mkdir()
+    evidence = tmp_path / 'evidence'
+    evidence.mkdir()
+    real_path = Path
+    monkeypatch.setattr(ci, 'Path', lambda value: artifacts if value == '/artifacts' else real_path(value))
+    monkeypatch.setattr(ci, 'effective_identity', lambda: (evidence.stat().st_uid, evidence.stat().st_gid))
+    return evidence
+
+
+def test_preflight_records_only_effective_identity_mode_and_owned_probe_outcome(monkeypatch, tmp_path, capsys):
+    evidence = preflight_context(monkeypatch, tmp_path)
+    ci.evidence_preflight(evidence)
+    assert not (evidence / '.veriforge-mount-probe').exists()
+    receipt = json.loads((evidence / 'mount-preflight.json').read_text())
+    assert receipt == {'effective_uid': evidence.stat().st_uid, 'effective_gid': evidence.stat().st_gid,
+                       'directory': ci.directory_identity(evidence), 'probe': 'write_read_remove_passed', 'artifact_root': 'readable'}
+    assert set(p.name for p in evidence.iterdir()) == {'mount-preflight.json'}
+    assert json.loads(capsys.readouterr().out) == {'evidence_mount_preflight': {
+        'effective_uid': receipt['effective_uid'], 'effective_gid': receipt['effective_gid'],
+        'directory': receipt['directory']}}
+
+
+@pytest.mark.parametrize('failure', ['existing_probe', 'read_failure', 'wrong_owner', 'artifact_unavailable'])
+def test_preflight_failure_precedes_source_requests_and_all_posts(monkeypatch, tmp_path, failure):
+    evidence = preflight_context(monkeypatch, tmp_path)
+    monkeypatch.setattr(ci.sys, 'platform', 'linux')
+    monkeypatch.setenv('VERIFORGE_CI_EPHEMERAL_PROJECT', 'vf-axi-ci-123-1')
+    monkeypatch.setattr(ci, 'fixture_plans', lambda: pytest.fail('requests prepared after failed preflight'))
+    monkeypatch.setattr(ci, 'api_json', lambda *a, **k: pytest.fail('HTTP after failed preflight'))
+    probe = evidence / '.veriforge-mount-probe'
+    if failure == 'existing_probe':
+        probe.write_bytes(b'preexisting must remain untouched')
+    elif failure == 'wrong_owner':
+        monkeypatch.setattr(ci, 'effective_identity', lambda: (12345, 12345))
+    elif failure == 'artifact_unavailable':
+        (tmp_path / 'artifacts').rmdir()
+    else:
+        original = Path.open
+        def fail_read(path, mode='r', *args, **kwargs):
+            if path == probe and mode == 'rb':
+                raise PermissionError('fake probe read denied')
+            return original(path, mode, *args, **kwargs)
+        monkeypatch.setattr(Path, 'open', fail_read)
+    with pytest.raises((RuntimeError, OSError)):
+        ci.exercise(evidence)
+    assert not (evidence / 'installed-source-vector.json').exists()
+    assert not (evidence / 'frozen-requests.json').exists()
+    assert not (evidence / 'mount-preflight.json').exists()
+    if failure == 'existing_probe':
+        assert probe.read_bytes() == b'preexisting must remain untouched'
+    else:
+        assert not probe.exists()
+
+
+@pytest.mark.parametrize('phase', ['read', 'write'])
+@pytest.mark.parametrize('cleanup', ['lstat', 'unlink'])
+def test_probe_cleanup_retains_exact_primary_exception_and_bounded_secondary_note(monkeypatch, tmp_path, phase, cleanup):
+    from contextlib import contextmanager
+    evidence = preflight_context(monkeypatch, tmp_path)
+    probe = evidence / '.veriforge-mount-probe'
+    primary = OSError('first probe ' + phase + ' failure')
+    secondary = PermissionError('secondary cleanup denied ' + 'x' * 900)
+    original_open = Path.open
+    original_cleanup = getattr(Path, cleanup)
+
+    def fail_write(_):
+        raise primary
+
+    @contextmanager
+    def writing(path, mode, *args, **kwargs):
+        with original_open(path, mode, *args, **kwargs) as stream:
+            yield SimpleNamespace(fileno=stream.fileno, write=fail_write)
+
+    def open_probe(path, mode='r', *args, **kwargs):
+        if path == probe:
+            if phase == 'read' and mode == 'rb':
+                raise primary
+            if phase == 'write' and mode == 'xb':
+                return writing(path, mode, *args, **kwargs)
+        return original_open(path, mode, *args, **kwargs)
+
+    def fail_cleanup(path, *args, **kwargs):
+        if path == probe:
+            raise secondary
+        return original_cleanup(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, 'open', open_probe)
+    monkeypatch.setattr(Path, cleanup, fail_cleanup)
+    with pytest.raises(OSError) as observed:
+        ci.evidence_preflight(evidence)
+    assert observed.value is primary
+    assert len(primary.__notes__) == 1
+    assert 'PermissionError: secondary cleanup denied' in primary.__notes__[0]
+    assert len(primary.__notes__[0]) < 600
+    assert not (evidence / 'mount-preflight.json').exists()
