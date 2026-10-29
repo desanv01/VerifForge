@@ -6,13 +6,15 @@ The gameplan defines intended release scope. Source and mocked tests do not esta
 
 ## October30 integration checkpoint
 
-PR9, PR15 and PR17–25 merged after their respective current-head CI. They cover family API/workbench, engineering provenance, bounded AXI/native evidence, RISC-V execution and replay correction, durable planner foundations, Vivado recorded evidence, native investigation persistence/views and firmware harness source. Issue4 is closed for the seven-case bounded target qualification; issue16 retains the live AXI application gates. Five actual family API attempts, exact replays, downloads/export and preservation received independent review. The arithmetic browser gate remains pending. Resource-fence PR26 is undergoing CI after independent review.
+PR9, PR15 and PR17–36 merged after their respective current-head CI. They cover family API/workbench, engineering provenance, bounded AXI/native evidence and controls, RISC-V execution and replay correction, durable planner foundations/resource fencing/dispatch, Vivado recorded evidence, native investigation persistence/views, explicit engineering projects and trusted import, and bounded hosted firmware/AXI controllers. Issue4 is closed for the seven-case bounded target qualification; issue16 retains the live AXI application gates. Five actual family API attempts, exact replays, downloads/export and preservation received independent review. The arithmetic browser gate remains pending.
 
 RISC-V run40920450439 passed and its retained evidence was independently audited: control17 retirements/68 cycles, seeded mutant first divergence at retirement1/cycle14, and exact recompiled object/ELF/binary/raw and normalized trace replay. The earlier random-object-name ELF failure remains preserved. Saved-executable replay without recompilation and workbench integration remain open. [Curated raw results](../evidence/riscv/2026-10-30/README.md) preserve this scoped acceptance.
 
-The AXI image is adopted with all earlier rows and110 artifact files preserved after a guarded sequential service recovery. The subsequent actual API gate stopped before its first POST because headroom fell below the start floor; no AXI application run is claimed. Firmware harness source is merged but has not executed. Durable resource authority is source-reviewed; dispatch, operational migrations and runtime/API adoption remain open. Vivado synthesis is resource-limited; KiCad exact-part/physical gates remain; native cross-domain graphs remain inconclusive.
+The AXI image is adopted with all earlier rows and110 artifact files preserved after a guarded sequential service recovery. The subsequent actual API gate stopped before its first POST because headroom fell below the start floor; no AXI application run is claimed. Hosted firmware run40929665294 on commit5565985 completed and its285 retained files were independently audited: control/candidate55 retirements and218 cycles, seeded bad39/166 with first MMIO discrepancy at cycle95, and exact saved bad/candidate program replay without firmware recompilation. HDL was rebuilt. This is a curated header correction under unchanged checks, not a model-generated repair. The hosted AXI gate awaits the current schema integration. Durable driver source passed independent review and156 frozen integration checks; operational migrations and runtime/API adoption remain open. Explicit engineering project kinds passed327 frozen checks with two gated skips; PR32 historical fixture CI correction preserves all original assertions. Trusted import and project UI passed separate independent reviews. Vivado synthesis is resource-limited; KiCad exact-part/physical gates remain; native cross-domain graphs remain inconclusive.
 
 The coordinator continues finite assignments, reviews and GitHub integrations under the human's weekly allowance guard, pausing all project work and the existing schedule at five percent remaining. Live Meta remains deferred because the key is not ready. No live Meta or completed six-sequence release is claimed.
+
+Later hosted AXI checkpoints: run40934406068 failed before migration because of Docker logging configuration; PR35 fixed that and exact terminal receipt byte accounting. Run40938359555 then qualified an empty PostgreSQL database at13engineeringprojects, passed the schema comparison and started healthy services, but failed before the first campaign POST because the evidence bind mount was not writable. Both owned ephemeral stacks were removed and evidence preserved. Zero AXI application attempts are claimed. The permission correction is being reviewed before a new run.
 
 ## October29 work packages (updated October30)
 
@@ -22,15 +24,15 @@ Current [support matrix](SUPPORT_MATRIX.md) separates Import / Execute / Repair 
 |---|---|
 | U0 | Preservation reconciled; original backup restore accepted; family image adopted and five real attempts/export independently reviewed; newer restore pending |
 | U1 | Engineering provenance/support schema accepted after transitive review-state correction; native adoption pending |
-| U2 | Durable foundations merged PR20; resource fence/transport independently reviewed in PR26; bounded driver being implemented; operational adoption and live Meta open |
-| U3 | Actual family API and AXI seven-case native gates accepted; three-family image adopted/preserved; AXI API execution blocked before POST, hosted gate and UI under development |
+| U2 | Durable foundations/resource authority merged PR20/26; bounded driver and owner-loss quarantine source accepted; dedicated runtime/control and two-stage API independent findings being corrected; operational adoption and live Meta open |
+| U3 | Actual family API and AXI seven-case native gates accepted; three-family image adopted/preserved; AXI controls merged PR30 and hosted gate merged PR31; local API execution blocked before POST, actual hosted/browser gates open |
 | U4 | Actual PicoRV32/Spike control/seeded divergence/exact recompiled replay independently accepted; saved executable replay and workbench open |
-| U5 | Facts and executable harness merged PR15/25; bounded hosted controller being implemented; actual firmware/MMIO pending |
+| U5 | Facts, executable harness and bounded controller merged PR15/25/29; actual hosted run40929665294 control/seeded mismatch/curated candidate/saved-program replay independently accepted; workbench open |
 | U6 | Actual Vivado2026.1 selected-part query passed; synthesis resource-limited; retry memory-blocked; recorded importer/readiness/storage source merged PR21 |
 | U7 | Actual candidate configured ERC/DRC checks independently accepted with4ERC/5DRC ignored checks unchanged; exact-part/physical acceptance unresolved |
 | U8 | Manifest/native bridge source accepted; recorded graphs remain inconclusive; independent system evidence pending |
-| U9 | Native admission/persistence/views merged PR22/24; explicit engineering projects and trusted import being implemented; actual runtime/browser adoption pending |
-| U10 | Evaluation/demo/submission/provenance prepared; permanent curated RISC-V raw evidence reviewed; complete comparative evaluation/video pending |
+| U9 | Native admission/persistence/views merged PR22/24; explicit engineering projects, trusted import and project UI source reviewed; additive typed native-tool reports being implemented; actual runtime/browser adoption pending |
+| U10 | Evaluation/demo/submission/provenance prepared; permanent curated RISC-V and firmware raw evidence reviewed; complete comparative evaluation/video pending |
 | U11 | Analog/ASIC stretch after primary scope and submission-critical gates |
 
 ## Earlier foundation milestones

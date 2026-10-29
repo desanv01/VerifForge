@@ -1,0 +1,26 @@
+{
+  "schema_version": "firmware.comparison.v1",
+  "verdict": "mismatch",
+  "execution_status": "not_run",
+  "contract_hash": "8c7283f35a9b198f3a2cb5a9d04580eb98ef90e92e268621d89fff8c06a50f09",
+  "issues": [
+    {
+      "register_name": "status",
+      "artifact": "header",
+      "expected_address": 1073741828,
+      "observed_address": 1073741832,
+      "provenance": {
+        "source": "registers.h",
+        "source_sha256": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+        "location": "line:3",
+        "extractor": "firmware.facts.v1",
+        "origin": "imported_artifact",
+        "review_state": "extracted_unreviewed",
+        "conditions": []
+      }
+    }
+  ],
+  "limitations": [
+    "Address comparison does not verify access policy, reset, byte-strobe behavior, side effects, ELF startup or firmware execution."
+  ]
+}

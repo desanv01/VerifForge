@@ -1,0 +1,225 @@
+{
+  "accepted": true,
+  "builder_settled": true,
+  "cases": {
+    "bad": {
+      "candidate_diff_sha256": null,
+      "check": {
+        "execution_status": "completed",
+        "first_mmio_sequence": 2,
+        "reason": "Completed firmware differs from reviewed MMIO requirements or returned failure mailbox",
+        "verdict": "design_mismatch"
+      },
+      "cycles": 166,
+      "execution_sha256": "ecffcca57a2aaf321dd8a831b261c73da0b4b62a8a5cf86b2ab973948da06b60",
+      "failure_signature": {
+        "expected": "{\"address\": 1073741828, \"probe\": 1432778632}",
+        "failure_class": "firmware.status_offset",
+        "first_cycle": 95,
+        "observed": "{\"address\": 1073741832, \"probe\": 0}",
+        "requirement_id": "FIRMWARE_STATUS_ADDRESS",
+        "signature_hash": "9488364c67d7a03476757611e26bde1c4b4b7cdb693cb29a94fd0454ed257749"
+      },
+      "first_conflict": {
+        "bus_sequence": 31,
+        "cycle": 95,
+        "expected_address": 1073741828,
+        "expected_probe": 1432778632,
+        "mmio_sequence": 2,
+        "observed_address": 1073741832,
+        "observed_probe": 0,
+        "requirement_id": "FIRMWARE_STATUS_ADDRESS"
+      },
+      "identity": {
+        "checker_hash": "e492402996430dd2a88478a040b98c7c976c4c42a8049b417055d57cfe6468c4",
+        "contract_hash": "440bd77896cb3ad3bc1450116759a5bb2aa5db3079e3fef3e52ef44aa71573e3",
+        "environment_hash": "bd4c0f07a21aba5f38b01906295863805604c6b3a2c8575919c0cfda49480466",
+        "experiment_hash": "bc61c664281a4e296dcbb1db35ba672fe8171e6783846a0fc2dc9bc4d9e4fd5a",
+        "source_hash": "6957bbb8840096e1e088d6894eda0c08636d740d8a6fa1d471e4698211d2b2bc"
+      },
+      "observation_sha256": "24506c0abf61b50ea509e0782e5020cebf0d0f590c56c0f366bc8d6e250bd6da",
+      "original_bad_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "program_hashes": {
+        "disassembly.txt": "f266a0bf22d88bdb3bdbbff17af51ab283d8903a0fc0b6072fa053b725b098f1",
+        "elf_headers.txt": "5e219fcefae4a0c6eeace0936f09056cc1613492513fd3f3164e57f48351eaa1",
+        "firmware.bin": "26108391b15f93e12691da1c6116bb81ae0ebd6e96d9d1064fc67722a50c1da4",
+        "firmware.elf": "9e969a9e5480e20135930f30b2fac8dbd348907c1282a33e71f51ffb7f19bbf0",
+        "firmware.map": "81688d9d5073d45a18ee61908ae2a7f80cf0ab21023e8cc09c6f091d4d8fc0e1",
+        "independent_probe.o": "2693729a459e5311b8811dac5931da4ac9a3396f70829c26193f62ab497c1e6b",
+        "main.o": "3055269b7d9763310d8e268472a8f6da9e37e9ab1829d5683dbb429e6c1b63ce",
+        "start.o": "d7b340c5e016cffc0821823bcaf156f1b582e9703708a5263193e9568c159876"
+      },
+      "reference_support": "Spike MMIO unsupported; independent literal MMIO checker only",
+      "replay_original_hash": null,
+      "selected_header_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "semantic_hash": "264c387efdfa26780e52861fac5feb461393daa0e75fe944427fa18735d92e16"
+    },
+    "bad-replay": {
+      "candidate_diff_sha256": null,
+      "check": {
+        "execution_status": "completed",
+        "first_mmio_sequence": 2,
+        "reason": "Completed firmware differs from reviewed MMIO requirements or returned failure mailbox",
+        "verdict": "design_mismatch"
+      },
+      "cycles": 166,
+      "execution_sha256": "e50148532b0dc1b113c5015b0fc2bc4036928d5ffa7a5bb1d15300e398897d7e",
+      "failure_signature": {
+        "expected": "{\"address\": 1073741828, \"probe\": 1432778632}",
+        "failure_class": "firmware.status_offset",
+        "first_cycle": 95,
+        "observed": "{\"address\": 1073741832, \"probe\": 0}",
+        "requirement_id": "FIRMWARE_STATUS_ADDRESS",
+        "signature_hash": "9488364c67d7a03476757611e26bde1c4b4b7cdb693cb29a94fd0454ed257749"
+      },
+      "first_conflict": {
+        "bus_sequence": 31,
+        "cycle": 95,
+        "expected_address": 1073741828,
+        "expected_probe": 1432778632,
+        "mmio_sequence": 2,
+        "observed_address": 1073741832,
+        "observed_probe": 0,
+        "requirement_id": "FIRMWARE_STATUS_ADDRESS"
+      },
+      "identity": {
+        "checker_hash": "e492402996430dd2a88478a040b98c7c976c4c42a8049b417055d57cfe6468c4",
+        "contract_hash": "440bd77896cb3ad3bc1450116759a5bb2aa5db3079e3fef3e52ef44aa71573e3",
+        "environment_hash": "bd4c0f07a21aba5f38b01906295863805604c6b3a2c8575919c0cfda49480466",
+        "experiment_hash": "bc61c664281a4e296dcbb1db35ba672fe8171e6783846a0fc2dc9bc4d9e4fd5a",
+        "source_hash": "6957bbb8840096e1e088d6894eda0c08636d740d8a6fa1d471e4698211d2b2bc"
+      },
+      "observation_sha256": "24506c0abf61b50ea509e0782e5020cebf0d0f590c56c0f366bc8d6e250bd6da",
+      "original_bad_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "program_hashes": {
+        "disassembly.txt": "f266a0bf22d88bdb3bdbbff17af51ab283d8903a0fc0b6072fa053b725b098f1",
+        "elf_headers.txt": "5e219fcefae4a0c6eeace0936f09056cc1613492513fd3f3164e57f48351eaa1",
+        "firmware.bin": "26108391b15f93e12691da1c6116bb81ae0ebd6e96d9d1064fc67722a50c1da4",
+        "firmware.elf": "9e969a9e5480e20135930f30b2fac8dbd348907c1282a33e71f51ffb7f19bbf0",
+        "firmware.map": "81688d9d5073d45a18ee61908ae2a7f80cf0ab21023e8cc09c6f091d4d8fc0e1",
+        "independent_probe.o": "2693729a459e5311b8811dac5931da4ac9a3396f70829c26193f62ab497c1e6b",
+        "main.o": "3055269b7d9763310d8e268472a8f6da9e37e9ab1829d5683dbb429e6c1b63ce",
+        "start.o": "d7b340c5e016cffc0821823bcaf156f1b582e9703708a5263193e9568c159876"
+      },
+      "reference_support": "Spike MMIO unsupported; independent literal MMIO checker only",
+      "replay_original_hash": "ecffcca57a2aaf321dd8a831b261c73da0b4b62a8a5cf86b2ab973948da06b60",
+      "selected_header_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "semantic_hash": "264c387efdfa26780e52861fac5feb461393daa0e75fe944427fa18735d92e16"
+    },
+    "candidate": {
+      "candidate_diff_sha256": "32e638c4879824d757900a95439f126cdc517bca3a71abbabc80568cec7cb070",
+      "check": {
+        "execution_status": "completed",
+        "first_mmio_sequence": null,
+        "reason": "Reviewed MMIO sequence, byte lanes and retired success mailbox agree",
+        "verdict": "pass_within_scope"
+      },
+      "cycles": 218,
+      "execution_sha256": "9ab6344599aa37fb362c87f2ec876179acd35ec1897504a9055f247bb81d552a",
+      "failure_signature": null,
+      "first_conflict": null,
+      "identity": {
+        "checker_hash": "e492402996430dd2a88478a040b98c7c976c4c42a8049b417055d57cfe6468c4",
+        "contract_hash": "440bd77896cb3ad3bc1450116759a5bb2aa5db3079e3fef3e52ef44aa71573e3",
+        "environment_hash": "bd4c0f07a21aba5f38b01906295863805604c6b3a2c8575919c0cfda49480466",
+        "experiment_hash": "bb3edf2ee475b02d8a8fcfe61170959ac79faef9548ef9f218f82f3ea258d1a2",
+        "source_hash": "8ce3eb7fe215e6c9da92f5c91b70e6fd791c29e28e03ee3fe0490b399999882a"
+      },
+      "observation_sha256": "5774182fc3f9833af6c4ebe197e0494a8c31982c960b75087c455a0286d94e13",
+      "original_bad_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "program_hashes": {
+        "disassembly.txt": "6e8fad34af3cc55768b725ef6e249465c4380f8bd3fd8832d0d7f88dd710eab3",
+        "elf_headers.txt": "4d3896c36799de84aad866fb22149da058a6688cd07dfb86b4dba3b65426ed7c",
+        "firmware.bin": "46eb7d20bf166bae4acd64938989d09cb5ec33ffab92e1ba2e2b91c7bb259666",
+        "firmware.elf": "199eb65c18cd2798b197bc34289a4208c5da3be99a6cd988d24af328251ea9d5",
+        "firmware.map": "0759f1255dfe4dc10b8f7ae9dc5e0fa9ca57566e4101978cab11d440f66d7a0c",
+        "independent_probe.o": "2693729a459e5311b8811dac5931da4ac9a3396f70829c26193f62ab497c1e6b",
+        "main.o": "991555eb5c137a336e9bb0cd5352d8b60c781a93f0ee66805df2109fed957916",
+        "start.o": "d7b340c5e016cffc0821823bcaf156f1b582e9703708a5263193e9568c159876"
+      },
+      "reference_support": "Spike MMIO unsupported; independent literal MMIO checker only",
+      "replay_original_hash": null,
+      "selected_header_hash": "552749250f2edae188589e9c62d7ef6bcc203bbb310ac68756b327a38573a755",
+      "semantic_hash": "cfc9866121c67fe0ec8409201b6426469c56a012f6892f755a105f9f619718e9"
+    },
+    "candidate-replay": {
+      "candidate_diff_sha256": "32e638c4879824d757900a95439f126cdc517bca3a71abbabc80568cec7cb070",
+      "check": {
+        "execution_status": "completed",
+        "first_mmio_sequence": null,
+        "reason": "Reviewed MMIO sequence, byte lanes and retired success mailbox agree",
+        "verdict": "pass_within_scope"
+      },
+      "cycles": 218,
+      "execution_sha256": "6e1d1f44a144568c188ef74e7540db970621d9d6853c3d2d841fc64ea08f0873",
+      "failure_signature": null,
+      "first_conflict": null,
+      "identity": {
+        "checker_hash": "e492402996430dd2a88478a040b98c7c976c4c42a8049b417055d57cfe6468c4",
+        "contract_hash": "440bd77896cb3ad3bc1450116759a5bb2aa5db3079e3fef3e52ef44aa71573e3",
+        "environment_hash": "bd4c0f07a21aba5f38b01906295863805604c6b3a2c8575919c0cfda49480466",
+        "experiment_hash": "bb3edf2ee475b02d8a8fcfe61170959ac79faef9548ef9f218f82f3ea258d1a2",
+        "source_hash": "8ce3eb7fe215e6c9da92f5c91b70e6fd791c29e28e03ee3fe0490b399999882a"
+      },
+      "observation_sha256": "5774182fc3f9833af6c4ebe197e0494a8c31982c960b75087c455a0286d94e13",
+      "original_bad_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "program_hashes": {
+        "disassembly.txt": "6e8fad34af3cc55768b725ef6e249465c4380f8bd3fd8832d0d7f88dd710eab3",
+        "elf_headers.txt": "4d3896c36799de84aad866fb22149da058a6688cd07dfb86b4dba3b65426ed7c",
+        "firmware.bin": "46eb7d20bf166bae4acd64938989d09cb5ec33ffab92e1ba2e2b91c7bb259666",
+        "firmware.elf": "199eb65c18cd2798b197bc34289a4208c5da3be99a6cd988d24af328251ea9d5",
+        "firmware.map": "0759f1255dfe4dc10b8f7ae9dc5e0fa9ca57566e4101978cab11d440f66d7a0c",
+        "independent_probe.o": "2693729a459e5311b8811dac5931da4ac9a3396f70829c26193f62ab497c1e6b",
+        "main.o": "991555eb5c137a336e9bb0cd5352d8b60c781a93f0ee66805df2109fed957916",
+        "start.o": "d7b340c5e016cffc0821823bcaf156f1b582e9703708a5263193e9568c159876"
+      },
+      "reference_support": "Spike MMIO unsupported; independent literal MMIO checker only",
+      "replay_original_hash": "9ab6344599aa37fb362c87f2ec876179acd35ec1897504a9055f247bb81d552a",
+      "selected_header_hash": "552749250f2edae188589e9c62d7ef6bcc203bbb310ac68756b327a38573a755",
+      "semantic_hash": "cfc9866121c67fe0ec8409201b6426469c56a012f6892f755a105f9f619718e9"
+    },
+    "control": {
+      "candidate_diff_sha256": null,
+      "check": {
+        "execution_status": "completed",
+        "first_mmio_sequence": null,
+        "reason": "Reviewed MMIO sequence, byte lanes and retired success mailbox agree",
+        "verdict": "pass_within_scope"
+      },
+      "cycles": 218,
+      "execution_sha256": "e41e45d09d0383e0368a8343ff5498093a3c09996e671dc738f04bb164cc6638",
+      "failure_signature": null,
+      "first_conflict": null,
+      "identity": {
+        "checker_hash": "e492402996430dd2a88478a040b98c7c976c4c42a8049b417055d57cfe6468c4",
+        "contract_hash": "440bd77896cb3ad3bc1450116759a5bb2aa5db3079e3fef3e52ef44aa71573e3",
+        "environment_hash": "bd4c0f07a21aba5f38b01906295863805604c6b3a2c8575919c0cfda49480466",
+        "experiment_hash": "7347dfa876538e6d500983b24771bbdb7b1ffa212ce10a8eda7d7b847deda020",
+        "source_hash": "c38d059130046e6db322962af954d95fe94aa6a7d8157e5fb1806ec5b99827cc"
+      },
+      "observation_sha256": "5774182fc3f9833af6c4ebe197e0494a8c31982c960b75087c455a0286d94e13",
+      "original_bad_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "program_hashes": {
+        "disassembly.txt": "6e8fad34af3cc55768b725ef6e249465c4380f8bd3fd8832d0d7f88dd710eab3",
+        "elf_headers.txt": "4d3896c36799de84aad866fb22149da058a6688cd07dfb86b4dba3b65426ed7c",
+        "firmware.bin": "46eb7d20bf166bae4acd64938989d09cb5ec33ffab92e1ba2e2b91c7bb259666",
+        "firmware.elf": "199eb65c18cd2798b197bc34289a4208c5da3be99a6cd988d24af328251ea9d5",
+        "firmware.map": "0759f1255dfe4dc10b8f7ae9dc5e0fa9ca57566e4101978cab11d440f66d7a0c",
+        "independent_probe.o": "2693729a459e5311b8811dac5931da4ac9a3396f70829c26193f62ab497c1e6b",
+        "main.o": "991555eb5c137a336e9bb0cd5352d8b60c781a93f0ee66805df2109fed957916",
+        "start.o": "d7b340c5e016cffc0821823bcaf156f1b582e9703708a5263193e9568c159876"
+      },
+      "reference_support": "Spike MMIO unsupported; independent literal MMIO checker only",
+      "replay_original_hash": null,
+      "selected_header_hash": "552749250f2edae188589e9c62d7ef6bcc203bbb310ac68756b327a38573a755",
+      "semantic_hash": "cfc9866121c67fe0ec8409201b6426469c56a012f6892f755a105f9f619718e9"
+    }
+  },
+  "commit": "5565985bbe2bb2a0be869d366baa48c715057657",
+  "image_id": "sha256:41215acab7a23238d62b5bfc9a6e09187afffbc689c0ad2689a9778133a85f85",
+  "reference_support": "Spike MMIO unsupported",
+  "run_attempt": "1",
+  "run_id": "40929665294",
+  "schema_version": "firmware.ci.v1",
+  "wall_seconds": 598.746973173
+}

@@ -1,68 +1,62 @@
 # Three-minute demonstration handoff
 
-Prepared 29 October 2026. This is a production plan, not a recorded demo or completed acceptance. Organizer approval is settled. Target sequences 1–6 in the [implementation gameplan](IMPLEMENTATION_GAMEPLAN.md) and [support matrix](SUPPORT_MATRIX.md); keep missing capabilities explicit instead of presenting a roadmap card as execution.
+Prepared 29 October 2026; refreshed **30 October, 02:51 MYT (29 October, 18:51 UTC)**. This is a script and rehearsal plan, not a recorded demonstration or final submission. Organizer approval is settled. Submission remains due **5 November 2026, 10:00 AM MYT**. The [implementation gameplan](IMPLEMENTATION_GAMEPLAN.md) and [support matrix](SUPPORT_MATRIX.md) retain the broader gates.
 
-Refreshed 30 October 2026 MYT; evidence snapshot: **01:44 MYT (29 October, 17:44 UTC)**. Submission remains due **5 November, 10:00 AM MYT**. No recording, video assets or render should start until the critical actual evidence and chosen story are stable.
+## Story and configuration boundary
 
-## Story and evidence requirements
+Show how exact observations distinguish a core-register fault from a firmware register-address fault, then show the preserved candidate and replay evidence. The two accepted hosted demonstrations share pinned upstream PicoRV32 RTL; they are **different configurations, programs, images and checkers**, not one connected engineering-system execution. The RAM-only RISC-V case compares against Spike. The firmware case adds a native MMIO peripheral and literal independent checker; Spike MMIO is unsupported. Neither is a physical-board demonstration.
 
-The engineer's problem is losing time connecting a failure to the exact RTL, firmware, tool configuration or board fact that caused it. Show one investigation record connecting intended behavior, a real Meta proposal, independent execution/checking, a reviewable correction and a related cross-domain discrepancy. The model proposes; independent checks decide.
+The proposed evidence spine is accepted and inspectable. The final release snapshot/cut is not frozen. Live Meta feedback, native workbench views and their actual browser acceptance remain pending. Do not present file inspection as an implemented workbench screen, a curated candidate as generated repair, or the shared core as proof of cross-domain agreement. No video, captions, media assets, render or upload has been produced by this plan.
 
-Use one frozen release snapshot and one named engineering system. Prefer the strongest actually accepted case after U2–U9 gates settle; the final system/fixture is **not selected yet**. Do not invent a register value, pin mismatch, timing improvement or board measurement to fill the script. No current receipt establishes the required real Meta or cross-domain portions.
+## Shot list: exactly 180 seconds
 
-## Shot list: 180 seconds total
-
-| Time | Show | Required evidence / spoken qualification |
+| Time | Visible evidence and suggested narration | Qualification / gate |
 |---|---|---|
-| 0:00–0:20 | Concrete engineering pain and system/revision; point to the relevant source | “We built on our earlier local RTL/evidence foundation; the event additions are identified in the contribution ledger.” Name the actual new contribution once accepted |
-| 0:20–0:50 | Required final shot: real Meta proposal, validated budget, checked feedback and subsequent proposal | **Pending; key deferred.** During rehearsal, inspect frozen policy/request identity and clearly labeled synthetic state tests only; these cannot fulfill the Meta shot |
-| 0:50–1:25 | Inspect actual arithmetic product mismatch: cycle 6, 65025 expected versus1; exact native trace and identities, then its recorded replay/export | Current API evidence is accepted; use authorized readback or sanitized recorded artifacts. Seeded fault remains labeled. Fresh browser capture is still pending |
-| 1:25–1:55 | Candidate diff against its exact base, unchanged checker/contract, witness plus distinct neighbor/regression results | Label prepared/manual/model-generated candidate correctly. Show actual response/diff lineage before claiming generated repair |
-| 1:55–2:30 | Inspect KiCad original findings versus distinct corrected candidate and unchanged copper/pads; show the related graph's unresolved status | Zero reported findings under unchanged configured checks, with 4 ERC/5 DRC checks ignored and exact part unresolved. This is a narrow native correction; connected cross-domain proof remains pending |
-| 2:30–3:00 | Replay/export and concise scoped result/contribution summary | Show verified bundle and replay lineage; distinguish historical/recorded evidence from current execution; state genuine remaining limits |
+| 0:00–0:15 | Show source revision and problem: “A plausible explanation is not enough; keep the failing input, independent check and exact executable.” Briefly identify the reused 24 October RTL/evidence foundation and the 29–30 October additions | Contribution ledger, not an all-code-authored-during-event claim |
+| 0:15–0:45 | Show [RISC-V summary and raw traces](../evidence/riscv/2026-10-30/README.md): control 17 retirements/68 cycles agrees with Spike; seeded register fault first diverges at order 1, PC `0x80000004`, DUT cycle 14: `0x8000fef0` expected versus `0x8000fef1` | Recorded run 40920450439, source 44b8b5e; curated seed, one RAM smoke, not ISA certification |
+| 0:45–1:20 | Switch to the separately identified [firmware observation and check](../evidence/firmware/2026-10-30/README.md): bad STATUS write at cycle 95/bus 31/MMIO index 2, `0x40000008` versus required `0x40000004`; literal probe reads0 instead of `0x55667788`; mailbox 2 | Recorded run 40929665294, source 5565985; native MMIO checker, not Spike; bad 39 retirements/166 cycles |
+| 1:20–1:50 | Show preserved bad header beside actual candidate.diff: one STATUS address restored. Show unchanged checker/contract identities and candidate's neighbor/byte-lane observations, mailbox 1, 55 retirements/218 cycles | Hand-authored curated restoration. No Meta-generated diff or general firmware-correctness claim |
+| 1:50–2:15 | Compare replay identities: RISC-V controls reassemble/relink then reproduce exact object/ELF/binary/traces; firmware bad/candidate replays consume exact saved program bytes with simulator-only commands | Firmware replay rebuilds unchanged HDL model, not firmware. These are distinct replay operations; first RISC-V ELF failure remains preserved |
+| 2:15–2:45 | Required final Meta shot: actual proposal, admitted budget, checked result and subsequent proposal in the identified product view | **Missing: human key readiness/live feedback and native workbench implementation/browser gate.** Rehearsal uses a labeled pending card; it does not fulfill this shot or imply inference occurred |
+| 2:45–3:00 | Show exact public evidence manifests, upstream attribution and concise limits; identify local setup and remaining product/demo gates | Sanitized recorded evidence fallback is available. No live application, deployment, completed video or external submission claim |
 
-Long compile/tool runs may be recorded and time-compressed. Display “Recorded execution — [date, revision, tool]” and mark cuts/acceleration. Playback is not live computation. A three-minute narrative does not require pretending compilation finishes in a few seconds.
+Each row occupies its stated interval; total15+30+35+30+25+30+15=180-seconds. Keep only the legible values needed to follow the failure and correction. Do not compress the two configurations into one apparent continuous execution.
 
-## Historical rehearsal material available
+## Evidence and labels for the operator
 
-Receipt-based material can be inspected locally: FIFO original cycle-14 empty mismatch, exact replays, 18→14 same-semantic reduction, portable ZIP and curated correct-variant validation; arithmetic WIDTH=8/latency=2 correct/latency/data cases; selected real FIFO API replay/export. These are pre-event foundation records from 24 October, not newly generated Meta repairs. Raw receipts are locally retained and not public links. [Evaluation](EVALUATION.md) records the exact scope and gaps.
+[RISC-V run 40920450439](https://github.com/desanv01/VerifForge/actions/runs/40920450439) is independently accepted within the curated recompiled-control gate at source `44b8b5e40ce7841f076e4178df13f38ecdbd05fd`. The earlier [run 40912735570](https://github.com/desanv01/VerifForge/actions/runs/40912735570) failed full ELF equality because random temporary-object metadata differed; the fixed-object recipe preserved exact equality checks. Keep that history visible in supporting material. This RAM case does not establish original-saved-ELF execution without recompilation.
 
-The October29 continuation adds six actual AXI-Lite cases to the preserved October24 control: four correct passes and three expected seeded-fault detections across seven cases, independently audited. It also establishes an independently reviewed isolated restore of the original October24 database backup. These can support a recorded evidence segment; AXI API/browser/replay/repair/export and recovery of newer data or artifacts remain separate gates.
+[Firmware run 40929665294](https://github.com/desanv01/VerifForge/actions/runs/40929665294) is independently accepted within five curated cases at source `5565985bbe2bb2a0be869d366baa48c715057657`: control, bad, candidate and saved-program replays of bad/candidate. Passing cases55 retirements/218 cycles/72 bus transfers; bad 39/166/54. Bus totals include RAM/instruction traffic. Original bad header, candidate diff, exact ELF/bin, observations, command records and typed identities are preserved in the public subset; its manifest lists omissions. Earlier preparation.json still says not_run: it is a frozen preparation record, read alongside later execution/check records.
 
-Five actual family API/RQ attempts now provide an inspectable arithmetic control, two faults, retained FIFO replay and arithmetic product replay, plus native downloads/export; independent saved-evidence and GET readback review accepted them. PRs #9/#15 and #17–21 are merged after their CI. Native investigation PR #22 merged as `496c89fb72aa2d4e6ff322dad9db279fba81cb21` after CI run 40919086170; its source checks report 242 passed/two private-evidence skips, without runtime/browser adoption. The first local AXI overlay was blocked before build at 632.54 MiB headroom below its 768 MiB floor. A later image build and source verification succeeded; API data/artifacts were preserved during adoption, but consumer startup hit the host-memory abort floor. API, queue worker and reconciler were quiesced at 499 MiB headroom below the 512 MiB abort floor. Subsequent sequential recovery of the existing verified `e8eb` containers succeeded: healthy API with three adapters, idle queue worker and running reconciler; schema `7bf`, all prior nine-table rows and all 110 artifact files were preserved. No new AXI campaign/attempt or browser acceptance follows. UI source checks do not establish fresh browser acceptance.
+For an authorized later recording, label every evidence playback “Recorded hosted execution — 30 October 2026 MYT — [run, source, tool]”. Label local JSON/source inspection “Inspection of retained evidence”; it is not live native computation. Mark cuts and acceleration. An authored pending card or diagram must be identified as such and cannot stand in for a product screenshot or actual Meta response.
 
-Durable planner/transport and executable firmware harness source are accepted; no Meta-to-tool run exists and the human has deferred key readiness. After two failed local builds and the first hosted exact-ELF failure, actual [run 40920450439](https://github.com/desanv01/VerifForge/actions/runs/40920450439) passed the independently audited curated recompiled-control gate. Control and recompiled control each agree with Spike for 17 retirements/68 cycles, with exact object/ELF/binary and raw/normalized traces; the seeded register mutant first diverges at order 1/cycle 14 (`0x8000fef0` versus `0x8000fef1`). Inspect the [retained public CI evidence](../evidence/riscv/2026-10-30/README.md). An optional segment must distinguish recompilation from executing a saved ELF without compilation; this is not release-head hero replay 3/3, full ISA, firmware or repair acceptance.
+## Local rehearsal without starting engineering jobs
 
-Vivado part query succeeded, but synthesis stopped at its scratch cap before report success; the revised retry is blocked by host headroom below 2 GiB. KiCad's scoped grid/parity correction is inspectable, while native graph comparisons remain inconclusive despite accepted bridge fixes. None fills the required real Meta, generated patch or executed cross-domain improvement shots.
+1. Pin the selected source/run/image/checker/contract identities from both evidence READMEs and manifests. Open retained local files in a read-only viewer; do not execute copied artifacts or rebuild anything for this rehearsal.
+2. Rehearse the RISC-V control→first-divergence path using summary, raw RVFI/Spike and normalized pair. Keep diagnostic DUT cycle separate from architectural retirement order.
+3. Rehearse the firmware bad observation→independent check→preserved header/diff→candidate path. Confirm the displayed cycle/address/probe/mailbox values match the actual records and the spoken labels say curated.
+4. Rehearse the two replay explanations using execution commands and matching hashes, not a new invocation. Point to the subset/omission bounds; neither directory is a full distributed runtime image.
+5. Reserve the30-second Meta slot and list the missing native product views. After key readiness is supplied through the established secure path, a separate authorized run must establish real proposal→tool→checked-feedback→next-proposal and actual UI behavior. Do not repeat key requests while deferred.
+6. Review source/tool/upstream attribution, contribution dates, privacy and the180-second reading. Main later chooses a frozen cut and grants recording/runtime slots; no service/DB/browser/native tool is started by these steps.
 
-[PR #23](https://github.com/desanv01/VerifForge/pull/23) and [#24](https://github.com/desanv01/VerifForge/pull/24) are merged; [#25](https://github.com/desanv01/VerifForge/pull/25) merged as `1db9916dff8e2fbdf181727bc8ba4a4862b254fa` after [current-head CI 40922456584](https://github.com/desanv01/VerifForge/actions/runs/40922456584). Source publication does not establish firmware execution or application/browser adoption.
+A recorded-file fallback can honestly demonstrate the accepted engineering results locally while native views are unfinished. It cannot fulfill the missing real Meta/product interaction shots. If the intended final narrative still requires a connected cross-domain discrepancy/improvement, that shot also remains missing: native graph comparisons are inconclusive and the two CPU demonstrations do not close it.
 
-The original FIFO `faulty` package from the older tamper test is deliberately incomplete. Use an intact accepted replay package for any selected witness; do not repair old evidence bytes to hide the tamper test. A ZIP here is a portable report requiring the matching installed runner, not a self-contained executable environment.
+## Other material and open gates
 
-## Operator rehearsal, after separate operation authorization
+The 24 October FIFO cycle14 mismatch, same-semantic18→14 reduction, historical replays/export and curated validation remain earlier foundation; arithmetic control/latency/product cases and five later family API attempts/export provide additional scoped material. The original tamper-tested FIFO package remains incomplete; use intact accepted packages, never edit historical evidence to conceal tampering. A portable ZIP requires its matching runner, not a self-contained executable environment.
 
-1. Pin commit/image/contract/checker/model/prompt and case IDs. Verify source/configuration still match; inventory service/tool readiness. Health/capability markers alone are insufficient.
-2. Run the real model feedback loop through the application, preserve per-experiment plans and accepted checker results, and record usage/unknowns without keys. Inspect rejected/timeout/unavailable states honestly.
-3. Show the first divergence, exact replay and bounded reduction where supported. Use the same frozen semantic failure class, not equal cycle position as a reduction requirement.
-4. Review the actual candidate base/diff and permitted-file provenance. Reproduce original, then validate the candidate with unchanged requirements/checker, distinct neighbors and regressions. Preserve originals.
-5. Cross-check at least two independently extracted artifacts for the connected system case; rerun affected tools after the correction. No physical-board functionality claim without physical testing.
-6. Refresh/reconnect in the browser; inspect the same durable campaign. Test verified downloads/export and actual replay on the frozen build. Record IDs and label any recorded-run fallback.
-7. Capture screen/video only after the evidence path is accepted. Review the exact 180-second edit for legible values, no credentials/private paths, accurate chronology and matching final links.
+Earlier AXI fixture evidence is accepted separately. [Hosted AXI run 40934406068](https://github.com/desanv01/VerifForge/actions/runs/40934406068) failed at **30 October 02:50:41 MYT (29 October 18:50:41 UTC)** before migrations or any attempt: Docker logging compression was incompatible with `max-file=1`. Owned resources were removed with no cleanup errors. This is infrastructure failure, not AXI design evidence; reserve no success shot for it. Earlier memory blocks, quiescence and sequential service recovery remain history, not proof of a completed AXI application campaign. Native investigation views are being implemented; prior source/API evidence does not establish their actual UI/browser behavior.
 
-No command in this document grants a simulator/build/migration/recording slot. Main coordinates the actual runs. No browser/model/tool session or video was started to prepare this plan.
+Vivado part query succeeded; synthesis/report/repair acceptance remains open after resource stops. KiCad's curated grid/parity correction has zero reported findings under unchanged configured checks, with4 ERC/5 DRC checks ignored; exact part/mate/physical/electrical acceptance remains unresolved. None is inserted into this180-second spine as an invented connected-system improvement.
 
-## Before the camera: required assets
-
-| Asset | Current handoff status |
+| Final asset or decision | Current state |
 |---|---|
-| Frozen hero case, control and release-head replay 3/3 | Pending selection/requalification; historical FIFO evidence exists |
-| Real Meta two-step feedback receipt and visible UI | Pending; no accepted live Meta run |
-| Actual candidate patch/base/provenance and validation matrix | KiCad scoped curated correction and earlier RTL prepared variants exist; generated patch path pending |
-| Connected cross-domain before/after and independent facts | Source bridge accepted; graphs inconclusive, improvement/reruns pending |
-| Current browser-to-find/replay/candidate/export capture | Family API/replay/export accepted; fresh U9 browser gate/capture pending |
-| Three-minute video, captions/transcript and accessible URL | Not produced |
-| Public, sanitized supporting claim manifest and reproduction instructions | Pending final selected evidence review |
+| Accepted raw-result spine and exact manifests | RISC-V and firmware subsets available; final release cut and release-head hero replay 3/3 remain open |
+| Actual Meta two-step feedback and visible product shot | Deferred key; no accepted live Meta feedback |
+| Native workbench finding/candidate/replay/inspect views | Implementation and actual browser/refresh/error validation pending |
+| Generated repair if claimed | No actual model response/diff lineage; firmware candidate is curated |
+| Connected cross-domain improvement if claimed | Missing independent connected facts and affected-tool reruns |
+| Three-minute recording, captions/transcript and playback URL | Not produced; capture only after critical story/evidence gates settle |
+| Access and delivery | Local-only rehearsal; hosting/deployment needs separate authorization; final packet/portal submission not performed |
 
-If a required portion remains incomplete, record it as pending and report the submission dependency to main. A deterministic-only fallback can demonstrate engineering evidence but cannot fulfill the real Meta shot by relabeling a mock. Targets 1–6 remain the approved target; incomplete sequences must be described accurately.
-
-Use [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md), [PROVENANCE.md](PROVENANCE.md) and [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) alongside this shot list. No video upload, public application deployment or external submission has been performed or authorized by this document.
+Use [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md), [PROVENANCE.md](PROVENANCE.md), [EVALUATION.md](EVALUATION.md) and [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for supporting detail. No judging weights are assumed. This document authorizes no job, recording, upload, deployment or submission.

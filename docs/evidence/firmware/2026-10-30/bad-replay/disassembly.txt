@@ -1,0 +1,75 @@
+
+/tmp/firmware-snapshot/firmware.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+80000000 <_start>:
+80000000:	80010137          	lui	x2,0x80010
+80000004:	ef010113          	addi	x2,x2,-272 # 8000fef0 <__bss_end+0xfdf0>
+80000008:	800002b7          	lui	x5,0x80000
+8000000c:	10028293          	addi	x5,x5,256 # 80000100 <__bss_end>
+80000010:	80000337          	lui	x6,0x80000
+80000014:	10030313          	addi	x6,x6,256 # 80000100 <__bss_end>
+80000018:	0062f863          	bgeu	x5,x6,80000028 <_start+0x28>
+8000001c:	0002a023          	sw	x0,0(x5)
+80000020:	00428293          	addi	x5,x5,4
+80000024:	ff5ff06f          	jal	x0,80000018 <_start+0x18>
+80000028:	00000097          	auipc	x1,0x0
+8000002c:	024080e7          	jalr	x1,36(x1) # 8000004c <fw_test>
+80000030:	800102b7          	lui	x5,0x80010
+80000034:	f0028293          	addi	x5,x5,-256 # 8000ff00 <__bss_end+0xfe00>
+80000038:	00a2a023          	sw	x10,0(x5)
+8000003c:	0000006f          	jal	x0,8000003c <_start+0x3c>
+
+80000040 <read_status_at_reviewed_address>:
+80000040:	400002b7          	lui	x5,0x40000
+80000044:	0042a503          	lw	x10,4(x5) # 40000004 <_start-0x3ffffffc>
+80000048:	00008067          	jalr	x0,0(x1)
+
+8000004c <fw_test>:
+8000004c:	112237b7          	lui	x15,0x11223
+80000050:	40000737          	lui	x14,0x40000
+80000054:	34478793          	addi	x15,x15,836 # 11223344 <_start-0x6eddccbc>
+80000058:	00f72023          	sw	x15,0(x14) # 40000000 <_start-0x40000000>
+8000005c:	00072703          	lw	x14,0(x14)
+80000060:	02f70263          	beq	x14,x15,80000084 <fw_test+0x38>
+80000064:	00200513          	addi	x10,x0,2
+80000068:	00008067          	jalr	x0,0(x1)
+8000006c:	00200513          	addi	x10,x0,2
+80000070:	00c12083          	lw	x1,12(x2)
+80000074:	00812403          	lw	x8,8(x2)
+80000078:	00412483          	lw	x9,4(x2)
+8000007c:	01010113          	addi	x2,x2,16
+80000080:	00008067          	jalr	x0,0(x1)
+80000084:	ff010113          	addi	x2,x2,-16
+80000088:	00912223          	sw	x9,4(x2)
+8000008c:	556674b7          	lui	x9,0x55667
+80000090:	00812423          	sw	x8,8(x2)
+80000094:	00112623          	sw	x1,12(x2)
+80000098:	40000437          	lui	x8,0x40000
+8000009c:	78848493          	addi	x9,x9,1928 # 55667788 <_start-0x2a998878>
+800000a0:	00942423          	sw	x9,8(x8) # 40000008 <_start-0x3ffffff8>
+800000a4:	00840413          	addi	x8,x8,8
+800000a8:	00000097          	auipc	x1,0x0
+800000ac:	f98080e7          	jalr	x1,-104(x1) # 80000040 <read_status_at_reviewed_address>
+800000b0:	fa951ee3          	bne	x10,x9,8000006c <fw_test+0x20>
+800000b4:	aabbd7b7          	lui	x15,0xaabbd
+800000b8:	cdd78793          	addi	x15,x15,-803 # aabbccdd <__bss_end+0x2abbcbdd>
+800000bc:	00f42023          	sw	x15,0(x8)
+800000c0:	01100713          	addi	x14,x0,17
+800000c4:	400007b7          	lui	x15,0x40000
+800000c8:	00e784a3          	sb	x14,9(x15) # 40000009 <_start-0x3ffffff7>
+800000cc:	00042703          	lw	x14,0(x8)
+800000d0:	aabb17b7          	lui	x15,0xaabb1
+800000d4:	1dd78793          	addi	x15,x15,477 # aabb11dd <__bss_end+0x2abb10dd>
+800000d8:	f8f71ae3          	bne	x14,x15,8000006c <fw_test+0x20>
+800000dc:	1357a7b7          	lui	x15,0x1357a
+800000e0:	40000737          	lui	x14,0x40000
+800000e4:	bdf78793          	addi	x15,x15,-1057 # 13579bdf <_start-0x6ca86421>
+800000e8:	00f72623          	sw	x15,12(x14) # 4000000c <_start-0x3ffffff4>
+800000ec:	00c70713          	addi	x14,x14,12
+800000f0:	00072703          	lw	x14,0(x14)
+800000f4:	f6f71ce3          	bne	x14,x15,8000006c <fw_test+0x20>
+800000f8:	00100513          	addi	x10,x0,1
+800000fc:	f75ff06f          	jal	x0,80000070 <fw_test+0x24>
