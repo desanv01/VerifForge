@@ -17,7 +17,7 @@ PREFIX = (b' Network vf-planner-pg-ci-40952295201-1_default  Creating\n'
 def module(monkeypatch, tmp_path):
     for name, digest in {
         'scripts/ci_planner_postgres.py': '3dd41e80bd492ad0ac53ad8e02d5c07c718fc181cfe8d8ed1bee76f9933b9694',
-        'tests/acceptance/test_planner_postgres_plan.py': 'ffbbd5fb68e2e22df37aac2db071732743e222d39e87373c863d1305ac54af90',
+        'tests/acceptance/test_planner_postgres_plan.py': 'd914f057c142f511a791d156063abe1caa9465272ae2183edea92947b39a9e70',
     }.items():
         # Portable source identity only; retained tool bytes are not normalized.
         assert hashlib.sha256((ROOT / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() == digest

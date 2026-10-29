@@ -45,6 +45,79 @@ def safe_row(table, row):
     return {key: row[key] for key in SAFE_FIELDS[table] if key in row}
 
 
+RESOURCE_GRAPH_SQL = """
+SELECT json_build_object(
+ 'backends', (SELECT coalesce(json_agg(node), '[]'::json) FROM (
+   SELECT a.pid, a.application_name, a.state, a.wait_event_type, a.wait_event,
+          a.backend_xid::text AS xid, pg_blocking_pids(a.pid) AS blockers,
+          (SELECT coalesce(json_agg(l), '[]'::json) FROM (
+            SELECT locktype, mode, granted, transactionid::text AS xid,
+                   relation = 'planner_runtime_slots'::regclass AS resource_relation, page, tuple
+            FROM pg_locks WHERE pid=a.pid ORDER BY locktype, mode LIMIT 65
+          ) l) AS locks
+   FROM pg_stat_activity a WHERE a.datname=current_database() AND
+    (a.pid=:barrier OR a.application_name IN ('pg-ci-runtime-a','pg-ci-runtime-b'))
+   ORDER BY a.pid LIMIT 9
+ ) node),
+ 'pending', (SELECT coalesce(json_agg(p), '[]'::json) FROM (
+   SELECT i.id AS intent, i.round_id AS round, r.status, c.started_at, c.outcome
+   FROM planner_intents i JOIN planner_rounds r ON r.id=i.round_id
+    JOIN planner_model_calls c ON c.round_id=r.id
+   WHERE i.id IN (:intent_a,:intent_b)
+ ) p))
+"""
+
+
+def validate_resource_graph(observation, expected, barrier):
+    """Two genuine resource waiters; known blocker paths terminate at held barrier."""
+    nodes = observation['backends']
+    require(3 <= len(nodes) <= 8 and all(len(n['locks']) <= 64 for n in nodes), 'graph backend/lock cap')
+    by_pid = {n['pid']: n for n in nodes}
+    require(len(by_pid) == len(nodes), 'duplicate backend PID')
+    holder = by_pid.get(barrier['pid'])
+    require(holder is not None and holder['application_name'] == 'pg-ci-controller' and
+            holder['state'] == 'idle in transaction' and holder['xid'] == barrier['xid'] and
+            not holder['blockers'] and any(l['locktype'] == 'relation' and l['resource_relation'] is True and
+                l['granted'] and l['mode'] == 'RowShareLock' for l in holder['locks']) and any(l['locktype'] == 'transactionid' and l['granted'] and
+                l['mode'] == 'ExclusiveLock' and l['xid'] == barrier['xid'] for l in holder['locks']),
+            'barrier transaction not held')
+    require(len(observation['pending']) == 2 and {p['intent']: p['round'] for p in observation['pending']} == expected and
+            all(p['status'] == 'queued' and p['started_at'] is None and p['outcome'] is None for p in observation['pending']),
+            'expected pending round/intent changed')
+    require(not observation['completed_intents'], 'expected job already completed')
+    waiters = []
+    job_ids = set()
+    intents = set()
+    for role in ('runtime-a', 'runtime-b'):
+        owned = [n for n in nodes if n['application_name'] == 'pg-ci-' + role and n['wait_event_type'] == 'Lock']
+        require(len(owned) == 1, 'exact runtime lock waiter missing')
+        node = owned[0]
+        require(node['state'] == 'active' and node['blockers'], 'runtime backend not blocked')
+        job = observation['jobs'].get(role)
+        require(job is not None and job['queue'] == 'veriforge-planner' and job['intent'] in expected and
+                observation['deliveries'].get(job['job_id']) == job['intent'], 'active owned job association differs')
+        job_ids.add(job['job_id']); intents.add(job['intent'])
+        require(any(l['resource_relation'] is True and l['locktype'] == 'relation' and l['granted'] and
+                    l['mode'] == 'RowShareLock' for l in node['locks']), 'runtime not locking fixed resource')
+        waiting = [l for l in node['locks'] if not l['granted']]
+        require(waiting and all((l['locktype'] == 'tuple' and l['resource_relation'] is True and
+                    (l['page'], l['tuple']) == (barrier['page'], barrier['tuple'])) or
+                    (l['locktype'] == 'transactionid' and l['xid'] == barrier['xid']) for l in waiting),
+                'unrelated resource/transaction lock wait')
+        waiters.append(node)
+    require(len(job_ids) == len(intents) == 2, 'two distinct active jobs/intents required')
+    allowed = {n['pid']: n for n in waiters}
+    def reaches(pid, trail):
+        if pid == barrier['pid']:
+            return True
+        require(pid in allowed and pid not in trail and len(trail) < 3, 'foreign/disconnected/cyclic blocker path')
+        edges = allowed[pid]['blockers']
+        require(edges and all(type(value) is int for value in edges), 'invalid blocker edges')
+        return all(reaches(value, trail | {pid}) for value in edges)
+    require(all(reaches(n['pid'], set()) for n in waiters), 'waiters do not reach held barrier')
+    return True
+
+
 def require(value, reason):
     if not value:
         raise RuntimeError(reason)
@@ -406,6 +479,38 @@ class Qualification:
         matching = [r for r in rows if expected in r['blockers']]
         return matching
 
+    def resource_waiters(self, values, barrier):
+        from sqlalchemy import text
+        expected = {value['intent']: value['round'] for value in values}
+        observation = {'backends': [], 'pending': [], 'jobs': {}, 'completed_intents': [],
+                       'deliveries': {r['job_id']: r['args'][0] for r in self.deliveries if r['args'][0] in expected},
+                       'barrier': barrier}
+        try:
+            with self.engine.connect() as connection:
+                observation.update(connection.scalar(text(RESOURCE_GRAPH_SQL),
+                    {'barrier': barrier['pid'], 'intent_a': values[0]['intent'], 'intent_b': values[1]['intent']}))
+            for role in ('runtime-a', 'runtime-b'):
+                path = OUT / (role + '-active-job.json')
+                if path.exists():
+                    job = read(path)
+                    observation['jobs'][role] = {key: job[key] for key in ('job_id', 'intent', 'queue')}
+                path = OUT / (role + '-jobs.json')
+                if path.exists():
+                    observation['completed_intents'] += [r['intent'] for r in read(path) if r['intent'] in expected]
+            validate_resource_graph(observation, expected, barrier)
+        except (RuntimeError, KeyError, TypeError, ValueError) as error:
+            observation['validation'] = type(error).__name__ + ': ' + str(error)[:200]
+            write(OUT / 'actual-pg-resource-last-observation.json', observation)
+            return None
+        except Exception as error:
+            # No driver SQL/parameters/exception detail (or secrets) in evidence.
+            observation['validation'] = 'observation_unavailable: ' + type(error).__name__
+            write(OUT / 'actual-pg-resource-last-observation.json', observation)
+            raise
+        observation['validation'] = 'both_owned_resource_waiters_reach_barrier'
+        write(OUT / 'actual-pg-resource-last-observation.json', observation)
+        return observation
+
     def project_before_campaign(self, campaign):
         from sqlalchemy import text
         project = self.engine.connect(); parent = self.engine.connect()
@@ -513,11 +618,14 @@ class Qualification:
         with self.engine.connect() as barrier:
             transaction = barrier.begin()
             try:
-                barrier.execute(text("select resource from planner_runtime_slots where resource='local_planner_provider' for update"))
-                pid = barrier.scalar(text('select pg_backend_pid()'))
+                position = barrier.scalar(text("select ctid::text from planner_runtime_slots where resource='local_planner_provider' for update"))
+                require(re.fullmatch(r'\([0-9]+,[0-9]+\)', position), 'invalid fixed resource position')
+                page, offset = map(int, position[1:-1].split(','))
+                identity = {'pid': barrier.scalar(text('select pg_backend_pid()')),
+                            'xid': str(int(barrier.scalar(text('select txid_current()'))) % 2**32),
+                            'page': page, 'tuple': offset}
                 self.enqueue(a); self.enqueue(b)
-                waiters = wait_for(lambda: (self.blockers('pg-ci-runtime-a', pid) + self.blockers('pg-ci-runtime-b', pid))
-                    if self.blockers('pg-ci-runtime-a', pid) and self.blockers('pg-ci-runtime-b', pid) else None, 2)
+                waiters = wait_for(lambda: self.resource_waiters((a, b), identity), 2)
                 write(OUT / 'actual-pg-resource-waiters.json', waiters)
             finally:
                 transaction.commit()
