@@ -78,16 +78,18 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
 
     @app.get("/api/projects")
     def projects():
+        from veriforge.core.engineering_catalog import project_view
         with sessions() as session:
-            return {"items": [p.data for p in session.scalars(select(Project).where(Project.owner == "local").order_by(Project.id))]}
+            return {"items": [project_view(p) for p in session.scalars(select(Project).where(Project.owner == "local").order_by(Project.id))]}
 
     @app.get("/api/projects/{project_id}")
     def project(project_id: str):
+        from veriforge.core.engineering_catalog import project_view
         with sessions() as session:
             row = session.get(Project, project_id)
             if not row or row.owner != "local":
                 raise service.NotFound(project_id)
-            return row.data
+            return project_view(row)
 
     @app.get("/api/contracts/{contract_id}")
     def contract(contract_id: str):

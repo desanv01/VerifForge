@@ -12,6 +12,10 @@ def experiment_adapter(experiment):
 
 
 def project_adapter(project):
+    from .engineering_catalog import project_view
+    from .service import Conflict
+    if project_view(project)['kind'] != 'rtl_fixture':
+        raise Conflict('Recorded engineering projects do not support RTL execution')
     return get_adapter(project.data.get("adapter_id", FIFO_ADAPTER))
 
 

@@ -5,11 +5,10 @@ from alembic.config import Config
 import pytest
 from sqlalchemy import MetaData, Table, inspect, select, text
 
-from veriforge.adapters import get_adapter
+from veriforge.adapters import get_adapter, registered_adapters
 from veriforge.arithmetic import ArithmeticExperiment
-from veriforge.contracts import Experiment
+from veriforge.contracts import Experiment, canonical_hash
 from veriforge.core import service
-from veriforge.core.catalog import seed_catalog
 from veriforge.core.database import Attempt, AttemptExperiment, Campaign, ExperimentRecord, make_engine, now, session_factory
 
 
@@ -19,11 +18,35 @@ def config_for(connection):
     return config
 
 
+def seed_historical_catalog(connection):
+    # This fixture deliberately remains at revision7. Reflect its actual tables;
+    # today's Project ORM includes kind, which does not exist in that schema.
+    metadata = MetaData()
+    contracts = Table('contracts', metadata, autoload_with=connection)
+    projects = Table('projects', metadata, autoload_with=connection)
+    seen = set()
+    for descriptor in registered_adapters():
+        reviewed = descriptor.reviewed_contract()
+        if reviewed.contract_id not in seen:
+            connection.execute(contracts.insert().values(id=reviewed.contract_id, data=reviewed.model_dump(mode='json'),
+                identity={'contract_hash': canonical_hash(reviewed), 'checker_hash': reviewed.checker.sha256}))
+            seen.add(reviewed.contract_id)
+        schema_version = descriptor.experiment_schema()['properties']['schema_version']['const']
+        for fixture in descriptor.fixture_ids:
+            source = descriptor.fixture_source(fixture)
+            connection.execute(projects.insert().values(id=fixture, owner='local', contract_id=reviewed.contract_id,
+                data={'id': fixture, 'name': fixture.replace('_', ' ').title(), 'family': descriptor.target,
+                    'support_level': 'experimental', 'contract_id': reviewed.contract_id,
+                    'source_file_hash': source['source_file_hash'], 'variant': source['variant'],
+                    'adapter_id': descriptor.adapter_id, 'experiment_schema_version': schema_version,
+                    'trace_schema': descriptor.trace_schema, 'trace_artifact': descriptor.trace_artifact}))
+
+
 @pytest.fixture
 def legacy(tmp_path):
     engine = make_engine("sqlite:///" + (tmp_path / "legacy.db").as_posix())
     with engine.begin() as connection: command.upgrade(config_for(connection), "7bf054adapter")
-    with session_factory(engine).begin() as session: seed_catalog(session)
+    with engine.begin() as connection: seed_historical_catalog(connection)
     fifo = Experiment(experiment_id="old-fifo", fixture_id="fifo_correct", objective_ids=("FIFO_BEHAVIOR",), parameters={"width": 3, "depth": 2}, operations=({"op": "reset"}, {"op": "write", "value": 7}, {"op": "read"}))
     arithmetic = ArithmeticExperiment(experiment_id="old-arithmetic", operations=({"op": "reset"}, {"op": "multiply", "a": 255, "b": 255}, {"op": "idle", "cycles": 2}))
     payloads = []
