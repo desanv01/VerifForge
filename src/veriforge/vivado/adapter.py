@@ -53,6 +53,7 @@ def inventory() -> Capability:
     roots = (
         "C:/AMD", "C:/Xilinx", "C:/Program Files/AMD", "C:/Program Files/Xilinx",
         "D:/AMD", "D:/Xilinx", "C:/tools/Xilinx",
+        "C:/AMDDesignTools", "D:/AMDDesignTools",
     )
     found = set()
     for name in ("vivado", "vivado.bat", "vivado.exe"):

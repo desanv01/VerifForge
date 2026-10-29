@@ -1,0 +1,2 @@
+# Stdout hash identities must survive platform checkout unchanged.
+*.log -text
