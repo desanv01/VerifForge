@@ -27,7 +27,7 @@ def controller(tmp_path,monkeypatch):
     def forbidden(*a,**kw):pytest.fail('review cannot launch an external operation')
     for name in ('run','Popen','check_output'):monkeypatch.setattr(subprocess,name,forbidden)
     path=ROOT/'scripts/ci_axi_application.py'
-    assert sha(path.read_bytes())=='bb47e72eb8f8c8e3a9e80055deda87758598c1a940504ae239650a5e25eeb37d'
+    assert sha(path.read_bytes())=='1ef06a8e1fb855724d919046b8b1835edd01874ffc538280ab8d1f2dbdeb9624'
     spec=importlib.util.spec_from_file_location('independent_final_receipt_review',path)
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     monkeypatch.setattr(module,'OUT',tmp_path)
@@ -125,7 +125,7 @@ def test_synthetic_receipt_sourcefix_counts_final_bytes_without_hiding_failure(t
     monkeypatch.setattr(subprocess,'run',forbidden)
     monkeypatch.setattr(subprocess,'check_output',forbidden)
     path=ROOT/'scripts/ci_axi_application.py'
-    require(sha(path.read_bytes())=='bb47e72eb8f8c8e3a9e80055deda87758598c1a940504ae239650a5e25eeb37d','reviewed correction source freeze')
+    require(sha(path.read_bytes())=='1ef06a8e1fb855724d919046b8b1835edd01874ffc538280ab8d1f2dbdeb9624','reviewed correction source freeze')
     spec=importlib.util.spec_from_file_location('receipt_correction_independent_review',path)
     controller=importlib.util.module_from_spec(spec);spec.loader.exec_module(controller)
     monkeypatch.setattr(controller,'OUT',tmp_path)

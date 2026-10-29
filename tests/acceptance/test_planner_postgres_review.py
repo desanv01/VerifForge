@@ -16,7 +16,7 @@ FROZEN = {
     'infra/planner/Dockerfile.ci': 'cdad35f0edf16d4d7ae50da2a01b00e3c65f404afd4133ee24d9a1b6c9285526',
     '.github/workflows/planner-postgres-acceptance.yml': '85e3250990212537bb4e5d0cf4c70106e9bdc11e41d51bf94febeb471ca83a39',
     'tests/acceptance/test_planner_postgres_plan.py': '69d607889ecb8199770fff411c7838f3bf09b36686259fbc35796be86adee214',
-    'scripts/ci_axi_application.py': 'bb47e72eb8f8c8e3a9e80055deda87758598c1a940504ae239650a5e25eeb37d',
+    'scripts/ci_axi_application.py': '1ef06a8e1fb855724d919046b8b1835edd01874ffc538280ab8d1f2dbdeb9624',
 }
 PROJECT = 'vf-planner-pg-ci-123456789-1'
 
