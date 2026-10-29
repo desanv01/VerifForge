@@ -1,0 +1,5 @@
+Synthetic GNU-style parser fixture, not produced by a compiler or disassembler.
+00000000 <fixture>:
+   0: 400002b7 lui t0,0x40000
+   4: 00428293 addi t0,t0,4
+   8: 0002a303 lw t1,0(t0)
