@@ -1,0 +1,44 @@
+{
+  "script_sha256": "3e8f46cf77453a4e203554fc76eb355c0370ec7c12bfbafa784d35eb83b8017e",
+  "exit_code": 0,
+  "wall_seconds": 11.656000000075437,
+  "limit_reason": null,
+  "version": [
+    "2026.1"
+  ],
+  "parts": [
+    {
+      "part": "xc7a200tsbg484-1",
+      "count": 1
+    },
+    {
+      "part": "xc7a100tcsg324-1",
+      "count": 1
+    },
+    {
+      "part": "xc7a35tcpg236-1",
+      "count": 1
+    }
+  ],
+  "active_owned_processes_after_cleanup": 0,
+  "job_kill_on_close": true,
+  "artifacts": {
+    "stdout.log": {
+      "bytes": 98,
+      "sha256": "6b15d4b5e91a1567702e5f29e69fa7fe954e8fb3000c0f68cdaf410b57b5c7a3"
+    }
+  },
+  "fixture_provenance": "redacted_recorded_import_not_new_execution",
+  "original_private_receipt_sha256": "c43c9677effe4d1dec9b096f6969a37976af76e2e2c9b8e1009d4171ecbb34e1",
+  "storage_before_receipt": {
+    "cache_bytes": 5245311,
+    "result_bytes": 4671,
+    "files": 190
+  },
+  "caps": {
+    "cache_bytes": 62914560,
+    "result_bytes": 4194304,
+    "total_bytes": 67108864,
+    "files": 4096
+  }
+}

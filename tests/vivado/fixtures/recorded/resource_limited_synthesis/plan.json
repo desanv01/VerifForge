@@ -1,0 +1,43 @@
+{
+  "recipe": "exercise3_post_synth_v1",
+  "script_sha256": "73da33982dba6a9666462a94ec63cd78866ce23d29450c77efc2877f85727045",
+  "sources": [
+    {
+      "name": "exercise3_core.v",
+      "sha256": "050a19942ce909f9b32a4e899e39f30408f9f7ac9df9cb0fe3c1f7748a98a76a",
+      "size_bytes": 1546
+    },
+    {
+      "name": "exercise3_nexys_video_top.v",
+      "sha256": "b67dbc9ee84693b09e375c70dd014b50eacbf68a42a59717e1eb8d583730d81f",
+      "size_bytes": 709
+    },
+    {
+      "name": "nexys_video_exercise3.xdc",
+      "sha256": "f446fcd9f2056f2c47872ba74f94d79f02e30d3c1abdf27599f1c0e125a4763e",
+      "size_bytes": 2282
+    }
+  ],
+  "source_manifest": {
+    "part": "xc7a200tsbg484-1",
+    "top": "exercise3_nexys_video_top",
+    "clock_period_ns": 10.0,
+    "sources": [
+      {
+        "name": "exercise3_core.v",
+        "sha256": "050a19942ce909f9b32a4e899e39f30408f9f7ac9df9cb0fe3c1f7748a98a76a",
+        "size_bytes": 1546
+      },
+      {
+        "name": "exercise3_nexys_video_top.v",
+        "sha256": "b67dbc9ee84693b09e375c70dd014b50eacbf68a42a59717e1eb8d583730d81f",
+        "size_bytes": 709
+      },
+      {
+        "name": "nexys_video_exercise3.xdc",
+        "sha256": "f446fcd9f2056f2c47872ba74f94d79f02e30d3c1abdf27599f1c0e125a4763e",
+        "size_bytes": 2282
+      }
+    ]
+  }
+}

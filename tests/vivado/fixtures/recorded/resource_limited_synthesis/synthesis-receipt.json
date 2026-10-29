@@ -1,0 +1,43 @@
+{
+  "script_sha256": "73da33982dba6a9666462a94ec63cd78866ce23d29450c77efc2877f85727045",
+  "exit_code": 1,
+  "wall_seconds": 115.71899999992456,
+  "limit_reason": "result_directory_limit",
+  "version": [
+    "2026.1"
+  ],
+  "parts": [],
+  "active_owned_processes_after_cleanup": 0,
+  "job_kill_on_close": true,
+  "artifacts": {
+    "exercise3_core.v": {
+      "bytes": 1546,
+      "sha256": "050a19942ce909f9b32a4e899e39f30408f9f7ac9df9cb0fe3c1f7748a98a76a"
+    },
+    "exercise3_nexys_video_top.v": {
+      "bytes": 709,
+      "sha256": "b67dbc9ee84693b09e375c70dd014b50eacbf68a42a59717e1eb8d583730d81f"
+    },
+    "nexys_video_exercise3.xdc": {
+      "bytes": 2282,
+      "sha256": "f446fcd9f2056f2c47872ba74f94d79f02e30d3c1abdf27599f1c0e125a4763e"
+    },
+    "stdout.log": {
+      "bytes": 104,
+      "sha256": "18938566b4825fc6c371d58438cb79d662ad3b1841c88dd6de2461cf28dcd5dc"
+    }
+  },
+  "fixture_provenance": "redacted_recorded_import_not_new_execution",
+  "original_private_receipt_sha256": "4c5450cb209a6d8f40aea67c7d8268762aac8bee137a13e7cf98c24015d3b9eb",
+  "storage_before_receipt": {
+    "cache_bytes": 7295738,
+    "result_bytes": 6418119,
+    "files": 317
+  },
+  "caps": {
+    "cache_bytes": 62914560,
+    "result_bytes": 4194304,
+    "total_bytes": 67108864,
+    "files": 4096
+  }
+}
