@@ -6,6 +6,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, expect, it, vi } from 'vitest'
 import { App } from './App'
 
+// This App-only review owns the recorded-investigation health sequence. The
+// separately reviewed planner panel has its own independent health requests.
+vi.mock('./PlannerPanel', () => ({ PlannerPanel: () => null }))
+
 vi.mock('./EngineeringInvestigation', () => ({ EngineeringInvestigation: ({ projectId }: { projectId: string }) => {
   const [version, setVersion] = useState('initial')
   useEffect(() => { void fetch(`/api/projects/${encodeURIComponent(projectId)}/investigations?after=&limit=20`, { method: 'GET' }) }, [projectId])
