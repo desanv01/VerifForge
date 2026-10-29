@@ -1,0 +1,194 @@
+{
+  "schema_version": "1",
+  "attempt_id": "attempt-3dd9e7660be54977a53e8a7c2e3527c0",
+  "experiment_id": "ci-application-fifo",
+  "execution_status": "completed",
+  "verdict": "pass_within_scope",
+  "identity": {
+    "source_hash": "29b2acd08b9f60f82a42e4d76735d2269e4129cbcb528d73ccd7b3b374112893",
+    "checker_hash": "f5d70acf0d1c6244559c72c2af8bad60ef55af26f6a313f9972de97d9c1a2884",
+    "contract_hash": "cf3c44875918a5543e8580294dbbe6bebb67fd7f7932d2c150a27221954af40d",
+    "experiment_hash": "68467428aec11b318589d7d3ae6c02271bf956b0b50ed2a76e19fcc9091bd341",
+    "environment_hash": "71e2ecfa288f39696d1398701eaeaa9ad2d0faf9cf80c5687c37451599bdae2e"
+  },
+  "tool_versions": [
+    {
+      "name": "verilator",
+      "version": "Verilator 5.042 2025-11-02 rev v5.042"
+    },
+    {
+      "name": "cocotb",
+      "version": "2.0.1"
+    },
+    {
+      "name": "python",
+      "version": "3.12.3"
+    },
+    {
+      "name": "gcc",
+      "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "name": "make",
+      "version": "GNU Make 4.3"
+    }
+  ],
+  "trace": [
+    {
+      "cycle": 0,
+      "operation_index": 0,
+      "write_accepted": false,
+      "read_accepted": false,
+      "expected_data": 0,
+      "observed_data": 0,
+      "expected_full": false,
+      "observed_full": false,
+      "expected_empty": true,
+      "observed_empty": true
+    },
+    {
+      "cycle": 1,
+      "operation_index": 1,
+      "write_accepted": true,
+      "read_accepted": false,
+      "expected_data": 0,
+      "observed_data": 0,
+      "expected_full": false,
+      "observed_full": false,
+      "expected_empty": false,
+      "observed_empty": false
+    },
+    {
+      "cycle": 2,
+      "operation_index": 2,
+      "write_accepted": false,
+      "read_accepted": false,
+      "expected_data": 0,
+      "observed_data": 0,
+      "expected_full": false,
+      "observed_full": false,
+      "expected_empty": true,
+      "observed_empty": true
+    },
+    {
+      "cycle": 3,
+      "operation_index": 3,
+      "write_accepted": true,
+      "read_accepted": false,
+      "expected_data": 0,
+      "observed_data": 0,
+      "expected_full": false,
+      "observed_full": false,
+      "expected_empty": false,
+      "observed_empty": false
+    },
+    {
+      "cycle": 4,
+      "operation_index": 4,
+      "write_accepted": false,
+      "read_accepted": true,
+      "expected_data": 42,
+      "observed_data": 42,
+      "expected_full": false,
+      "observed_full": false,
+      "expected_empty": true,
+      "observed_empty": true
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-0",
+      "path": "built.marker",
+      "sha256": "e43276febbe5f45de1db8cd5da191ad131c90d095f4cd539b44320c855a93dca",
+      "size_bytes": 43,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-1",
+      "path": "checker.py",
+      "sha256": "f5d70acf0d1c6244559c72c2af8bad60ef55af26f6a313f9972de97d9c1a2884",
+      "size_bytes": 2270,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-2",
+      "path": "contract.json",
+      "sha256": "d453be1a24f0940a517a8d3e2376e439e8268a1c9886153b9660509c32c649bb",
+      "size_bytes": 1113,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-3",
+      "path": "dump.vcd",
+      "sha256": "12dc2e11d196c89951ac08ebe5a13fb1240e71427fb2c5fd9244446c328381d8",
+      "size_bytes": 2030,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-4",
+      "path": "environment.json",
+      "sha256": "71e2ecfa288f39696d1398701eaeaa9ad2d0faf9cf80c5687c37451599bdae2e",
+      "size_bytes": 485,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-5",
+      "path": "execution.log",
+      "sha256": "44f0e3d46b37f1c767398a1998f1a22c15a98e6d8150a8e54c85993fd8d928d6",
+      "size_bytes": 7111,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-6",
+      "path": "experiment.json",
+      "sha256": "bfda6742a3c2f6dcb04520c1946a17a1f3286c39553d07ed65d2d34c5177d3af",
+      "size_bytes": 634,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-7",
+      "path": "fifo.sv",
+      "sha256": "a1c2f90987d423b9003f064638840bfb1e468cf0005906d4e76f1b0a81184cf5",
+      "size_bytes": 927,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-8",
+      "path": "job.json",
+      "sha256": "7e2c8997ff0517dfccfbc03b6970ebbac762c307809ba171f6dad40aa3a8049e",
+      "size_bytes": 370,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-9",
+      "path": "observed.json",
+      "sha256": "76c7bba30c173cfe5408e1caf75d53a03292c58bba3e1f1fef5b4588086bf3db",
+      "size_bytes": 390,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-10",
+      "path": "results.xml",
+      "sha256": "b6ecdc9e509626bfdb22c05de60790e16e2c4cb91e29ec0e5c19f41ff84261fe",
+      "size_bytes": 356,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-11",
+      "path": "stimulus.json",
+      "sha256": "99489f389db0152160838d2e5f7d9ff30292d7ff18def998cc85dcd34f6456fe",
+      "size_bytes": 363,
+      "media_type": "application/json"
+    }
+  ],
+  "failure_signature": null,
+  "requirement_coverage": [
+    "FIFO_BEHAVIOR"
+  ],
+  "usage": {
+    "cycles": 5,
+    "wall_time_seconds": 11.087854751999998,
+    "artifact_bytes": 16092
+  },
+  "uncertainties": []
+}

@@ -1,0 +1,138 @@
+{
+  "schema_version": "1",
+  "attempt_id": "attempt-499a699f175b4bd3970a46ded13b82d5",
+  "experiment_id": "ci-application-control",
+  "execution_status": "completed",
+  "verdict": "pass_within_scope",
+  "identity": {
+    "source_hash": "7089968dd17cb16274b3f43b61e4c05dccc57060af51df78de51ffcf58bcfbc9",
+    "checker_hash": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+    "contract_hash": "6e2511a28604b4492580d0b2b88512f8dace18c75e17bb82833ed52785dff903",
+    "experiment_hash": "52d3d56fc3179b375da4c3a827e7e63ed39b1b425471afb2007dda847b905f60",
+    "environment_hash": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265"
+  },
+  "tool_versions": [
+    {
+      "name": "verilator",
+      "version": "Verilator 5.042 2025-11-02 rev v5.042"
+    },
+    {
+      "name": "gcc",
+      "version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+    },
+    {
+      "name": "make",
+      "version": "GNU Make 4.3"
+    },
+    {
+      "name": "cocotb",
+      "version": "2.0.1"
+    },
+    {
+      "name": "python",
+      "version": "3.12.3"
+    }
+  ],
+  "trace": [],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-0",
+      "path": "built.marker",
+      "sha256": "8add8cf20817d03d02b57484dd7b9930b2cfd2eba847d4e8eb0bba7332f21614",
+      "size_bytes": 32,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-1",
+      "path": "check.json",
+      "sha256": "aa960c089fe03dea07361930471db74212cb9c63066a065041cd3214a15bbc80",
+      "size_bytes": 193,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-2",
+      "path": "checker-contracts.py",
+      "sha256": "67c6d17e047be8fad4b8caf7fdb41949d206440e1eb6188c7233b94942dc45eb",
+      "size_bytes": 6184,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-3",
+      "path": "checker.py",
+      "sha256": "e5e79ca257a56ce14ee98ff71d58bd991cb188ada0b87132c3022af1b149b060",
+      "size_bytes": 9252,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-4",
+      "path": "contract.json",
+      "sha256": "94b59bfb34a64f4cb5e7fbfbc650ff283a2d5bae5ac245ca5ac185dd471064f3",
+      "size_bytes": 2053,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-5",
+      "path": "environment.json",
+      "sha256": "44061068c0924742ca7b6b5aac1407a13a03fdf628416712b77fe1e55e61c265",
+      "size_bytes": 653,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-6",
+      "path": "execution.log",
+      "sha256": "a59cd1181916469807867740affd165139700ccb71b22584c6c94b898cce2200",
+      "size_bytes": 6474,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-7",
+      "path": "experiment.json",
+      "sha256": "0a68d94c10ed522807079bae1835d97463e7e44150d7f61cb35787622082c0d5",
+      "size_bytes": 41819,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-8",
+      "path": "job.json",
+      "sha256": "dc12eb942f65224b918c7d6106601adf06bc8dcb663f52606b27e8132429e995",
+      "size_bytes": 347,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-9",
+      "path": "observed.json",
+      "sha256": "23d631cfa97d753266059e6953424088bf143d529a8b47d3c2d5faa4a7e0c483",
+      "size_bytes": 22316,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-10",
+      "path": "registers.sv",
+      "sha256": "07f980801f8dbc1fc1a361cd7d84e8147e36c9426990d926ad80c3371085aba9",
+      "size_bytes": 3453,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-11",
+      "path": "results.xml",
+      "sha256": "7d1eb1bf3f4cac08b246312a83a1ccae0d6f1e42799295084a96b382ad55ddcf",
+      "size_bytes": 367,
+      "media_type": "text/plain"
+    },
+    {
+      "artifact_id": "artifact-12",
+      "path": "stimulus.json",
+      "sha256": "ca208d2e4319f80fc7ad1206b643bfe11f5b11af05b22daf9e5a9f83bba9fd2a",
+      "size_bytes": 25258,
+      "media_type": "application/json"
+    }
+  ],
+  "failure_signature": null,
+  "requirement_coverage": [],
+  "usage": {
+    "cycles": 149,
+    "wall_time_seconds": 9.181711614000022,
+    "artifact_bytes": 118401
+  },
+  "uncertainties": []
+}

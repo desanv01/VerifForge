@@ -1,0 +1,19 @@
+{
+  "schema_version": "axi_lite.check.v1",
+  "verdict": "property_failure",
+  "failure": {
+    "cycle": 7,
+    "requirement_id": "AXIL_PROGRESS",
+    "failure_class": "axil.response_bound",
+    "expected": "bVALID within 4 edges",
+    "observed": "4"
+  },
+  "checked_cycles": 8,
+  "registers": [
+    287454020,
+    0,
+    0,
+    0
+  ],
+  "uncertainties": []
+}

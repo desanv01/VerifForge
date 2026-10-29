@@ -1,0 +1,32 @@
+[
+  {
+    "cycle": 0,
+    "data": 0,
+    "empty": true,
+    "full": false
+  },
+  {
+    "cycle": 1,
+    "data": 0,
+    "empty": false,
+    "full": false
+  },
+  {
+    "cycle": 2,
+    "data": 0,
+    "empty": true,
+    "full": false
+  },
+  {
+    "cycle": 3,
+    "data": 0,
+    "empty": false,
+    "full": false
+  },
+  {
+    "cycle": 4,
+    "data": 42,
+    "empty": true,
+    "full": false
+  }
+]

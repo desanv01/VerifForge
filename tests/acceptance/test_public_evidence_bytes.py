@@ -17,8 +17,8 @@ def verify_record(base, relative, size, digest):
     assert hashlib.sha256(raw).hexdigest() == digest, relative
 
 
-@pytest.mark.parametrize("domain", ["riscv", "firmware"])
-def test_published_native_raw_bytes(domain):
+@pytest.mark.parametrize("domain", ["riscv", "firmware", "axi"])
+def test_published_raw_evidence_bytes(domain):
     base = ROOT / "docs/evidence" / domain / "2026-10-30"
     manifest = json.loads((base / "identity-manifest.json").read_bytes())
     records = manifest["file_records"]
