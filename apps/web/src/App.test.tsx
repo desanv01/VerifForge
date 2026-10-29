@@ -1,18 +1,22 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { createPlan, hasCompleteIdentity, isActive, MAX_SEED, request } from './api'
 
+// App composition only. The real component has separate HTTP/projection tests.
+vi.mock('./EngineeringInvestigation', () => ({ EngineeringInvestigation: ({ projectId }: { projectId: string }) => <div data-testid="engineering-project">{projectId}</div> }))
+
 const project = { id: 'fifo_correct', name: 'Correct FIFO', family: 'fifo', support_level: 'experimental', contract_id: 'fifo-v1' }
 const contract = { contract_id: 'fifo-v1', version: '1', review_status: 'reviewed', checker: { checker_id: 'fifo-checker', version: '1', sha256: 'a'.repeat(64) }, parameters: { width: 8, depth: 4 }, requirements: [{ requirement_id: 'RESET_DISCARDS_PENDING_DATA', description: 'Reset discards all pending values.' }], assumptions: [], reset_priority: 'reset_over_read_write', acceptance: 'pre_edge_flags', read_semantics: 'oldest_on_accepted_edge' }
 const campaign = { id: 'campaign-test', project_id: project.id, contract_id: contract.contract_id, execution_status: 'draft', verdict: null, version: 1, created_at: '2026-10-23T00:00:00Z', updated_at: '2026-10-23T00:00:00Z', attempts: [], findings: [], plan: {schema_version:"1",target:"fifo",experiment_id:"saved-plan",fixture_id:"fifo_correct",contract_id:"fifo-v1",objective_ids:[],seed:123,parameters:{width:8,depth:4},operations:[{op:"reset",cycles:1}],budget:{max_cycles:100,wall_time_seconds:120,max_artifact_bytes:10485760}} }
-function mount() { const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); return render(<QueryClientProvider client={client}><App/></QueryClientProvider>) }
+function mount(client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })) { return render(<QueryClientProvider client={client}><App/></QueryClientProvider>) }
 function mockApi(override?: (url: string, init?: RequestInit) => unknown) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = String(input)
-    const custom = override?.(url, init)
+    const custom = await override?.(url, init)
+    if (custom instanceof Response) return custom
     const value = custom ?? (url === '/api/projects' ? { items: [project] } : url.includes('/contracts/') ? contract : url === '/api/campaigns' && init?.method !== 'POST' ? { items: [] } : url.includes('/events?') ? { items: [] } : campaign)
     return new Response(JSON.stringify(value), { status: 200, headers: { 'Content-Type': 'application/json' } })
   })
@@ -134,6 +138,75 @@ describe('investigation workflow', () => {
     expect(calls.mock.calls.some(([,init]) => init?.method === 'PATCH' || init?.method === 'PUT')).toBe(false)
   })
 })
+describe('engineering investigation App composition (mock capability and component)', () => {
+  it('mounts the existing selected project only after the runtime advertises version 1', async () => {
+    let resolve!: (response: Response) => void
+    const calls = mockApi(url => url === '/api/health' ? new Promise<Response>(r => { resolve = r }) : undefined)
+    mount(); await screen.findByText('Checking recorded investigation availability…')
+    expect(screen.queryByTestId('engineering-project')).not.toBeInTheDocument()
+    resolve(new Response(JSON.stringify({ investigation_api: '1' })))
+    expect(await screen.findByTestId('engineering-project')).toHaveTextContent(project.id)
+    expect(calls.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+  })
+  it.each([undefined, '0', 1])('keeps unavailable capability %s explicit without mounting or requesting records', async marker => {
+    const calls = mockApi(url => url === '/api/health' ? { investigation_api: marker } : undefined)
+    mount(); await screen.findByText(/unavailable on this runtime/)
+    expect(screen.queryByTestId('engineering-project')).not.toBeInTheDocument()
+    expect(screen.queryByText('No investigations on this page')).not.toBeInTheDocument()
+    expect(calls.mock.calls.some(([url]) => String(url).includes('/investigations'))).toBe(false)
+  })
+  it('requires a fresh successful health read instead of trusting cached availability', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['health', 'investigation-api', project.id], { investigation_api: '1' })
+    let resolve!: (response: Response) => void
+    mockApi(url => url === '/api/health' ? new Promise<Response>(r => { resolve = r }) : undefined)
+    mount(client); await screen.findByText('Checking recorded investigation availability…')
+    expect(screen.queryByTestId('engineering-project')).not.toBeInTheDocument()
+    resolve(new Response(JSON.stringify({ detail: 'not ready' }), { status: 503 }))
+    await screen.findByText(/runtime capability could not be checked/)
+    expect(screen.queryByTestId('engineering-project')).not.toBeInTheDocument()
+  })
+  it('removes the mounted view when a capability refresh fails and offers a safe retry', async () => {
+    let failing = false
+    mockApi(url => url === '/api/health' ? failing ? new Response('{}', { status: 503 }) : { investigation_api: '1' } : undefined)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); mount(client)
+    await screen.findByTestId('engineering-project')
+    failing = true; await client.invalidateQueries({ queryKey: ['health', 'investigation-api', project.id] })
+    await screen.findByText(/runtime capability could not be checked/)
+    expect(screen.queryByTestId('engineering-project')).not.toBeInTheDocument()
+    failing = false; await userEvent.click(screen.getByRole('button', { name: 'Check investigation availability' }))
+    await screen.findByTestId('engineering-project')
+  })
+  it('preserves the mounted project view across successful capability revalidation', async () => {
+    mockApi(url => url === '/api/health' ? { investigation_api: '1' } : undefined)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); mount(client)
+    const prior = await screen.findByTestId('engineering-project')
+    await client.invalidateQueries({ queryKey: ['health', 'investigation-api', project.id] })
+    await waitFor(() => expect(screen.getByTestId('engineering-project')).toBeVisible())
+    expect(screen.getByTestId('engineering-project')).toBe(prior)
+  })
+  it('changes draft project context but anchors saved campaigns to their stored project', async () => {
+    const other = { ...project, id: 'other-existing-project', name: 'Other existing project' }
+    mockApi(url => url === '/api/health' ? { investigation_api: '1' } : url === '/api/projects' ? { items: [project, other] } : url === '/api/campaigns' ? { items: [campaign] } : undefined)
+    mount(); await screen.findByTestId('engineering-project')
+    await userEvent.selectOptions(screen.getByLabelText('Curated project'), other.id)
+    await waitFor(() => expect(screen.getByTestId('engineering-project')).toHaveTextContent(other.id))
+    await userEvent.selectOptions(screen.getByLabelText('Saved campaigns'), campaign.id)
+    await waitFor(() => expect(screen.getByTestId('engineering-project')).toHaveTextContent(project.id))
+    expect(screen.getByLabelText('Curated project')).toHaveValue(other.id)
+    await userEvent.selectOptions(screen.getByLabelText('Saved campaigns'), '')
+    await waitFor(() => expect(screen.getByTestId('engineering-project')).toHaveTextContent(other.id))
+  })
+  it('does not guess a draft project while a selected saved campaign is unavailable', async () => {
+    history.replaceState(null, '', '/?campaign=missing-campaign')
+    const calls = mockApi(url => url === '/api/health' ? { investigation_api: '1' } : url === '/api/campaigns/missing-campaign' ? new Response('{}', { status: 404 }) : undefined)
+    mount(); await screen.findByText('Reset discards all pending values.')
+    await screen.findByText('Load the selected saved campaign to identify its engineering project.')
+    expect(screen.queryByTestId('engineering-project')).not.toBeInTheDocument()
+    expect(calls.mock.calls.some(([url]) => String(url).includes('/investigations'))).toBe(false)
+  })
+})
+
 describe('wire boundary', () => {
   it('retains API validation errors', async () => {
     vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response(JSON.stringify({detail:'Contract not reviewed'}),{status:409}))
