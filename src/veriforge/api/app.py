@@ -8,11 +8,12 @@ from typing import Annotated
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Literal
+from veriforge.adapters import ValidatedExperiment, get_adapter
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from veriforge.contracts import Experiment
 from veriforge.core import service
 from veriforge.core.database import Campaign, Contract, Finding, Project, RunEvent, make_engine, session_factory
 
@@ -20,7 +21,20 @@ from veriforge.core.database import Campaign, Contract, Finding, Project, RunEve
 class CreateCampaign(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: Annotated[str, Field(min_length=1, max_length=128)]
-    plan: Experiment
+    adapter_id: Literal["rtl.fifo.v1", "rtl.arithmetic.v1"] = "rtl.fifo.v1"
+    plan: Annotated[ValidatedExperiment, Field(discriminator="schema_version")]
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_fifo(cls, value):
+        if isinstance(value, dict) and value.get("adapter_id", "rtl.fifo.v1") == "rtl.fifo.v1" and isinstance(value.get("plan"), dict):
+            value = {**value, "plan": {"schema_version": "1", **value["plan"]}}
+        return value
+
+    @model_validator(mode="after")
+    def installed_family(self):
+        get_adapter(self.adapter_id).validate_experiment(self.plan)
+        return self
 
 
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]
@@ -57,7 +71,8 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
     def health():
         with sessions() as session:
             session.execute(text("SELECT 1"))
-        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1"}
+        from veriforge.core.artifacts import EVIDENCE_ADAPTERS
+        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "evidence_adapters": sorted(EVIDENCE_ADAPTERS)}
 
     @app.get("/api/projects")
     def projects():
@@ -88,7 +103,7 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
         for attempt in range(2):
             try:
                 with sessions.begin() as session:
-                    row = service.create_campaign(session, payload.project_id, payload.plan.model_dump(mode="json"), idempotency_key)
+                    row = service.create_campaign(session, payload.project_id, payload.plan.model_dump(mode="json"), idempotency_key, adapter_id=payload.adapter_id)
                     session.flush()
                     return service.campaign_view(session, row)
             except IntegrityError:

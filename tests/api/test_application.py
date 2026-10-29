@@ -41,7 +41,7 @@ def start(client, campaign_id):
 def test_catalog_contract_and_reject_unsafe_payload(client):
     assert client.get("/api/health").json()["model"] == "not_integrated"
     projects = client.get("/api/projects").json()["items"]
-    assert {p["id"] for p in projects} == {"fifo_correct", "fifo_reset_bug"}
+    assert {p["id"] for p in projects if p["family"] == "fifo"} == {"fifo_correct", "fifo_reset_bug"}
     assert client.get("/api/contracts/fifo-v1").json()["review_status"] == "reviewed"
     assert client.post("/api/campaigns", json={"project_id": "fifo_correct", "plan": PLAN}).status_code == 422
     bad = {**PLAN, "command": "anything"}
