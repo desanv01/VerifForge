@@ -38,7 +38,7 @@ class Contract(Base):
 
 class Campaign(Base):
     __tablename__ = "campaigns"
-    __table_args__ = (UniqueConstraint("owner", "create_key"),)
+    __table_args__ = (UniqueConstraint("owner", "create_key"), Index("uq_campaign_project", "id", "project_id", unique=True))
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
     owner: Mapped[str] = mapped_column(String(128), default="local")
     adapter_id: Mapped[str] = mapped_column(String(128), default="rtl.fifo.v1", server_default="rtl.fifo.v1")
@@ -55,6 +55,79 @@ class Campaign(Base):
     event_sequence: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class Investigation(Base):
+    __tablename__ = "investigations"
+    __table_args__ = (UniqueConstraint("id", "project_id"), UniqueConstraint("owner", "create_key"))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    owner: Mapped[str] = mapped_column(String(128), default="local")
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
+    create_key: Mapped[str] = mapped_column(String(128))
+    request_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class InvestigationVersion(Base):
+    __tablename__ = "investigation_versions"
+    __table_args__ = (
+        ForeignKeyConstraint(["investigation_id", "project_id"], ["investigations.id", "investigations.project_id"]),
+        UniqueConstraint("investigation_id", "ordinal"), UniqueConstraint("investigation_id", "admission_key"),
+        UniqueConstraint("id", "project_id"),
+        CheckConstraint("ordinal > 0 AND scope = 'recorded_import' AND execution_status = 'not_run'"),
+        CheckConstraint("length(content) > 0 AND length(content) <= 262144"))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    investigation_id: Mapped[str] = mapped_column(String(36))
+    project_id: Mapped[str] = mapped_column(String(128))
+    ordinal: Mapped[int] = mapped_column(Integer)
+    admission_key: Mapped[str] = mapped_column(String(128))
+    schema_version: Mapped[str] = mapped_column(String(128))
+    revision_id: Mapped[str] = mapped_column(String(128))
+    revision_hash: Mapped[str] = mapped_column(String(64))
+    manifest_hash: Mapped[str] = mapped_column(String(64))
+    content_hash: Mapped[str] = mapped_column(String(64))
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    scope: Mapped[str] = mapped_column(String(32), default="recorded_import")
+    execution_status: Mapped[str] = mapped_column(String(16), default="not_run")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class InvestigationExecutionLink(Base):
+    __tablename__ = "investigation_execution_links"
+    __table_args__ = (
+        ForeignKeyConstraint(["version_id", "project_id"], ["investigation_versions.id", "investigation_versions.project_id"]),
+        ForeignKeyConstraint(["campaign_id", "project_id"], ["campaigns.id", "campaigns.project_id"]),
+        ForeignKeyConstraint(["attempt_id", "campaign_id"], ["attempts.id", "attempts.campaign_id"]),
+        ForeignKeyConstraint(["experiment_id", "campaign_id"], ["experiments.id", "experiments.campaign_id"]),
+        UniqueConstraint("version_id", "association_hash"),
+        CheckConstraint("(attempt_id IS NULL AND experiment_id IS NULL AND result_hash IS NULL) OR (attempt_id IS NOT NULL AND experiment_id IS NOT NULL AND result_hash IS NOT NULL)"),
+        CheckConstraint("length(content) > 0 AND length(content) <= 1048576"))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    version_id: Mapped[str] = mapped_column(String(36))
+    project_id: Mapped[str] = mapped_column(String(128))
+    campaign_id: Mapped[str] = mapped_column(String(36))
+    attempt_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    experiment_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    result_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    association_hash: Mapped[str] = mapped_column(String(64))
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class InvestigationArtifact(Base):
+    __tablename__ = "investigation_artifacts"
+    __table_args__ = (UniqueConstraint("version_id", "identity_key"),
+        CheckConstraint("size_bytes >= 0 AND size_bytes <= 1048576 AND length(data) = size_bytes"))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    version_id: Mapped[str] = mapped_column(ForeignKey("investigation_versions.id"))
+    artifact_id: Mapped[str] = mapped_column(String(128))
+    native_revision_id: Mapped[str] = mapped_column(String(128))
+    native_attempt_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    identity_key: Mapped[str] = mapped_column(String(64))
+    sha256: Mapped[str] = mapped_column(String(64))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    media_type: Mapped[str] = mapped_column(String(128))
+    role: Mapped[str] = mapped_column(String(512))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
 
 
 class Attempt(Base):
@@ -111,7 +184,7 @@ def _immutable_record(mapper, connection, target):
     raise ValueError("Experiment records and attempt bindings are immutable")
 
 
-for _record_type in (ExperimentRecord, AttemptExperiment):
+for _record_type in (ExperimentRecord, AttemptExperiment, Investigation, InvestigationVersion, InvestigationExecutionLink, InvestigationArtifact):
     event.listen(_record_type, "before_update", _immutable_record)
     event.listen(_record_type, "before_delete", _immutable_record)
 

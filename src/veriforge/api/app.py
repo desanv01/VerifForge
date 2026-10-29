@@ -56,6 +56,8 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
     app.state.sessions = sessions
     from .evidence import evidence_router
     app.include_router(evidence_router(sessions, artifact_root))
+    from .investigations import investigations_router
+    app.include_router(investigations_router(sessions))
 
     @app.exception_handler(service.NotFound)
     async def missing(request, error):
