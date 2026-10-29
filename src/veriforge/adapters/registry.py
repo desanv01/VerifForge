@@ -20,10 +20,14 @@ from veriforge.arithmetic import reviewed_contract as arithmetic_contract
 from veriforge.arithmetic import run_experiment as arithmetic_native
 from veriforge.arithmetic.container import run_container_experiment as arithmetic_container
 from veriforge.arithmetic import oracle as arithmetic_oracle
+from veriforge.axi_lite import AxiLiteContract, AxiLiteExperiment, Parameters as AxiLiteParameters
+from veriforge.axi_lite import reviewed_contract as axi_lite_contract
+from veriforge.axi_lite.runner import run_experiment as axi_lite_native
+from veriforge.axi_lite.container import run_container_experiment as axi_lite_container
 
 ExecutionMode = Literal["native", "container"]
-ValidatedExperiment = Experiment | ArithmeticExperiment
-ReviewedContract = BehavioralContract | ArithmeticContract
+ValidatedExperiment = Experiment | ArithmeticExperiment | AxiLiteExperiment
+ReviewedContract = BehavioralContract | ArithmeticContract | AxiLiteContract
 
 
 class CancellationToken(Protocol):
@@ -56,9 +60,9 @@ class _CuratedSource:
 class AdapterDescriptor:
     adapter_id: str
     target: str
-    experiment_model: type[Experiment] | type[ArithmeticExperiment]
-    parameter_model: type[FifoParameters] | type[Parameters]
-    contract_model: type[BehavioralContract] | type[ArithmeticContract]
+    experiment_model: type[Experiment] | type[ArithmeticExperiment] | type[AxiLiteExperiment]
+    parameter_model: type[FifoParameters] | type[Parameters] | type[AxiLiteParameters]
+    contract_model: type[BehavioralContract] | type[ArithmeticContract] | type[AxiLiteContract]
     fixture_ids: tuple[str, ...]
     trace_schema: str | None
     trace_artifact: str | None
@@ -167,6 +171,16 @@ _DESCRIPTORS = (
         _source=_CuratedSource(_ROOT / "targets/arithmetic/multiplier.sv", (
             ("multiplier_correct", 0), ("multiplier_latency_bug", 1), ("multiplier_data_bug", 2))),
         _expand=arithmetic_oracle.expand),
+    AdapterDescriptor(adapter_id="rtl.axi_lite.v1", target="axi_lite", experiment_model=AxiLiteExperiment,
+        parameter_model=AxiLiteParameters, contract_model=AxiLiteContract,
+        fixture_ids=("axil_registers_correct", "axil_aw_w_order_bug", "axil_strobe_bug", "axil_response_stability_bug"),
+        trace_schema="axi_lite.trace.v1", trace_artifact="observed.json", _contract_factory=axi_lite_contract,
+        _native_runner=axi_lite_native, _container_runner=axi_lite_container,
+        source_artifact="registers.sv", portable_artifacts=(*_COMMON_PORTABLE, "registers.sv", "checker-contracts.py", "check.json"),
+        _source=_CuratedSource(_ROOT / "targets/axi_lite/registers.sv", (
+            ("axil_registers_correct", 0), ("axil_aw_w_order_bug", 1), ("axil_strobe_bug", 2),
+            ("axil_response_stability_bug", 3))),
+        _expand=lambda experiment: [row.model_dump(mode="json") for row in experiment.cycles]),
 )
 _REGISTRY = MappingProxyType({descriptor.adapter_id: descriptor for descriptor in _DESCRIPTORS})
 

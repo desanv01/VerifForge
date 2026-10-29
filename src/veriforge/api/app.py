@@ -21,7 +21,7 @@ from veriforge.core.database import Campaign, Contract, Finding, Project, RunEve
 class CreateCampaign(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: Annotated[str, Field(min_length=1, max_length=128)]
-    adapter_id: Literal["rtl.fifo.v1", "rtl.arithmetic.v1"] = "rtl.fifo.v1"
+    adapter_id: Literal["rtl.fifo.v1", "rtl.arithmetic.v1", "rtl.axi_lite.v1"] = "rtl.fifo.v1"
     plan: Annotated[ValidatedExperiment, Field(discriminator="schema_version")]
 
     @model_validator(mode="before")

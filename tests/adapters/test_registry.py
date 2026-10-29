@@ -21,7 +21,7 @@ def arithmetic_payload():
 
 
 def test_only_curated_identifiers_registered_and_descriptors_frozen():
-    assert tuple(item.adapter_id for item in registered_adapters()) == ("rtl.fifo.v1", "rtl.arithmetic.v1")
+    assert tuple(item.adapter_id for item in registered_adapters()) == ("rtl.fifo.v1", "rtl.arithmetic.v1", "rtl.axi_lite.v1")
     with pytest.raises(FrozenInstanceError):
         get_adapter("rtl.fifo.v1").target = "changed"
 

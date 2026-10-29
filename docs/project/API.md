@@ -2,7 +2,21 @@
 
 ## Typed campaign family agreement (VF-054A)
 
-Campaign creation accepts `adapter_id: "rtl.fifo.v1" | "rtl.arithmetic.v1"` beside `project_id` and `plan`. Omitted adapter remains legacy FIFO only. FIFO plans use `schema_version:"1"`; arithmetic requires explicit `adapter_id:"rtl.arithmetic.v1"` and `plan.schema_version:"arithmetic.v1"`. Registry descriptors validate installed fixtures and exact family schemas; cross-family payloads fail422. Arithmetic operations/contract/parameters are never coerced to FIFO. The common execution result preserves its native shape: arithmetic valid/product rows are in `arithmetic-trace.json` (`arithmetic.trace.v1`), with empty common FIFO-shaped `trace`.
+U3 adds explicit `adapter_id:"rtl.axi_lite.v1"` with
+`plan.schema_version:"axi_lite.v1"`. The four fixed AXI projects are
+`axil_registers_correct`, `axil_aw_w_order_bug`, `axil_strobe_bug`, and
+`axil_response_stability_bug`; their reviewed contract is `axil-registers-v1`
+(`axi_lite.contract.v1`). Plans contain bounded exact pre-edge `cycles`, not FIFO
+or arithmetic operations. The discriminator and descriptor both reject family
+mismatches; omitted adapter/schema compatibility remains FIFO only. AXI catalog
+and draft admission are source integration. `trace_artifact:"observed.json"`
+names a typed `axi_lite.trace.v1` envelope with `observations`. AXI evidence
+capability is independently gated: registration does not add AXI to health's
+`evidence_adapters` or establish replay/export/reduction acceptance. The U3
+registry/API tests create isolated drafts and invoke labeled stub dispatch;
+they perform no simulator runs.
+
+Campaign creation accepts `adapter_id: "rtl.fifo.v1" | "rtl.arithmetic.v1" | "rtl.axi_lite.v1"` beside `project_id` and `plan`. Omitted adapter remains legacy FIFO only. FIFO plans use `schema_version:"1"`; arithmetic requires explicit `adapter_id:"rtl.arithmetic.v1"` and `plan.schema_version:"arithmetic.v1"`. Registry descriptors validate installed fixtures and exact family schemas; cross-family payloads fail422. Arithmetic operations/contract/parameters are never coerced to FIFO. The common execution result preserves its native shape: arithmetic valid/product rows are in `arithmetic-trace.json` (`arithmetic.trace.v1`), with empty common FIFO-shaped `trace`.
 
 Project/campaign responses add `adapter_id`; projects also advertise `experiment_schema_version`, `trace_schema`, and `trace_artifact`. GET contracts returns that family's versioned typed contract. Existing FIFO records are backfilled with `rtl.fifo.v1` by additive migration, retaining original hashes/stimulus. Campaign `contract_snapshot` uses its stored descriptor family and exact parameters. VF-054D connects the separately reviewed generic evidence hooks for FIFO and arithmetic; other families remain explicitly unsupported. Native/container dispatch is selected only by the trusted static descriptor; no client commands/imports/paths or execution-mode override exists. This is source integration, not permission to launch jobs outside the coordinator's runtime gate.
 
