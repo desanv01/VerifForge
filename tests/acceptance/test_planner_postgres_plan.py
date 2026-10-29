@@ -43,7 +43,7 @@ def test_import_and_disabled_local_entrypoint_have_no_side_effects(monkeypatch):
 
 def test_plan_has_private_owned_resources_and_no_native_worker_or_credentials(tmp_path):
     project = 'vf-planner-pg-ci-123-1'
-    plan = host.compose_plan(project, 'sha256:' + 'a' * 64, tmp_path / 'controls', tmp_path / 'evidence')
+    plan = host.compose_plan(project, 'sha256:' + 'a' * 64, tmp_path / 'controls', tmp_path / 'evidence', '1001:123')
     assert plan['networks']['default']['internal'] is True
     assert set(plan['volumes']) == {'database', 'broker'}
     assert not any('ports' in value or 'env_file' in value or 'build' in value for value in plan['services'].values())
@@ -263,7 +263,7 @@ def test_snapshot_allowlist_excludes_authority_and_future_columns(table):
 
 
 def test_all_service_log_caps_are_explicit_and_uncompressed(tmp_path):
-    plan = host.compose_plan('vf-planner-pg-ci-123-1', 'image', tmp_path, tmp_path)
+    plan = host.compose_plan('vf-planner-pg-ci-123-1', 'image', tmp_path, tmp_path, '1001:123')
     assert all(value['logging'] == {'driver': 'local', 'options': {'max-size': '1m', 'max-file': '1', 'compress': 'false'}}
                for value in plan['services'].values())
 
@@ -350,3 +350,116 @@ def test_cleanup_requires_post_remove_builder_absence(monkeypatch, tmp_path):
     monkeypatch.setattr(host.subprocess, 'run', fake)
     with pytest.raises(RuntimeError, match='builder remains'):
         host.cleanup(project, work)
+
+
+@pytest.mark.parametrize('user', ['0:0', '1;exec:2', 'user:group', '1001:-1', '4294967295:1', None])
+def test_bind_identity_is_numeric_nonroot_and_bounded(user, tmp_path):
+    with pytest.raises(RuntimeError, match='identity|user'):
+        host.compose_plan('vf-planner-pg-ci-123-1', 'image', tmp_path, tmp_path, user)
+
+
+def test_all_application_roles_use_observed_identity_without_changing_storage_identity(tmp_path):
+    plan = host.compose_plan('vf-planner-pg-ci-123-1', 'image', tmp_path, tmp_path, '4321:987')
+    assert all(plan['services'][role]['user'] == '4321:987' for role in host.WRITING_ROLES)
+    assert all('user' not in plan['services'][role] for role in ('postgres', 'valkey'))
+    assert all(plan['services'][role]['cap_drop'] == ['ALL'] and
+               plan['services'][role]['security_opt'] == ['no-new-privileges:true'] for role in host.WRITING_ROLES)
+
+
+def test_prepare_creates_only_new_owned_evidence_directory(monkeypatch, tmp_path):
+    monkeypatch.setattr(host, 'ROOT', tmp_path)
+    monkeypatch.setattr(host, 'OUT', tmp_path / 'output')
+    host.OUT.mkdir()
+    monkeypatch.setattr(host, 'effective_identity', lambda: (4321, 987))
+    monkeypatch.setattr(host, 'directory_identity', lambda path: {'uid': 4321, 'gid': 987, 'mode': '0700'})
+    evidence, user = host.prepare_evidence_mount()
+    assert evidence == (host.OUT / 'data').resolve() and evidence.is_dir() and user == '4321:987'
+    assert json.loads((host.OUT / 'evidence-mount.json').read_text())['directory']['mode'] == '0700'
+    (evidence / 'keep').write_text('existing data')
+    with pytest.raises(RuntimeError, match='already exists'):
+        host.prepare_evidence_mount()
+    assert (evidence / 'keep').read_text() == 'existing data'
+
+
+def test_prepare_rejects_foreign_or_broad_directory_mode(monkeypatch, tmp_path):
+    monkeypatch.setattr(host, 'ROOT', tmp_path)
+    monkeypatch.setattr(host, 'OUT', tmp_path / 'output')
+    host.OUT.mkdir()
+    monkeypatch.setattr(host, 'effective_identity', lambda: (4321, 987))
+    monkeypatch.setattr(host, 'directory_identity', lambda path: {'uid': 0, 'gid': 987, 'mode': '0777'})
+    with pytest.raises(RuntimeError, match='identity/mode differs'):
+        host.prepare_evidence_mount()
+    assert not (host.OUT / 'evidence-mount.json').exists()
+
+
+def test_preflight_exclusive_write_read_list_delete_and_preserve_existing_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(host, 'effective_identity', lambda: (4321, 987))
+    monkeypatch.setattr(host, 'directory_identity', lambda path: {'uid': 4321, 'gid': 987, 'mode': '0700'})
+    proof = host.mount_preflight(tmp_path, '4321:987', 'controller')
+    assert proof['probe'] == 'exclusive_write_read_list_delete_passed' and not list(tmp_path.iterdir())
+    existing = tmp_path / '.veriforge-controller-mount-probe'
+    existing.write_bytes(b'preserve prior owner file')
+    with pytest.raises(FileExistsError):
+        host.mount_preflight(tmp_path, '4321:987', 'controller')
+    assert existing.read_bytes() == b'preserve prior owner file'
+
+
+@pytest.mark.parametrize('mismatch', ['uid', 'owner', 'mode'])
+def test_preflight_denies_identity_and_permission_mismatch_before_writes(monkeypatch, tmp_path, mismatch):
+    monkeypatch.setattr(host, 'effective_identity', lambda: (4322 if mismatch == 'uid' else 4321, 987))
+    monkeypatch.setattr(host, 'directory_identity', lambda path: {'uid': 0 if mismatch == 'owner' else 4321,
+                                                                'gid': 987, 'mode': '0755' if mismatch == 'mode' else '0700'})
+    with pytest.raises(RuntimeError, match='differs'):
+        host.mount_preflight(tmp_path, '4321:987', 'runtime-c')
+    assert not list(tmp_path.iterdir())
+
+
+def test_preflight_keeps_first_error_when_probe_delete_also_fails(monkeypatch, tmp_path):
+    monkeypatch.setattr(host, 'effective_identity', lambda: (4321, 987))
+    monkeypatch.setattr(host, 'directory_identity', lambda path: {'uid': 4321, 'gid': 987, 'mode': '0700'})
+    original_unlink = Path.unlink
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, 'iterdir', lambda *_: (_ for _ in ()).throw(OSError('first listing failure')))
+        patch.setattr(Path, 'unlink', lambda *_: (_ for _ in ()).throw(PermissionError('secondary delete failure')))
+        with pytest.raises(OSError, match='first listing failure') as captured:
+            host.mount_preflight(tmp_path, '4321:987', 'mock')
+        assert captured.value.__notes__ == ['Probe deletion also failed: PermissionError']
+    original_unlink(tmp_path / '.veriforge-mock-mount-probe')
+
+
+def test_each_role_gets_bounded_preflight_before_service_start(monkeypatch, tmp_path):
+    monkeypatch.setattr(host, 'OUT', tmp_path)
+    calls = []
+    class FakeHost:
+        prefix = ['docker', 'compose', '-p', 'owned-project']
+        def run(self, command, name, timeout):
+            calls.append((command, name, timeout))
+            role = command[command.index('-c') + 2]
+            code = command[command.index('-c') + 1]
+            compile(code, '<published-preflight>', 'exec')
+            paths = command[command.index('-c') + 4:]
+            return json.dumps({'role': role, 'mounts': [{'directory': path, 'effective_uid': 4321,
+                'effective_gid': 987, 'probe': 'exclusive_write_read_list_delete_passed'} for path in paths]}).encode()
+    host.preflight_writing_roles(FakeHost(), '4321:987')
+    assert len(calls) == len(host.WRITING_ROLES) == 6
+    for (command, name, timeout), role in zip(calls, host.WRITING_ROLES):
+        assert command[:4] == FakeHost.prefix and '--no-deps' in command and '--no-build' in command
+        assert command[command.index('--pull') + 1] == 'never' and '--entrypoint' in command
+        assert name == 'mount-preflight-' + role and timeout == 15
+        assert ('/controls' in command) == (role == 'controller')
+        assert (tmp_path / (name + '.json')).is_file()
+    source = (ROOT / 'scripts/ci_planner_postgres.py').read_text()
+    assert source.index('        preflight_writing_roles(host, user)') < source.index("        host.run(host.prefix + ['up', '-d', '--no-deps', '--no-build', 'postgres'")
+
+
+def test_failed_role_preflight_stops_before_remaining_roles(monkeypatch, tmp_path):
+    monkeypatch.setattr(host, 'OUT', tmp_path)
+    calls = []
+    class FakeHost:
+        prefix = ['docker', 'compose']
+        def run(self, command, name, timeout):
+            calls.append(name)
+            raise PermissionError('mount denied')
+    with pytest.raises(PermissionError, match='mount denied'):
+        host.preflight_writing_roles(FakeHost(), '4321:987')
+    assert calls == ['mount-preflight-mock'] and not list(tmp_path.iterdir())
