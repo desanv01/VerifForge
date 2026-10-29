@@ -67,7 +67,13 @@ def _check_process_cleanup(tmp_path):
         assert reason == ("cancelled" if cancellation else "timeout")
         pid = int((output / "pid").read_text())
         state = Path(f"/proc/{pid}/stat")
-        assert not state.exists() or state.read_text().split()[2] == "Z"
+        try:
+            process_state = state.read_text().split()[2]
+        except FileNotFoundError:
+            # A reaped child can disappear between lookup and open. Absence is
+            # the expected settled state; other read failures remain failures.
+            continue
+        assert process_state == "Z"
 
 
 @pytest.mark.skipif(platform.system() != "Linux" or shutil.which("verilator") is None, reason="real Linux simulator required")
