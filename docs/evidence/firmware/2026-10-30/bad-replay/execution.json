@@ -1,0 +1,48 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "/opt/venv/bin/python",
+        "-m",
+        "veriforge.firmware.sim_job",
+        "/tmp/firmware-snapshot"
+      ],
+      "phase": "simulator",
+      "returncode": 0,
+      "wall_seconds": 8.708455489000016
+    }
+  ],
+  "completed": true,
+  "files": {
+    "address-check.json": "1871cbf8b02b2f914c35c442d884dabe22448324e5ac26b9a658a915146a77a8",
+    "disassembly.txt": "f266a0bf22d88bdb3bdbbff17af51ab283d8903a0fc0b6072fa053b725b098f1",
+    "elf_headers.txt": "5e219fcefae4a0c6eeace0936f09056cc1613492513fd3f3164e57f48351eaa1",
+    "execution-identities.json": "ba433fdadf4d4f4c0f70883c2a8af2cc199b31c3b3d23e71ffd0de334f6a8641",
+    "firmware.bin": "26108391b15f93e12691da1c6116bb81ae0ebd6e96d9d1064fc67722a50c1da4",
+    "firmware.elf": "9e969a9e5480e20135930f30b2fac8dbd348907c1282a33e71f51ffb7f19bbf0",
+    "firmware.map": "81688d9d5073d45a18ee61908ae2a7f80cf0ab21023e8cc09c6f091d4d8fc0e1",
+    "firmware_top.sv": "a0b1177f02f505eb23d08fdb2700b76682605ad3532f6143ac3c4cee7b127326",
+    "independent_probe.S": "7a906f59907135fbc129c47e83137779e85b647de5566596bed2063ad8ade5a6",
+    "independent_probe.o": "2693729a459e5311b8811dac5931da4ac9a3396f70829c26193f62ab497c1e6b",
+    "link.ld": "cbfe225815b286b615f7439db2899665eb0b10f6a3ef5364dad37a075f87ae36",
+    "main.c": "798ee2735f1e9099a3f854be9b38d97a1706b606f1a39cb7c541568d8c300a00",
+    "main.o": "3055269b7d9763310d8e268472a8f6da9e37e9ab1829d5683dbb429e6c1b63ce",
+    "native_registers.sv": "06d9c04c8beff2863e98a09428edbaa7a763b875ea946011a4f0972996b198eb",
+    "observation.json": "24506c0abf61b50ea509e0782e5020cebf0d0f590c56c0f366bc8d6e250bd6da",
+    "original-bad-registers.h": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+    "picorv32.v": "0836050971b3c6cdd28ac3b1e5719a67fb645161912bef1e472e63995ceb0622",
+    "picorv32_top.sv": "7cf8a728f22ed45aec2cca2c09f6927e1697736e35b0e36b833b97b894f42ed3",
+    "preparation.json": "ba027c55f10a4a555fc01745748a853d3f367a63ccbdf6529bf7578c47f6e515",
+    "register-contract.json": "ef88127351533f39e46fb924a58443b486ba03f07f6f605fe83bc7e1fbce5759",
+    "registers.h": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+    "results.xml": "77f522b32422cb51074607bf1aa1ebd16a3918551532e7b7901ebcdf2f4d0bf8",
+    "simulation-job.json": "ab8d4383dcf691759dd3169b77ab22e567166a7016fe6d49a72f1b61e5df6745",
+    "start.S": "b80dfbf24304a6f4a34e13d73cb34f13c7d89ee55b7220a909d846c0bbb374ea",
+    "start.o": "d7b340c5e016cffc0821823bcaf156f1b582e9703708a5263193e9568c159876"
+  },
+  "fixture_id": "fw-regmap-offset-bug-v1",
+  "replay": true,
+  "replay_original_hash": "ecffcca57a2aaf321dd8a831b261c73da0b4b62a8a5cf86b2ab973948da06b60",
+  "schema_version": "firmware.ci-execution.v1",
+  "wall_seconds": 8.712487156999941
+}

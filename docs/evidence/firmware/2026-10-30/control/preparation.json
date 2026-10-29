@@ -1,0 +1,225 @@
+{
+  "schema_version": "firmware.executable-preparation.v1",
+  "execution_status": "not_run",
+  "preparation": {
+    "schema_version": "firmware.executable-prep.v1",
+    "fixture_id": "fw-regmap-control-v1",
+    "max_retired": 4096,
+    "max_cycles": 200000,
+    "wall_time_seconds": 120.0
+  },
+  "profile": {
+    "schema_version": "firmware.platform.v1",
+    "core_revision": "ef203c2b0a3fb793280f5114941416c425c5b461",
+    "reference_revision": "4c6a9bc79dab80616932949707e7c0471d8e9e54",
+    "isa": "RV32I",
+    "abi": "ilp32",
+    "byte_order": "little",
+    "ram_start": 2147483648,
+    "ram_end_exclusive": 2147549184,
+    "reset_vector": 2147483648,
+    "completion_mailbox": 2147548928,
+    "completion_value": 1,
+    "mmio_start": 1073741824,
+    "mmio_end_exclusive": 1073741840,
+    "memory_bus": "picorv32_native_valid_ready_32bit_byte_wstrb",
+    "compiler_flags": [
+      "-march=rv32i",
+      "-mabi=ilp32",
+      "-mno-relax",
+      "-nostdlib",
+      "-nostartfiles"
+    ],
+    "execution_status": "not_run"
+  },
+  "profile_hash": "aac677746f64168e2dd2e9f829f2defe3f727fa02a18f45fd32f7a66773be5c4",
+  "contract_hash": "8c7283f35a9b198f3a2cb5a9d04580eb98ef90e92e268621d89fff8c06a50f09",
+  "candidate_provenance": null,
+  "original_bad_hash": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+  "selected_header_hash": "552749250f2edae188589e9c62d7ef6bcc203bbb310ac68756b327a38573a755",
+  "preparer_hash": "3fe11f3767922297d5331b6a2a5be5e9a7bcd366f7b5188e46ee1181de0771ef",
+  "fact_extractor_hash": "de06195d12a964a647becd19ed20a20b33c253d2d864fec06b3730047517e4b7",
+  "address_checker_hash": "652beee5a6b043818cc262c1723c1e9596367f82b794213e76bd94a77827d380",
+  "core_revision": "ef203c2b0a3fb793280f5114941416c425c5b461",
+  "runtime_files": {
+    "harness.py": "f9aaa9dce71af57ec6eb5bc4e93ec726e42d8ae27a028dee74ff3618359a4d78",
+    "sim_test.py": "1ea2e9087182cd2ca8c8218fa5303c5536e75d7efb55052455cd988433f6259c",
+    "sim_job.py": "bd484c8dde000b9f8445d916ac869f38d4e4966887994c9ad6c917c640d3f45d"
+  },
+  "shared_runtime_files": {
+    "memory.py": "5aabc7af95c3f6be622059f8c475bbd0f463466f729267ca699c93f8ed53d182",
+    "profile.py": "f2944d49eaf356bdc3078dd35cc9dc201f025159bcac3274a8bc6f12f5294680",
+    "contracts.py": "a4cb03b72d3ac97cb5706079c769fc436f46bc43bba93b171351100bdf8ab3ef"
+  },
+  "source_files": {
+    "start.S": {
+      "sha256": "b80dfbf24304a6f4a34e13d73cb34f13c7d89ee55b7220a909d846c0bbb374ea",
+      "size_bytes": 648
+    },
+    "independent_probe.S": {
+      "sha256": "7a906f59907135fbc129c47e83137779e85b647de5566596bed2063ad8ade5a6",
+      "size_bytes": 259
+    },
+    "main.c": {
+      "sha256": "798ee2735f1e9099a3f854be9b38d97a1706b606f1a39cb7c541568d8c300a00",
+      "size_bytes": 960
+    },
+    "link.ld": {
+      "sha256": "cbfe225815b286b615f7439db2899665eb0b10f6a3ef5364dad37a075f87ae36",
+      "size_bytes": 661
+    },
+    "native_registers.sv": {
+      "sha256": "06d9c04c8beff2863e98a09428edbaa7a763b875ea946011a4f0972996b198eb",
+      "size_bytes": 1406
+    },
+    "firmware_top.sv": {
+      "sha256": "a0b1177f02f505eb23d08fdb2700b76682605ad3532f6143ac3c4cee7b127326",
+      "size_bytes": 2443
+    },
+    "picorv32.v": {
+      "sha256": "0836050971b3c6cdd28ac3b1e5719a67fb645161912bef1e472e63995ceb0622",
+      "size_bytes": 94657
+    },
+    "picorv32_top.sv": {
+      "sha256": "7cf8a728f22ed45aec2cca2c09f6927e1697736e35b0e36b833b97b894f42ed3",
+      "size_bytes": 1834
+    },
+    "registers.h": {
+      "sha256": "552749250f2edae188589e9c62d7ef6bcc203bbb310ac68756b327a38573a755",
+      "size_bytes": 206
+    },
+    "original-bad-registers.h": {
+      "sha256": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
+      "size_bytes": 206
+    },
+    "register-contract.json": {
+      "sha256": "ef88127351533f39e46fb924a58443b486ba03f07f6f605fe83bc7e1fbce5759",
+      "size_bytes": 535
+    },
+    "address-check.json": {
+      "sha256": "9ae54dcd642aefec8d0a9562bedb6e71f4dd8d61376a002d645fecd3935ef636",
+      "size_bytes": 370
+    }
+  },
+  "recipes": {
+    "assemble_start": [
+      "riscv64-unknown-elf-gcc",
+      "-march=rv32i",
+      "-mabi=ilp32",
+      "-mno-relax",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-pic",
+      "-fno-pie",
+      "-fno-stack-protector",
+      "-msmall-data-limit=0",
+      "-Os",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-c",
+      "/tmp/firmware-snapshot/start.S",
+      "-o",
+      "/tmp/firmware-snapshot/start.o"
+    ],
+    "assemble_probe": [
+      "riscv64-unknown-elf-gcc",
+      "-march=rv32i",
+      "-mabi=ilp32",
+      "-mno-relax",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-pic",
+      "-fno-pie",
+      "-fno-stack-protector",
+      "-msmall-data-limit=0",
+      "-Os",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-c",
+      "/tmp/firmware-snapshot/independent_probe.S",
+      "-o",
+      "/tmp/firmware-snapshot/independent_probe.o"
+    ],
+    "compile_main": [
+      "riscv64-unknown-elf-gcc",
+      "-march=rv32i",
+      "-mabi=ilp32",
+      "-mno-relax",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-pic",
+      "-fno-pie",
+      "-fno-stack-protector",
+      "-msmall-data-limit=0",
+      "-Os",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/tmp/firmware-snapshot",
+      "-c",
+      "/tmp/firmware-snapshot/main.c",
+      "-o",
+      "/tmp/firmware-snapshot/main.o"
+    ],
+    "compiler": [
+      "riscv64-unknown-elf-gcc",
+      "-march=rv32i",
+      "-mabi=ilp32",
+      "-mno-relax",
+      "-nostdlib",
+      "-nostartfiles",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-pic",
+      "-fno-pie",
+      "-fno-stack-protector",
+      "-msmall-data-limit=0",
+      "-Os",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-Wl,--no-relax",
+      "-Wl,--build-id=none",
+      "-I",
+      "/tmp/firmware-snapshot",
+      "-T",
+      "/tmp/firmware-snapshot/link.ld",
+      "/tmp/firmware-snapshot/start.o",
+      "/tmp/firmware-snapshot/independent_probe.o",
+      "/tmp/firmware-snapshot/main.o",
+      "-Wl,-Map=/tmp/firmware-snapshot/firmware.map",
+      "-o",
+      "/tmp/firmware-snapshot/firmware.elf"
+    ],
+    "binary": [
+      "riscv64-unknown-elf-objcopy",
+      "-O",
+      "binary",
+      "/tmp/firmware-snapshot/firmware.elf",
+      "/tmp/firmware-snapshot/firmware.bin"
+    ],
+    "disassembly": [
+      "riscv64-unknown-elf-objdump",
+      "-d",
+      "-M",
+      "no-aliases,numeric",
+      "/tmp/firmware-snapshot/firmware.elf"
+    ],
+    "elf_headers": [
+      "riscv64-unknown-elf-readelf",
+      "-h",
+      "-l",
+      "-A",
+      "/tmp/firmware-snapshot/firmware.elf"
+    ]
+  },
+  "recipe_status": "prepared_not_executed",
+  "expected_observation": "First conflicting accepted MMIO transaction is STATUS write: address0x40000008 versus independent requirement0x40000004. No actual transaction observed yet.",
+  "limitations": [
+    "No compilation/core/MMIO run, no portable replay or accepted repair yet.",
+    "RAM-only Spike baseline is not a reference for this peripheral."
+  ]
+}

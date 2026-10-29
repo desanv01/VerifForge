@@ -1,0 +1,10 @@
+{
+  "schema_version": "firmware.comparison.v1",
+  "verdict": "facts_agree",
+  "execution_status": "not_run",
+  "contract_hash": "8c7283f35a9b198f3a2cb5a9d04580eb98ef90e92e268621d89fff8c06a50f09",
+  "issues": [],
+  "limitations": [
+    "Address comparison does not verify access policy, reset, byte-strobe behavior, side effects, ELF startup or firmware execution."
+  ]
+}
