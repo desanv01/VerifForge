@@ -5,14 +5,20 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from typing import Literal
+from typing import Annotated, Callable, Literal
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from pydantic import Field, ValidationError
 
+from veriforge.adapters import ValidatedExperiment
+
 from veriforge.contracts import (
-    ArtifactReference, AttemptResult, Experiment, ExperimentRunner, FixtureId, WireModel, canonical_hash,
+    ArtifactReference, AttemptResult, WireModel, canonical_hash,
 )
+from .families import descriptor_for, validate_arithmetic_trace, validate_experiment
+
+EvidenceExperiment = Annotated[ValidatedExperiment, Field(discriminator="target")]
+EvidenceRunner = Callable[[ValidatedExperiment, Path], AttemptResult]
 
 
 class ExportLimits(WireModel):
@@ -27,23 +33,23 @@ class ReplayRecord(WireModel):
 
 
 class ReductionRecord(WireModel):
-    original_experiment: Experiment
+    original_experiment: EvidenceExperiment
     original_result: AttemptResult
-    reduced_experiment: Experiment
+    reduced_experiment: EvidenceExperiment
     reduced_result: AttemptResult
     attempts: tuple[AttemptResult, ...]
-    submitted_experiments: tuple[Experiment, ...]
+    submitted_experiments: tuple[EvidenceExperiment, ...]
     max_attempts: int
     improved: bool
     claim: Literal["bounded_search_no_minimality_guarantee"] = "bounded_search_no_minimality_guarantee"
 
 
 class CandidateValidation(WireModel):
-    original_experiment: Experiment
+    original_experiment: EvidenceExperiment
     original_result: AttemptResult
     original_replay: AttemptResult
-    candidate_fixture_id: FixtureId
-    candidate_experiments: tuple[Experiment, ...]
+    candidate_fixture_id: str
+    candidate_experiments: tuple[EvidenceExperiment, ...]
     neighboring_plan_count: int
     regression_plan_count: int
     witness: AttemptResult | None = None
@@ -73,11 +79,11 @@ def _artifact(root: Path, relative: str) -> Path:
     return path
 
 
-def load_attempt(attempt_dir: Path, *, limits: ExportLimits = ExportLimits()) -> tuple[Experiment, AttemptResult]:
+def load_attempt(attempt_dir: Path, *, limits: ExportLimits = ExportLimits()) -> tuple[ValidatedExperiment, AttemptResult]:
     """Read exact stored input and verify every referenced artifact, size and hash."""
     root = Path(attempt_dir).resolve()
     result = AttemptResult.model_validate_json(_read(_artifact(root, "result.json"), limits.max_bytes))
-    experiment = Experiment.model_validate_json(_read(_artifact(root, "experiment.json"), limits.max_bytes))
+    experiment = validate_experiment(json.loads(_read(_artifact(root, "experiment.json"), limits.max_bytes)))
     if result.experiment_id != experiment.experiment_id:
         raise ValueError("result refers to a different experiment")
     if result.identity is None or result.identity.experiment_hash != canonical_hash(experiment):
@@ -97,10 +103,23 @@ def load_attempt(attempt_dir: Path, *, limits: ExportLimits = ExportLimits()) ->
         data = _read(_artifact(root, ref.path), min(ref.size_bytes, limits.max_bytes))
         if len(data) != ref.size_bytes or _digest(data) != ref.sha256:
             raise ValueError("artifact hash or size mismatch")
+    descriptor = descriptor_for(experiment)
+    if descriptor.trace_artifact is not None:
+        if result.trace:
+            raise ValueError("family-specific trace cannot use FIFO trace fields")
+        design = result.verdict in {"pass_within_scope", "design_mismatch", "property_failure"}
+        if descriptor.trace_artifact in paths:
+            raw = _read(_artifact(root, descriptor.trace_artifact), limits.max_bytes)
+            ref = next(ref for ref in result.artifacts if ref.path == descriptor.trace_artifact)
+            if len(raw) != ref.size_bytes or _digest(raw) != ref.sha256:
+                raise ValueError("arithmetic trace changed during validation")
+            validate_arithmetic_trace(raw, experiment, result)
+        elif design:
+            raise ValueError("checked arithmetic result requires its family trace artifact")
     return experiment, result
 
 
-def _identity_matches(result: AttemptResult, experiment: Experiment, original: AttemptResult,
+def _identity_matches(result: AttemptResult, experiment: ValidatedExperiment, original: AttemptResult,
                       *, candidate: bool = False) -> bool:
     a, b = original.identity, result.identity
     return bool(a and b and result.experiment_id == experiment.experiment_id
@@ -134,11 +153,20 @@ def _save(path: Path, value: WireModel):
         stream.write(value.model_dump_json(indent=2))
 
 
-def replay_attempt(attempt_dir: Path, output_dir: Path, *, runner: ExperimentRunner | None = None) -> ReplayRecord:
+def replay_attempt(attempt_dir: Path, output_dir: Path, *, runner: EvidenceRunner | None = None) -> ReplayRecord:
     experiment, original = load_attempt(attempt_dir)
     if runner is None:
-        from veriforge.rtl import replay
-        result = replay(attempt_dir, output_dir)
+        descriptor = descriptor_for(experiment)
+        expected = descriptor.expected_identity(experiment)
+        if any(getattr(original.identity, key) != value for key, value in expected.items()):
+            raise ValueError("replay source/checker/contract/experiment identity changed")
+        ref = next((ref for ref in original.artifacts if ref.path == "stimulus.json"), None)
+        if ref is None:
+            raise ValueError("native replay requires verified stored stimulus")
+        raw = _read(_artifact(Path(attempt_dir).resolve(), ref.path), ref.size_bytes)
+        if _digest(raw) != ref.sha256 or json.loads(raw) != descriptor.expand_stimulus(experiment):
+            raise ValueError("stored stimulus differs from exact typed experiment")
+        result = descriptor.resolve_runner("native")(experiment, output_dir)
     else:
         result = runner(experiment, output_dir)
     if not _identity_matches(result, experiment, original):
@@ -146,7 +174,7 @@ def replay_attempt(attempt_dir: Path, output_dir: Path, *, runner: ExperimentRun
     return ReplayRecord(original=original, replayed=result, same_semantic_failure=same_failure(original, result))
 
 
-def _candidates(experiment: Experiment):
+def _candidates(experiment: ValidatedExperiment):
     operations = experiment.model_dump(mode="json")["operations"]
     # Chunk deletion first; then single deletions and bounded scalar simplification.
     size = max(1, len(operations) // 2)
@@ -155,12 +183,12 @@ def _candidates(experiment: Experiment):
             yield operations[:start] + operations[start + size:]
         size //= 2
     for index, op in enumerate(operations):
-        for field, value in (("cycles", 1), ("value", 0)):
+        for field, value in (("cycles", 1), ("value", 0), ("a", 0), ("b", 0)):
             if field in op and op[field] != value:
                 yield operations[:index] + [{**op, field: value}] + operations[index + 1:]
 
 
-def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: ExperimentRunner,
+def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: EvidenceRunner,
                    max_attempts: int = 30) -> ReductionRecord:
     if type(max_attempts) is not int or not 1 <= max_attempts <= 1000:
         raise ValueError("max_attempts must be between 1 and 1000")
@@ -176,7 +204,7 @@ def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: ExperimentRun
             data = best.model_dump(mode="json")
             data["operations"] = operations
             try:
-                proposed = Experiment.model_validate(data)
+                proposed = validate_experiment(data)
             except ValidationError:
                 continue
             key = canonical_hash(proposed)
@@ -201,9 +229,9 @@ def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: ExperimentRun
     return record
 
 
-def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture_id: FixtureId,
-                       candidate_runner: ExperimentRunner, original_runner: ExperimentRunner,
-                       neighboring_plans: tuple[Experiment, ...], regression_plans: tuple[Experiment, ...]) -> CandidateValidation:
+def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture_id: str,
+                       candidate_runner: EvidenceRunner, original_runner: EvidenceRunner,
+                       neighboring_plans: tuple[ValidatedExperiment, ...], regression_plans: tuple[ValidatedExperiment, ...]) -> CandidateValidation:
     experiment, original = load_attempt(attempt_dir)
     if not same_failure(original, original):
         raise ValueError("candidate validation requires a checked original failure")
@@ -214,13 +242,15 @@ def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture
     plans = (experiment, *neighboring_plans, *regression_plans)
     candidates = []
     for plan in plans:
-        plan = Experiment.model_validate(plan.model_dump(mode="json"))
+        plan = validate_experiment(plan)
+        if descriptor_for(plan).adapter_id != descriptor_for(experiment).adapter_id:
+            raise ValueError("candidate validation cannot change adapter family")
         if (plan.contract_id, plan.target, plan.parameters, plan.fixture_id) != (
                 experiment.contract_id, experiment.target, experiment.parameters, experiment.fixture_id):
             raise ValueError("validation plans must keep original contract/target/parameters/revision")
         data = plan.model_dump(mode="json")
         data["fixture_id"] = candidate_fixture_id
-        candidates.append(Experiment.model_validate(data))
+        candidates.append(validate_experiment(data))
     root = _new_output(output_dir)
     reproduced = original_runner(experiment, root / "original-replay")
     common = dict(original_experiment=experiment, original_result=original, original_replay=reproduced,
@@ -245,7 +275,6 @@ def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture
 
 # Raw logs, job descriptions, environment diagnostics and arbitrary uploaded files
 # are deliberately absent. Exact originals remain in the local attempt directory.
-_PORTABLE = {"stimulus.json", "contract.json", "fifo.sv", "checker.py", "observed.json"}
 _SENSITIVE = re.compile(r"(?i)([a-z]:[/\\]|/(?:users|home|workspace|attempt|tmp|var|private)/|"
                         r"(?:api[_-]?key|access[_-]?token|password|authorization)\s*[\"']?\s*[:=]|"
                         r"\b(?:sk-|ghp_|github_pat_)[a-z0-9_-]{8,}|-----BEGIN .*PRIVATE KEY)")
@@ -260,8 +289,8 @@ def _screen_content(data: bytes) -> None:
         raise ValueError("portable evidence contains possible secret or local machine path")
 
 
-def _portable_bytes(root: Path, ref: ArtifactReference, limits: ExportLimits) -> bytes:
-    if ref.path not in _PORTABLE:
+def _portable_bytes(root: Path, ref: ArtifactReference, limits: ExportLimits, experiment: ValidatedExperiment) -> bytes:
+    if ref.path not in descriptor_for(experiment).portable_artifacts:
         raise ValueError("artifact is not permitted for portable download")
     data = _read(_artifact(root, ref.path), min(ref.size_bytes, limits.max_bytes))
     if len(data) != ref.size_bytes or _digest(data) != ref.sha256:
@@ -273,11 +302,11 @@ def _portable_bytes(root: Path, ref: ArtifactReference, limits: ExportLimits) ->
 def portable_artifact_bytes(attempt_dir: Path, artifact_id: str, *,
                             limits: ExportLimits = ExportLimits()) -> bytes:
     """Return a verified bounded snapshot; authorization remains the caller's duty."""
-    _, result = load_attempt(attempt_dir, limits=limits)
+    experiment, result = load_attempt(attempt_dir, limits=limits)
     ref = next((ref for ref in result.artifacts if ref.artifact_id == artifact_id), None)
     if ref is None:
         raise ValueError("artifact ID is not present in the verified attempt")
-    return _portable_bytes(Path(attempt_dir).resolve(), ref, limits)
+    return _portable_bytes(Path(attempt_dir).resolve(), ref, limits, experiment)
 
 
 def export_bundle(attempt_dir: Path, destination: Path, *, limits: ExportLimits = ExportLimits()) -> Path:
@@ -286,13 +315,18 @@ def export_bundle(attempt_dir: Path, destination: Path, *, limits: ExportLimits 
     root, destination = Path(attempt_dir).resolve(), Path(destination).resolve()
     if destination.is_relative_to(root):
         raise ValueError("export must not modify original evidence directory")
-    selected = [ref for ref in result.artifacts if ref.path in _PORTABLE]
+    descriptor = descriptor_for(experiment)
+    selected = [ref for ref in result.artifacts if ref.path in descriptor.portable_artifacts]
     metadata = {
         "schema_version": "1", "experiment": experiment.model_dump(mode="json"),
         "execution_status": result.execution_status, "verdict": result.verdict,
         "identity": result.identity.model_dump(mode="json"),
         "tool_versions": [v.model_dump(mode="json") for v in result.tool_versions],
         "trace": [row.model_dump(mode="json") for row in result.trace],
+        "adapter_id": descriptor.adapter_id,
+        "family_trace": ({"schema_version": descriptor.trace_schema,
+            "artifact": "artifacts/" + descriptor.trace_artifact}
+            if descriptor.trace_artifact and any(ref.path == descriptor.trace_artifact for ref in selected) else None),
         "failure": ({k: v for k, v in result.failure_signature.model_dump(mode="json").items()
                      if k not in {"expected", "observed"}} if result.failure_signature else None),
         "artifacts": [ref.model_dump(mode="json") for ref in selected],
@@ -303,7 +337,7 @@ def export_bundle(attempt_dir: Path, destination: Path, *, limits: ExportLimits 
              "experiment.json": experiment.model_dump_json(indent=2).encode(),
              "REPORT.txt": b"VerifForge evidence export\nReplay the exact experiment using the matching curated RTL runner.\nVerify manifest artifact SHA-256 values before use. No model call is needed.\nA passing build is not functional correctness. No global minimality is claimed.\n"}
     for ref in selected:
-        files["artifacts/" + ref.path] = _portable_bytes(root, ref, limits)
+        files["artifacts/" + ref.path] = _portable_bytes(root, ref, limits, experiment)
     if len(files) > limits.max_files or sum(map(len, files.values())) > limits.max_bytes:
         raise ValueError("export exceeds file or byte limit")
     for data in files.values():

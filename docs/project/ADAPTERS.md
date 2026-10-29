@@ -1,9 +1,9 @@
-# Curated adapter registry — VF-052
+# Curated adapter registry — VF-052 / VF-054C
 
 `veriforge.adapters` provides a static registry for typed validation and runner
-resolution. This is groundwork for future integration. It does not change the
-existing API, controller, evidence pipeline, shared schemas, checkers, or HDL.
-No simulator runs are part of this registry delivery.
+resolution and trusted metadata for family adoption. This registry delivery does
+not change API/core, evidence, shared schemas, checkers, or HDL. Their owners adopt
+the interface independently. No simulator runs are part of this registry delivery.
 
 | Adapter ID | Experiment schema/model | Contract model | Installed fixtures |
 |---|---|---|---|
@@ -66,6 +66,51 @@ token and controller-selected output directory. Tokens must provide `is_set()`;
 token or manufacture cancellation outcomes. Existing backend process cleanup and
 execution/verdict separation remain authoritative.
 
+## Trusted identity and evidence helpers
+
+The API and evidence owners agreed on one shared descriptor interface for family
+adoption. These are installed-code helpers, never planner-supplied identity claims:
+
+| Helper or property | Result |
+|---|---|
+| `fixture_source(fixture_id)` | Fresh dictionary with exactly `source_file_hash` and integer `variant`; installed fixture only |
+| `expected_identity(experiment)` | Fresh dictionary with exactly `source_hash`, `checker_hash`, `contract_hash`, `experiment_hash` |
+| `expand_stimulus(experiment)` | Fresh deterministic list of typed cycle dictionaries from the family's existing oracle |
+| `source_artifact` | `fifo.sv` or `multiplier.sv` |
+| `portable_artifacts` | Fixed tuple: stimulus, contract, checker, observations and own source; arithmetic also includes `arithmetic-trace.json` |
+
+Fixed source paths and source-variant declarations live in an internal frozen
+descriptor record. The public source snapshot contains no paths, commands or
+imports. Caller mutation of a returned dictionary cannot change descriptor state.
+`expected_identity` validates the family/fixture/parameters, reads current installed
+source bytes, uses the reviewed checker/contract factory, and matches both existing
+runners' source identity formula:
+
+```text
+source_hash = SHA256(compact_sorted_JSON({
+  "source": source_file_hash, "variant": variant, "parameters": validated_parameters
+}))
+```
+
+Contract and experiment hashes use shared `canonical_hash`; the checker hash is
+the reviewed contract's actual checker SHA. There is deliberately no expected
+environment/tool hash: only an actual execution can supply observed environment
+identity. This method is an explicit current-installation preflight for execution
+or replay, and does not run a tool or create an attempt directory.
+
+Historical stored-input parsing and export must remain separate from current
+installation preflight. `validate_experiment`, schema/portable metadata access,
+and stored-model validation do not read active source files. An old archive can
+remain readable when current source differs or is absent; a new replay still has
+to reject a current identity mismatch. Evidence owners retain artifact hash/size,
+path-containment, screening, and arithmetic sidecar-envelope checks. An allowlist
+is a selection boundary, not evidence integrity or download authorization.
+
+No new selector alias or implicit schema map was introduced. Callers resolve a
+known descriptor and then use strict family validation. Existing descriptor fields
+and runner call signatures remain compatible; new metadata fields have defaults
+for code-created legacy descriptors, whose new unavailable helpers fail explicitly.
+
 ## Evidence and capability limits
 
 FIFO transactions remain in `AttemptResult.trace`; there is no new FIFO trace wire
@@ -78,9 +123,10 @@ These descriptors identify installed curated packages. Registration is not proof
 of a working host toolchain or live arithmetic acceptance. Native execution needs
 the existing supported Linux Verilator/cocotb environment; host container execution
 needs the prebuilt project image and Docker daemon. FIFO live evidence is tracked
-by VF-011/VF-021. Arithmetic live acceptance remains owned and gated by VF-050A.
-The API, planner, evidence replay/reduction, and repair integrations remain
-FIFO-specific until their owners make explicitly versioned changes.
+by VF-011/VF-021. See ARITHMETIC.md for the separately recorded VF-050B curated
+arithmetic acceptance. It does not establish API/planner/evidence integration.
+Those integrations remain separate owner assignments with their own acceptance;
+the registry adds no new live capability claim.
 
 No AXI-Lite/general-software adapter, automatic package discovery, external plugin
 loader, arbitrary project import, or capability negotiation is implemented here.

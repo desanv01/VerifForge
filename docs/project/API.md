@@ -1,5 +1,21 @@
 # Local API agreement (VF-020)
 
+## Typed campaign family agreement (VF-054A)
+
+Campaign creation accepts `adapter_id: "rtl.fifo.v1" | "rtl.arithmetic.v1"` beside `project_id` and `plan`. Omitted adapter remains legacy FIFO only. FIFO plans use `schema_version:"1"`; arithmetic requires explicit `adapter_id:"rtl.arithmetic.v1"` and `plan.schema_version:"arithmetic.v1"`. Registry descriptors validate installed fixtures and exact family schemas; cross-family payloads fail422. Arithmetic operations/contract/parameters are never coerced to FIFO. The common execution result preserves its native shape: arithmetic valid/product rows are in `arithmetic-trace.json` (`arithmetic.trace.v1`), with empty common FIFO-shaped `trace`.
+
+Project/campaign responses add `adapter_id`; projects also advertise `experiment_schema_version`, `trace_schema`, and `trace_artifact`. GET contracts returns that family's versioned typed contract. Existing FIFO records are backfilled with `rtl.fifo.v1` by additive migration, retaining original hashes/stimulus. Campaign `contract_snapshot` uses its stored descriptor family and exact parameters. VF-054D connects the separately reviewed generic evidence hooks for FIFO and arithmetic; other families remain explicitly unsupported. Native/container dispatch is selected only by the trusted static descriptor; no client commands/imports/paths or execution-mode override exists. This is source integration, not permission to launch jobs outside the coordinator's runtime gate.
+
+Migration `7bf054adapter` follows `6bf022evidence`. The registry hooks are `descriptor.fixture_source(fixture_id)` (exact trusted source-file hash and variant) and `descriptor.expected_identity(experiment)` (source/checker/contract/experiment hashes, no fabricated environment). Source metadata is frozen in the catalog; current installed identity is independently rechecked before execution and completion. Typed contract parsing uses the campaign's stored descriptor, rather than selecting a family from a client filename.
+
+Example arithmetic create (with `Idempotency-Key`):
+
+```json
+{"adapter_id":"rtl.arithmetic.v1","project_id":"multiplier_correct","plan":{"schema_version":"arithmetic.v1","experiment_id":"arithmetic-example","fixture_id":"multiplier_correct","operations":[{"op":"reset"},{"op":"multiply","a":255,"b":255},{"op":"idle","cycles":2}]}}
+```
+
+This creates a draft. Start/cancel/events/attempts/findings retain the existing routes and semantics. The reviewed contract requires a drained or reset pipeline; the example includes two idle edges after the multiplication. An arithmetic mismatch names its own requirement (for example `ARITH_PRODUCT` or `ARITH_LATENCY`) and keeps valid/product evidence in its typed sidecar.
+
 Base URL: `http://127.0.0.1:8000`. Start with `uvicorn veriforge.api.app:app --host 127.0.0.1`.
 This milestone uses one local identity; it is not a remote authentication implementation.
 
@@ -58,7 +74,7 @@ Current scope: one bounded curated FIFO experiment per campaign; localhost ident
 
 These routes require migration `6bf022evidence`, a shared `VERIFORGE_ARTIFACT_ROOT` for API/workers, and the existing reconciler/RQ worker. They use **database attempt IDs** (`campaign.attempts[].id`). `attempt.result.attempt_id` is an independent adapter record ID and is never a filesystem lookup authority. No request body or local path is accepted.
 
-`GET /api/health` advertises `evidence_api: "1"` when these routes are installed. This is an endpoint capability marker; it does not certify simulator readiness. UI must keep evidence execution actions unavailable when the marker is absent from an older runtime snapshot.
+`GET /api/health` advertises `evidence_api: "1"` when these routes are installed. VF-054D also advertises `evidence_adapters:["rtl.arithmetic.v1","rtl.fifo.v1"]`. These are source capability markers, not simulator readiness. Older snapshots without the family array support only their previously qualified FIFO evidence routes; new clients must not infer arithmetic support solely from `evidence_api`. UI must keep evidence execution actions unavailable when the marker or required family support is absent.
 
 | Method/path | Result |
 | --- | --- |
@@ -77,6 +93,8 @@ Unknown IDs, cross-owner access and unknown/excluded artifact IDs return 404. Mi
 Artifacts are selected by matching the stored artifact ID within that authorized database attempt. The server maps the attempt to `<artifact-root>/<DB-attempt-id>`; a URL cannot choose a directory or path. Completed evidence must match the immutable DB result and exact campaign experiment; source/checker/contract/stimulus hashes must agree with the campaign. All referenced artifacts are hash/size checked under fixed bounds: 100 files, 20 MiB total, bounded metadata JSON. Every symlink/junction and ancestor is rejected. Bytes are read into a bounded immutable response snapshot before returning, avoiding a later path reopen.
 
 Only `stimulus.json`, `contract.json`, `fifo.sv`, `checker.py`, and `observed.json` are eligible for raw download. Shared evidence content screening rejects common credential/private-key/local-path markers and invalid UTF-8. Logs, job metadata and environment diagnostics are browse-only relative metadata. Screening is conservative protection for curated fixtures, not a universal secret classifier or arbitrary-upload support.
+
+For arithmetic, the reviewed descriptor replaces `fifo.sv` with `multiplier.sv` and adds `arithmetic-trace.json`; a wrong-family source remains excluded even if referenced in the result. The sidecar is validated as `arithmetic.trace.v1`, with strict boolean/integer fields, complete cycles/operation indices and width bounds. It stays distinct from the empty common FIFO trace. Export manifests include the adapter and a `family_trace` reference. API DB ownership/exact DB-disk result/immutable campaign identity checks apply before these family hooks. Historical load/export does not require the current installation to match old source identities; replay does.
 
 Export runs as a bounded RQ job (`job_timeout=60`) from a private DB-verified byte snapshot, using the shared safe exporter. Exclusive server-generated output paths cannot overwrite original evidence. Only a successfully published ZIP hash/size permits download. Duplicate deliveries claim one job; stale running jobs fail after 120 seconds and revoke publication. The reconciler retries queued delivery after broker failures; a failed export needs a fresh request key. Cancellation and late worker completion cannot overwrite terminal state.
 

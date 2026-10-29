@@ -7,7 +7,7 @@ import { createPlan, hasCompleteIdentity, isActive, MAX_SEED, request } from './
 
 const project = { id: 'fifo_correct', name: 'Correct FIFO', family: 'fifo', support_level: 'experimental', contract_id: 'fifo-v1' }
 const contract = { contract_id: 'fifo-v1', version: '1', review_status: 'reviewed', checker: { checker_id: 'fifo-checker', version: '1', sha256: 'a'.repeat(64) }, parameters: { width: 8, depth: 4 }, requirements: [{ requirement_id: 'RESET_DISCARDS_PENDING_DATA', description: 'Reset discards all pending values.' }], assumptions: [], reset_priority: 'reset_over_read_write', acceptance: 'pre_edge_flags', read_semantics: 'oldest_on_accepted_edge' }
-const campaign = { id: 'campaign-test', project_id: project.id, contract_id: contract.contract_id, execution_status: 'draft', verdict: null, version: 1, created_at: '2026-10-23T00:00:00Z', updated_at: '2026-10-23T00:00:00Z', attempts: [], findings: [], plan: {} }
+const campaign = { id: 'campaign-test', project_id: project.id, contract_id: contract.contract_id, execution_status: 'draft', verdict: null, version: 1, created_at: '2026-10-23T00:00:00Z', updated_at: '2026-10-23T00:00:00Z', attempts: [], findings: [], plan: {schema_version:"1",target:"fifo",experiment_id:"saved-plan",fixture_id:"fifo_correct",contract_id:"fifo-v1",objective_ids:[],seed:123,parameters:{width:8,depth:4},operations:[{op:"reset",cycles:1}],budget:{max_cycles:100,wall_time_seconds:120,max_artifact_bytes:10485760}} }
 function mount() { const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } }); return render(<QueryClientProvider client={client}><App/></QueryClientProvider>) }
 function mockApi(override?: (url: string, init?: RequestInit) => unknown) {
   return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -93,7 +93,7 @@ describe('investigation workflow', () => {
   it('renders wide saved stimulus and distinct trace integers without rounded digits or raw-JSON claims', async () => {
     history.replaceState(null,'','/?campaign=campaign-test')
     const result = {identity:null,tool_versions:[],artifacts:[],uncertainties:[],failure_signature:null,trace:[{cycle:0,operation_index:0,write_accepted:false,read_accepted:true,expected_data:'odd-placeholder',observed_data:'max-placeholder',expected_empty:true,observed_empty:false,expected_full:false,observed_full:false}]}
-    const wire = JSON.stringify({...campaign,execution_status:'completed',verdict:'design_mismatch',plan:{operations:[{op:'write',value:'max-placeholder'}]},attempts:[{id:'attempt-wide',result}]})
+    const wire = JSON.stringify({...campaign,execution_status:'completed',verdict:'design_mismatch',plan:{...campaign.plan,operations:[{op:'write',value:'max-placeholder'}]},attempts:[{id:'attempt-wide',result}]})
       .replaceAll('"odd-placeholder"','9007199254740993').replaceAll('"max-placeholder"','18446744073709551615')
     const calls = mockApi(); const original = calls.getMockImplementation()!
     calls.mockImplementation((input,init) => String(input) === '/api/campaigns/campaign-test' ? Promise.resolve(new Response(wire)) : original(input,init))

@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import select
 
 from veriforge.api.app import create_app
+from veriforge.adapters import get_adapter
 from veriforge.contracts import ArtifactReference, AttemptResult, Experiment
 from veriforge.core import artifacts, service, worker
 from veriforge.core.database import Attempt, Campaign, EvidenceExport, ReplayLink, now
@@ -31,7 +32,8 @@ def evidence_state(db, tmp_path):
         lease, _, _ = service.claim(session, attempt.id)
         directory = root / attempt.id
         directory.mkdir(parents=True)
-        contents = {"experiment.json": experiment.model_dump_json(indent=2).encode(), "stimulus.json": b'[{"reset":true}]', "execution.log": b"private local diagnostics"}
+        stimulus_bytes = json.dumps(get_adapter("rtl.fifo.v1").expand_stimulus(experiment)).encode()
+        contents = {"experiment.json": experiment.model_dump_json(indent=2).encode(), "stimulus.json": stimulus_bytes, "execution.log": b"private local diagnostics"}
         refs = []
         for index, (name, data) in enumerate(contents.items()):
             (directory / name).write_bytes(data)
@@ -41,7 +43,7 @@ def evidence_state(db, tmp_path):
         assert service.finalize(session, attempt.id, lease, result.model_dump(mode="json"))
         campaign_id, attempt_id = campaign.id, attempt.id
     with TestClient(create_app(db[0], artifact_root=root)) as client:
-        yield {"client": client, "root": root, "directory": directory, "attempt_id": attempt_id, "campaign_id": campaign_id, "result": result, "sessions": db[1]}
+        yield {"client": client, "root": root, "directory": directory, "attempt_id": attempt_id, "campaign_id": campaign_id, "result": result, "sessions": db[1], "stimulus_bytes": stimulus_bytes}
 
 
 def request_replay(state, key="replay"):
@@ -58,7 +60,7 @@ def test_authorized_artifact_mapping_and_portable_snapshot(evidence_state):
     items = client.get(f"/api/attempts/{attempt_id}/artifacts").json()["items"]
     assert [item["downloadable"] for item in items] == [False, True, False]
     response = client.get(f"/api/attempts/{attempt_id}/artifacts/artifact-1/download")
-    assert response.content == b'[{"reset":true}]'
+    assert response.content == state["stimulus_bytes"]
     assert response.headers["x-content-type-options"] == "nosniff"
     assert "attachment" in response.headers["content-disposition"]
     for artifact_id in ("artifact-0", "artifact-2", "other-artifact"):
@@ -274,7 +276,7 @@ def test_export_uses_db_verified_snapshot_during_evidence_swap(evidence_state, m
     response = state["client"].get(f"/api/exports/{export['id']}/download")
     assert response.status_code == 200
     with ZipFile(BytesIO(response.content)) as archive:
-        assert archive.read("artifacts/stimulus.json") == b'[{"reset":true}]'
+        assert archive.read("artifacts/stimulus.json") == state["stimulus_bytes"]
 
 
 def test_symlink_path_is_rejected_when_host_supports_it(evidence_state, tmp_path):

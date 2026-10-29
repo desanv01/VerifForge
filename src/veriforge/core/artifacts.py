@@ -2,19 +2,22 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy import or_, select, update
 
-from veriforge.contracts import AttemptResult, Experiment
+from veriforge.contracts import AttemptResult
+from veriforge.adapters import get_adapter
+from .families import experiment_adapter
 from veriforge.evidence import ExportLimits, export_bundle, load_attempt
 from . import service
 from .database import Attempt, Campaign, EvidenceExport, ReplayLink, identifier, now
 
 LIMITS = ExportLimits()
-PORTABLE_NAMES = {"stimulus.json", "contract.json", "fifo.sv", "checker.py", "observed.json"}
+EVIDENCE_ADAPTERS = frozenset({"rtl.fifo.v1", "rtl.arithmetic.v1"})
 
 
 def storage_root(root=None) -> Path:
@@ -54,6 +57,8 @@ def owned_attempt(session, attempt_id):
     if attempt is None:
         raise service.NotFound(attempt_id)
     campaign = service.owned(session, attempt.campaign_id)
+    if campaign.adapter_id not in EVIDENCE_ADAPTERS:
+        raise service.Conflict("Evidence operations unsupported for this adapter")
     return attempt, campaign
 
 
@@ -62,7 +67,8 @@ def verify_replay_output(directory, experiment, result):
     directory = Path(directory).absolute()
     if AttemptResult.model_validate_json(snapshot_bytes(contained(directory, "result.json"), LIMITS.max_bytes)) != result:
         raise ValueError("Fresh replay result differs from runner record")
-    if Experiment.model_validate_json(snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes)) != experiment:
+    descriptor = experiment_adapter(experiment)
+    if descriptor.validate_experiment(json.loads(snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes))) != experiment:
         raise ValueError("Fresh replay experiment differs from submitted plan")
     if len(result.artifacts) > LIMITS.max_files or sum(ref.size_bytes for ref in result.artifacts) > LIMITS.max_bytes:
         raise ValueError("Fresh replay evidence exceeds bound")
@@ -72,6 +78,19 @@ def verify_replay_output(directory, experiment, result):
         snapshot_bytes(contained(directory, ref.path), LIMITS.max_bytes, sha256=ref.sha256, size=ref.size_bytes)
     if result.identity is not None:
         load_attempt(directory, limits=LIMITS)
+        verify_stimulus(directory, experiment, result)
+
+
+def verify_stimulus(directory, experiment, result):
+    descriptor = experiment_adapter(experiment)
+    ref = next((item for item in result.artifacts if item.path == "stimulus.json"), None)
+    if ref is None:
+        raise ValueError("Exact replay requires verified stored stimulus")
+    raw = snapshot_bytes(contained(directory, ref.path), LIMITS.max_bytes, sha256=ref.sha256, size=ref.size_bytes)
+    # Canonical JSON preserves bool/int/float distinctions that Python container
+    # equality would otherwise erase (True == 1). Exact replay must not coerce.
+    if service.digest(json.loads(raw)) != service.digest(descriptor.expand_stimulus(experiment)):
+        raise ValueError("Stored stimulus differs from exact typed experiment")
 
 
 def attempt_snapshot(session, attempt_id: str, *, root=None, checked_required=False):
@@ -82,7 +101,7 @@ def attempt_snapshot(session, attempt_id: str, *, root=None, checked_required=Fa
         directory = contained(storage_root(root), attempt.id)  # DB ID, never runner result ID
         result = AttemptResult.model_validate(attempt.result)
         on_disk = AttemptResult.model_validate_json(snapshot_bytes(contained(directory, "result.json"), LIMITS.max_bytes))
-        experiment = Experiment.model_validate_json(snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes))
+        experiment = get_adapter(campaign.adapter_id).validate_experiment(json.loads(snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes)))
         if result != on_disk or experiment.model_dump(mode="json") != campaign.plan:
             raise ValueError("Disk records differ from durable execution record")
         if result.experiment_id != experiment.experiment_id:
@@ -105,16 +124,17 @@ def attempt_snapshot(session, attempt_id: str, *, root=None, checked_required=Fa
 
 
 def artifact_list(session, attempt_id, *, root=None):
-    _, _, result, _ = attempt_snapshot(session, attempt_id, root=root)
-    return {"items": [{**ref.model_dump(mode="json"), "downloadable": result.identity is not None and ref.path in PORTABLE_NAMES} for ref in result.artifacts]}
+    _, experiment, result, _ = attempt_snapshot(session, attempt_id, root=root)
+    portable = experiment_adapter(experiment).portable_artifacts
+    return {"items": [{**ref.model_dump(mode="json"), "downloadable": result.identity is not None and ref.path in portable} for ref in result.artifacts]}
 
 
 def artifact_download(session, attempt_id, artifact_id, *, root=None):
-    directory, _, result, _ = attempt_snapshot(session, attempt_id, root=root, checked_required=True)
+    directory, experiment, result, _ = attempt_snapshot(session, attempt_id, root=root, checked_required=True)
     ref = next((item for item in result.artifacts if item.artifact_id == artifact_id), None)
     if ref is None:
         raise service.NotFound(artifact_id)
-    if ref.path not in PORTABLE_NAMES:
+    if ref.path not in experiment_adapter(experiment).portable_artifacts:
         raise service.NotFound(artifact_id)
     from veriforge.evidence import portable_artifact_bytes
     try:
@@ -134,9 +154,10 @@ def replay_campaign(session, attempt_id, key, *, root=None):
         if prior.source_attempt_id != attempt_id:
             raise service.Conflict("Replay key already used for another attempt")
         return service.owned(session, prior.campaign_id)
-    _, experiment, result, original = attempt_snapshot(session, attempt_id, root=root, checked_required=True)
+    directory, experiment, result, original = attempt_snapshot(session, attempt_id, root=root, checked_required=True)
     from .worker import installed_identity
     try:
+        verify_stimulus(directory, experiment, result)
         if installed_identity(experiment) != original.identity:
             raise ValueError("Installed execution provenance differs")
     except (ValueError, OSError, KeyError) as error:
@@ -144,7 +165,7 @@ def replay_campaign(session, attempt_id, key, *, root=None):
     # ReplayLink owns public replay idempotency. Never derive a campaign-create
     # key from client input: that namespace is also accepted by POST /campaigns.
     # require_new is an explicit guard even against an internal key collision.
-    row = service.create_campaign(session, original.project_id, original.plan, "replay:" + identifier(), require_new=True)
+    row = service.create_campaign(session, original.project_id, original.plan, "replay:" + identifier(), require_new=True, adapter_id=original.adapter_id)
     if row.identity != original.identity:
         raise service.Conflict("Current catalog provenance differs from original evidence")
     session.add(ReplayLink(campaign_id=row.id, source_attempt_id=attempt_id, request_key=key))
@@ -248,14 +269,15 @@ def execute_export(export_id, *, sessions=None, root=None):
         no_links(staged)
         staged.mkdir(parents=True, exist_ok=False)
         experiment_bytes = snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes)
-        if Experiment.model_validate_json(experiment_bytes) != experiment:
+        descriptor = experiment_adapter(experiment)
+        if descriptor.validate_experiment(json.loads(experiment_bytes)) != experiment:
             raise ValueError("Experiment changed during snapshot")
         files = {"experiment.json": experiment_bytes, "result.json": result.model_dump_json().encode()}
         for ref in result.artifacts:
             if ref.path == "result.json":
                 raise ValueError("Self-referential evidence record")
             files[ref.path] = snapshot_bytes(contained(directory, ref.path), LIMITS.max_bytes, sha256=ref.sha256, size=ref.size_bytes)
-        if Experiment.model_validate_json(files["experiment.json"]) != experiment:
+        if descriptor.validate_experiment(json.loads(files["experiment.json"])) != experiment:
             raise ValueError("Experiment snapshot differs")
         for relative, data in files.items():
             target = contained(staged, relative)

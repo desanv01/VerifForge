@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 
@@ -90,10 +91,15 @@ def test_replay_cannot_reuse_existing_campaign_through_public_create_key_collisi
 
 def test_capability_marker_and_additive_migration_are_present(evidence_store):
     store = evidence_store
+    scripts = ScriptDirectory.from_config(Config("alembic.ini"))
     with store["sessions"]() as session:
-        assert session.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == "6bf022evidence"
+        revision = session.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+        assert revision == scripts.get_current_head()
+        assert "6bf022evidence" in {item.revision for item in scripts.walk_revisions()}
     with store["client"]() as client:
-        assert client.get("/api/health").json()["evidence_api"] == "1"
+        health = client.get("/api/health").json()
+        assert health["evidence_api"] == "1"
+        assert health["evidence_adapters"] == ["rtl.arithmetic.v1", "rtl.fifo.v1"]
 
 
 def test_download_uses_database_attempt_and_verified_byte_snapshot(evidence_store, monkeypatch):

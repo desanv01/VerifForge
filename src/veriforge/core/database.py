@@ -41,6 +41,7 @@ class Campaign(Base):
     __table_args__ = (UniqueConstraint("owner", "create_key"),)
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
     owner: Mapped[str] = mapped_column(String(128), default="local")
+    adapter_id: Mapped[str] = mapped_column(String(128), default="rtl.fifo.v1", server_default="rtl.fifo.v1")
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     contract_id: Mapped[str] = mapped_column(ForeignKey("contracts.id"))
     create_key: Mapped[str] = mapped_column(String(128))

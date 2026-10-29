@@ -1,34 +1,23 @@
 """Separate RQ process entrypoint. Never invoked by an HTTP request."""
 from __future__ import annotations
 
-import hashlib
-import json
 import os
 import threading
 import time
 from pathlib import Path
 
-from veriforge.contracts import AttemptResult, Experiment, canonical_hash
+from veriforge.contracts import AttemptResult
+from veriforge.adapters import get_adapter
+from .families import experiment_adapter
 from .database import make_engine, session_factory
 from . import service
 
 
-def installed_identity(experiment: Experiment) -> dict:
-    from veriforge.rtl import oracle, reviewed_contract
-    from veriforge.rtl.runner import FIXTURES, ROOT
-    def hash_bytes(data):
-        return hashlib.sha256(data).hexdigest()
-    def encode(value):
-        return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-    return {
-        "experiment_hash": canonical_hash(experiment),
-        "checker_hash": hash_bytes(Path(oracle.__file__).read_bytes()),
-        "contract_hash": canonical_hash(reviewed_contract(experiment.parameters)),
-        "source_hash": hash_bytes(encode({"source": hash_bytes((ROOT / "targets/fifo/fifo.sv").read_bytes()), "variant": FIXTURES[experiment.fixture_id], "parameters": experiment.parameters.model_dump()})),
-    }
+def installed_identity(experiment) -> dict:
+    return experiment_adapter(experiment).expected_identity(experiment)
 
 
-def validate_identity(experiment: Experiment, result: AttemptResult):
+def validate_identity(experiment, result: AttemptResult):
     if result.identity is None:
         return
     if any(getattr(result.identity, key) != value for key, value in installed_identity(experiment).items()):
@@ -71,20 +60,16 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
     heartbeat_thread.start()
     try:
         from .database import Campaign, ReplayLink
-        experiment = Experiment.model_validate(plan)
         with sessions() as session:
             from .database import Attempt
             campaign = session.get(Campaign, session.get(Attempt, attempt_id).campaign_id)
+            descriptor = get_adapter(campaign.adapter_id)
+            experiment = descriptor.validate_experiment(plan)
             is_replay = session.get(ReplayLink, campaign.id) is not None
             if campaign.identity != installed_identity(experiment):
                 raise ValueError("Installed execution provenance changed since campaign creation")
         if runner is None:
-            if os.name == "nt":
-                from veriforge.rtl import run_container_experiment
-                runner = run_container_experiment
-            else:
-                from veriforge.rtl import run_experiment
-                runner = run_experiment
+            runner = descriptor.resolve_runner("container" if os.name == "nt" else "native")
         output = Path(artifact_root or os.getenv("VERIFORGE_ARTIFACT_ROOT", "artifacts")) / attempt_id
         result = AttemptResult.model_validate(runner(experiment, output, cancel_event=LeaseCancellation(sessions, attempt_id, lease)))
         validate_identity(experiment, result)

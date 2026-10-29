@@ -1,17 +1,21 @@
-export interface Project { id: string; name: string; family: string; support_level: string; contract_id: string }
-export interface Contract { contract_id: string; version: string; review_status: string; checker: { checker_id: string; version: string; sha256: string }; parameters: { width: number; depth: number }; requirements: { requirement_id: string; description: string }[]; assumptions: string[]; reset_priority: string; acceptance: string; read_semantics: string }
+export interface Project { id: string; name: string; family: string; support_level: string; contract_id: string; adapter_id?: string; experiment_schema_version?: string; trace_schema?: string | null; trace_artifact?: string | null }
+export interface Contract { contract_id: string; version: string; review_status: string; checker: { checker_id: string; version: string; sha256: string }; parameters: { width: number; depth?: number; latency?: number }; requirements: { requirement_id: string; description: string }[]; assumptions: string[]; target?: string; schema_version?: string; reset_priority?: string; acceptance?: string; read_semantics?: string; timing?: string; reset?: string; bubbles?: string }
 export interface Signature { requirement_id: string; failure_class: string; first_cycle: number; expected: string; observed: string; signature_hash: string }
 export interface Artifact { artifact_id: string; path: string; sha256: string; size_bytes: number; media_type: string }
 export interface DownloadableArtifact extends Artifact { downloadable: boolean }
-export interface Health { status: string; evidence_api?: string }
+export interface Health { status: string; evidence_api?: string; evidence_adapters?: string[] }
 export interface ExportJob { id: string; attempt_id: string; status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'; error_type: string | null; sha256: string | null; size_bytes: number | null }
 export interface Trace { cycle: number; operation_index: number; read_accepted: boolean; write_accepted: boolean; expected_data: InspectionInteger | null; observed_data: InspectionInteger | null; expected_empty: boolean | null; observed_empty: boolean | null; expected_full: boolean | null; observed_full: boolean | null }
 export interface Result { identity: Record<string, string> | null; tool_versions: { name: string; version: string }[]; trace: Trace[]; artifacts: Artifact[]; uncertainties: string[]; failure_signature: Signature | null }
 export interface Finding { id: string; attempt_id: string; status: string; verdict: string; result: Result; contract_id: string; plan_hash: string }
-export interface Campaign { id: string; project_id: string; contract_id: string; execution_status: string; verdict: string | null; version: number; created_at: string; updated_at: string; plan: SavedExperiment; attempts: { id: string; execution_status: string; verdict: string | null; result: Result | null }[]; findings: Finding[] }
+export interface Campaign { id: string; project_id: string; contract_id: string; adapter_id?: string; experiment_schema_version?: string; trace_schema?: string | null; trace_artifact?: string | null; completion_policy?: string; source_attempt_id?: string | null; contract_snapshot?: Contract; execution_status: string; verdict: string | null; version: number; created_at: string; updated_at: string; plan: SavedExperiment; attempts: { id: string; experiment_record_id?: string; execution_status: string; verdict: string | null; result: Result | null }[]; findings: Finding[] }
 export interface RunEvent { sequence: number; kind: string; payload: unknown; created_at: string }
-export interface Experiment { schema_version: '1'; experiment_id: string; fixture_id: string; contract_id: string; target: 'fifo'; objective_ids: string[]; seed: number; operations: ({ op: 'reset'; cycles: number } | { op: 'write'; value: number } | { op: 'read' })[]; parameters: { width: number; depth: number }; budget: { max_cycles: number; wall_time_seconds: number; max_artifact_bytes: number } }
-export type SavedExperiment = Omit<Experiment, 'operations'> & { operations: (Exclude<Experiment['operations'][number], { op: 'write' }> | { op: 'write'; value: InspectionInteger })[] }
+interface ExperimentBase { experiment_id: string; fixture_id: string; contract_id: string; objective_ids: string[]; seed: number; budget: { max_cycles: number; wall_time_seconds: number; max_artifact_bytes: number } }
+export interface FifoExperiment extends ExperimentBase { schema_version: '1'; target: 'fifo'; operations: ({ op: 'reset' | 'idle'; cycles: number } | { op: 'write'; value: number } | { op: 'read' } | { op: 'cycle'; reset: boolean; write: boolean; read: boolean; value: number })[]; parameters: { width: number; depth: number } }
+export interface ArithmeticExperiment extends ExperimentBase { schema_version: 'arithmetic.v1'; target: 'arithmetic'; adapter: 'rtl.arithmetic.v1'; operations: ({ op: 'reset' | 'idle'; cycles: number } | { op: 'multiply'; a: number; b: number } | { op: 'cycle'; reset: boolean; valid: boolean; a: number; b: number })[]; parameters: { width: number; latency: 2 } }
+export type Experiment = FifoExperiment | ArithmeticExperiment
+export type SavedOperation = { op: string; cycles?: number; value?: InspectionInteger; a?: InspectionInteger; b?: InspectionInteger; reset?: boolean; valid?: boolean }
+export type SavedExperiment = ExperimentBase & { schema_version: string; target: string; adapter?: string; operations: SavedOperation[]; parameters: { width: number; depth?: number; latency?: number } }
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message) }
@@ -44,16 +48,7 @@ export const mutate = <T>(path: string, body?: unknown, key: string = crypto.ran
 export const isActive = (status?: string) => !!status && ['queued', 'preparing', 'running', 'finalizing'].includes(status)
 export const humanize = (value: string) => value.replaceAll('_', ' ')
 export const hasCompleteIdentity = (identity: Record<string, string> | null) => !!identity && ['source_hash', 'checker_hash', 'contract_hash', 'experiment_hash', 'environment_hash'].every(key => /^[a-f0-9]{64}$/.test(identity[key] ?? ''))
-export const MAX_SEED = 2 ** 32 - 1
-export const DEFAULT_WALL_TIME = 120
-export const validSeed = (seed: number) => Number.isSafeInteger(seed) && seed >= 0 && seed <= MAX_SEED
-export const validWallTime = (seconds: number) => Number.isSafeInteger(seconds) && seconds >= 1 && seconds <= 3600
-export function createPlan(project: Project, contract: Contract, seed: number, wallTimeSeconds = DEFAULT_WALL_TIME): Experiment {
-  if (!validSeed(seed) || !validWallTime(wallTimeSeconds)) throw new Error('Seed or wall-time budget is outside the supported range.')
-  return { schema_version: '1', experiment_id: `web-${crypto.randomUUID()}`, fixture_id: project.id, contract_id: contract.contract_id, target: 'fifo', objective_ids: contract.requirements.map(r => r.requirement_id), seed,
-    operations: [{ op: 'reset', cycles: 2 }, { op: 'write', value: 17 }, { op: 'reset', cycles: 1 }, { op: 'write', value: 42 }, { op: 'read' }], parameters: contract.parameters,
-    budget: { max_cycles: 100, wall_time_seconds: wallTimeSeconds, max_artifact_bytes: 10485760 } }
-}
+export { createPlan, MAX_SEED, DEFAULT_WALL_TIME, validSeed, validWallTime } from './families'
 import { parseInspectionJson, stringifySubmission } from './json'
 
 export type InspectionInteger = number | string

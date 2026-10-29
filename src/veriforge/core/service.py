@@ -5,7 +5,9 @@ import json
 from datetime import timedelta, timezone
 
 from sqlalchemy import select, update
-from veriforge.contracts import AttemptResult, BehavioralContract, Experiment, Verdict, canonical_hash
+from veriforge.contracts import AttemptResult, Verdict, canonical_hash
+from veriforge.adapters import get_adapter
+from .families import FIFO_ADAPTER, project_adapter, campaign_contract
 
 from .database import Attempt, Campaign, Contract, Dispatch, Finding, Project, ReplayLink, RunEvent, identifier, now
 
@@ -49,13 +51,15 @@ def emit(session, campaign: Campaign, kind: str, payload: dict | None = None):
     session.add(RunEvent(campaign_id=campaign.id, sequence=campaign.event_sequence, kind=kind, payload=payload or {}))
 
 
-def create_campaign(session, project_id: str, plan: dict, key: str, *, require_new: bool = False) -> Campaign:
+def create_campaign(session, project_id: str, plan: dict, key: str, *, require_new: bool = False, adapter_id: str = FIFO_ADAPTER) -> Campaign:
     request_hash = digest({"project_id": project_id, "plan": plan})
+    if adapter_id != FIFO_ADAPTER:
+        request_hash = digest({"adapter_id": adapter_id, "project_id": project_id, "plan": plan})
     prior = session.scalar(select(Campaign).where(Campaign.owner == "local", Campaign.create_key == key))
     if prior:
         if require_new:
             raise Conflict("Fresh campaign creation cannot reuse an existing record")
-        if prior.request_hash != request_hash:
+        if prior.request_hash != request_hash or prior.adapter_id != adapter_id:
             raise Conflict("Idempotency key already used for a different request")
         return prior
     project = session.get(Project, project_id)
@@ -63,12 +67,17 @@ def create_campaign(session, project_id: str, plan: dict, key: str, *, require_n
         raise NotFound(project_id)
     if plan.get("contract_id") != project.contract_id:
         raise Conflict("Plan must reference the project's reviewed contract")
-    experiment = Experiment.model_validate(plan)
+    descriptor = project_adapter(project)
+    if descriptor.adapter_id != adapter_id:
+        raise Conflict("Campaign adapter does not match the curated project")
+    experiment = descriptor.validate_experiment(plan)
+    if experiment.fixture_id != project.id:
+        raise Conflict("Experiment fixture does not match project")
     contract = session.get(Contract, project.contract_id)
     source_hash = digest({"source": project.data["source_file_hash"], "variant": project.data["variant"], "parameters": experiment.parameters.model_dump()})
-    reviewed = BehavioralContract.model_validate(contract.data).model_copy(update={"parameters": experiment.parameters})
+    reviewed = descriptor.contract_model.model_validate(contract.data).model_copy(update={"parameters": experiment.parameters})
     identity = {**contract.identity, "contract_hash": canonical_hash(reviewed), "source_hash": source_hash, "experiment_hash": canonical_hash(experiment)}
-    campaign = Campaign(project_id=project.id, contract_id=project.contract_id, create_key=key, request_hash=request_hash, plan=plan, identity=identity)
+    campaign = Campaign(project_id=project.id, contract_id=project.contract_id, adapter_id=adapter_id, create_key=key, request_hash=request_hash, plan=plan, identity=identity)
     session.add(campaign)
     session.flush()
     emit(session, campaign, "campaign.created")
@@ -140,6 +149,8 @@ def finalize(session, attempt_id: str, lease: str, result: dict, infrastructure_
             raise ValueError("Result belongs to a different experiment")
         if checked.execution_status not in TERMINAL:
             raise ValueError("Result is not terminal")
+        if get_adapter(campaign.adapter_id).trace_schema is not None and checked.trace:
+            raise ValueError("Family-specific trace must not be coerced into FIFO trace")
         if checked.identity is not None and any(getattr(checked.identity, key) != expected for key, expected in campaign.identity.items()):
             raise ValueError("Result source/checker/contract/stimulus identity differs from the immutable campaign snapshot")
     verdict = result.get("verdict")
@@ -186,13 +197,17 @@ def campaign_view(session, campaign: Campaign) -> dict:
     def utc(value):
         return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
     replay = session.get(ReplayLink, campaign.id)
+    descriptor = get_adapter(campaign.adapter_id)
+    experiment = descriptor.validate_experiment(campaign.plan)
     return {
         "id": campaign.id, "project_id": campaign.project_id, "contract_id": campaign.contract_id,
+        "adapter_id": campaign.adapter_id, "experiment_schema_version": experiment.schema_version,
+        "trace_schema": descriptor.trace_schema, "trace_artifact": descriptor.trace_artifact,
         "execution_status": campaign.execution_status, "verdict": campaign.verdict,
         "version": campaign.version, "plan": campaign.plan,
         "source_attempt_id": replay.source_attempt_id if replay else None,
         "identity": campaign.identity,
-        "contract_snapshot": BehavioralContract.model_validate(session.get(Contract, campaign.contract_id).data).model_copy(update={"parameters": Experiment.model_validate(campaign.plan).parameters}).model_dump(mode="json"),
+        "contract_snapshot": campaign_contract(session, campaign, experiment).model_dump(mode="json"),
         "created_at": utc(campaign.created_at), "updated_at": utc(campaign.updated_at),
         "attempts": [{"id": a.id, "execution_status": a.execution_status, "verdict": a.verdict, "result": a.result, "created_at": utc(a.created_at), "finished_at": utc(a.finished_at)} for a in session.scalars(select(Attempt).where(Attempt.campaign_id == campaign.id).order_by(Attempt.created_at))],
         "findings": [{"id": f.id, "attempt_id": f.attempt_id, **f.data} for f in session.scalars(select(Finding).where(Finding.campaign_id == campaign.id))],
