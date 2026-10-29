@@ -5,7 +5,7 @@ import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, LargeBinary, String, UniqueConstraint, create_engine, event, inspect
+from sqlalchemy import JSON, BigInteger, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Index, Integer, LargeBinary, String, UniqueConstraint, create_engine, event, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -322,6 +322,28 @@ class PlannerCleanup(Base):
     owner_lost_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     settled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     settlement_proof: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+
+class PlannerRuntimeSlot(Base):
+    """One server-fixed provider capacity fence; cleanup remains authoritative."""
+    __tablename__ = "planner_runtime_slots"
+    __table_args__ = (
+        ForeignKeyConstraint(["active_round_id", "campaign_id"], ["planner_rounds.id", "planner_rounds.campaign_id"]),
+        CheckConstraint("resource = 'local_planner_provider' AND fence >= 0"),
+        CheckConstraint("(state = 'idle' AND incarnation IS NULL AND active_round_id IS NULL AND campaign_id IS NULL AND acquired_at IS NULL AND owner_lost_at IS NULL) OR (state IN ('active','unknown') AND incarnation IS NOT NULL AND active_round_id IS NOT NULL AND campaign_id IS NOT NULL AND acquired_at IS NOT NULL AND ((state = 'active' AND owner_lost_at IS NULL) OR (state = 'unknown' AND owner_lost_at IS NOT NULL)))"),
+        CheckConstraint("(acquired_at IS NULL OR acquired_at <= changed_at) AND (owner_lost_at IS NULL OR (owner_lost_at >= acquired_at AND owner_lost_at <= changed_at))"))
+    resource: Mapped[str] = mapped_column(String(64), primary_key=True)
+    fence: Mapped[int] = mapped_column(BigInteger, default=0)
+    state: Mapped[str] = mapped_column(String(16), default="idle")
+    incarnation: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    active_round_id: Mapped[str | None] = mapped_column(ForeignKey("planner_cleanup.round_id"), nullable=True)
+    campaign_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    acquired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    owner_lost_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+event.listen(PlannerRuntimeSlot, "before_delete", _immutable_record)
 
 
 class PlannerReservation(Base):
