@@ -151,7 +151,7 @@ def test_replay_lineage_is_exact_idempotent_source_specific_and_does_not_mutate_
 def test_unaccepted_adapter_and_replay_source_owner_fail_closed(store):
     source = store["create"]()
     with store["sessions"].begin() as session:
-        session.get(Campaign, source["campaign_id"]).adapter_id = "rtl.axi_lite.v1"
+        session.get(Campaign, source["campaign_id"]).adapter_id = "rtl.unaccepted.v1"
     with store["sessions"]() as session:
         with pytest.raises(service.Conflict, match="unsupported"):
             artifacts.owned_attempt(session, source["attempt_id"])

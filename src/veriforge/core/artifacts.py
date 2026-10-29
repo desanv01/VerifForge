@@ -17,7 +17,7 @@ from . import service
 from .database import Attempt, Campaign, EvidenceExport, ReplayLink, identifier, now
 
 LIMITS = ExportLimits()
-EVIDENCE_ADAPTERS = frozenset({"rtl.fifo.v1", "rtl.arithmetic.v1"})
+EVIDENCE_ADAPTERS = frozenset({"rtl.fifo.v1", "rtl.arithmetic.v1", "rtl.axi_lite.v1"})
 
 
 def storage_root(root=None) -> Path:

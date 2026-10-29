@@ -99,7 +99,7 @@ def test_capability_marker_and_additive_migration_are_present(evidence_store):
     with store["client"]() as client:
         health = client.get("/api/health").json()
         assert health["evidence_api"] == "1"
-        assert health["evidence_adapters"] == ["rtl.arithmetic.v1", "rtl.fifo.v1"]
+        assert health["evidence_adapters"] == ["rtl.arithmetic.v1", "rtl.axi_lite.v1", "rtl.fifo.v1"]
 
 
 def test_download_uses_database_attempt_and_verified_byte_snapshot(evidence_store, monkeypatch):

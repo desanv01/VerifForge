@@ -38,7 +38,7 @@ def test_axi_schema_and_catalog_create_through_api_handlers(db):
     assert len([p for p in projects if p["adapter_id"] == "rtl.fifo.v1"]) == 2
     assert len([p for p in projects if p["adapter_id"] == "rtl.arithmetic.v1"]) == 3
     assert handler(app, "/api/contracts/{contract_id}")("axil-registers-v1")["schema_version"] == "axi_lite.contract.v1"
-    assert "rtl.axi_lite.v1" not in handler(app, "/api/health")()["evidence_adapters"]
+    assert "rtl.axi_lite.v1" in handler(app, "/api/health")()["evidence_adapters"]
 
 
 @pytest.mark.parametrize("mutation", ["missing_adapter", "fifo_adapter", "arithmetic_adapter", "missing_schema", "wrong_schema", "unknown_fixture", "dynamic"])
