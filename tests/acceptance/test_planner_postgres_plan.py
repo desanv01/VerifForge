@@ -443,7 +443,8 @@ def test_each_role_gets_bounded_preflight_before_service_start(monkeypatch, tmp_
     host.preflight_writing_roles(FakeHost(), '4321:987')
     assert len(calls) == len(host.WRITING_ROLES) == 6
     for (command, name, timeout), role in zip(calls, host.WRITING_ROLES):
-        assert command[:4] == FakeHost.prefix and '--no-deps' in command and '--no-build' in command
+        assert command[:4] == FakeHost.prefix and '--no-deps' in command
+        assert '--no-build' not in command and '--build' not in command
         assert command[command.index('--pull') + 1] == 'never' and '--entrypoint' in command
         assert name == 'mount-preflight-' + role and timeout == 15
         assert ('/controls' in command) == (role == 'controller')
