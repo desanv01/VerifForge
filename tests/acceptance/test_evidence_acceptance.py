@@ -7,18 +7,31 @@ from zipfile import ZipFile
 import pytest
 
 from veriforge.contracts import (
-    ArtifactReference, AttemptResult, EvidenceIdentity, Experiment, FailureSignature,
-    ToolVersion, canonical_hash,
+    ArtifactReference, AttemptResult, BehavioralContract, CheckerIdentity, EvidenceIdentity,
+    Experiment, FailureSignature, Requirement, ToolVersion, canonical_hash,
 )
 from veriforge.evidence import (
     ExportLimits, export_bundle, load_attempt, reduce_failure, replay_attempt,
     validate_candidate,
 )
 
-ORIGINAL_SOURCE = "1" * 64
-CANDIDATE_SOURCE = "2" * 64
-CHECKER = "3" * 64
-CONTRACT = "4" * 64
+SCRIPTED_SOURCE = b"// synthetic HDL fixture; never compiled\n"
+SCRIPTED_CHECKER = b"# scripted fixture; never executed\n"
+CHECKER = sha256(SCRIPTED_CHECKER).hexdigest()
+# Reviewed fixture semantics/identity only; these callbacks never run the checker.
+CONTRACT_SNAPSHOT = BehavioralContract(review_status="reviewed",
+    checker=CheckerIdentity(checker_id="independent-scripted-fixture", version="1", sha256=CHECKER),
+    requirements=(Requirement(requirement_id="FIFO_BEHAVIOR", description="Synthetic workflow fixture; no HDL execution."),))
+CONTRACT = canonical_hash(CONTRACT_SNAPSHOT)
+
+
+def source_identity(variant):
+    return sha256(json.dumps({"source": sha256(SCRIPTED_SOURCE).hexdigest(), "variant": variant,
+        "parameters": CONTRACT_SNAPSHOT.parameters.model_dump()}, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+ORIGINAL_SOURCE = source_identity(1)
+CANDIDATE_SOURCE = source_identity(0)
 
 
 def experiment(name="independent-witness", value=13):
@@ -46,12 +59,19 @@ def scripted(plan, output, *, verdict="design_mismatch", identity_changes=None,
         "first_cycle": 2, "expected": "true", "observed": "false", "signature_hash": "6" * 64,
     }
     signature.update(signature_changes or {})
+    signature["signature_hash"] = sha256(json.dumps({"contract": identity["contract_hash"],
+        "checker": identity["checker_hash"], "requirement": signature["requirement_id"],
+        "class": signature["failure_class"]}, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    cycles = [{"operation_index": index, "reset": op.op == "reset" or getattr(op, "reset", False),
+        "write": op.op == "write" or getattr(op, "write", False),
+        "read": op.op == "read" or getattr(op, "read", False), "value": getattr(op, "value", 0)}
+        for index, op in enumerate(plan.operations) for _ in range(getattr(op, "cycles", 1))]
     files = {
         "experiment.json": plan.model_dump_json().encode(),
-        "stimulus.json": json.dumps({"scripted_only": True, "seed": plan.seed}).encode(),
-        "fifo.sv": b"// synthetic HDL fixture; never compiled\n",
-        "checker.py": b"# scripted fixture; never executed\n",
-        "contract.json": b'{"scripted_only": true}',
+        "stimulus.json": json.dumps(cycles).encode(),
+        "fifo.sv": SCRIPTED_SOURCE,
+        "checker.py": SCRIPTED_CHECKER,
+        "contract.json": CONTRACT_SNAPSHOT.model_dump_json().encode(),
     }
     refs = []
     for index, (name, data) in enumerate(files.items()):
@@ -183,6 +203,9 @@ def test_candidate_runs_original_witness_then_candidate_witness_and_distinct_sui
     options["original_runner"] = reproduce
     record = validate_candidate(original, tmp_path / "validation", candidate_runner=candidate, **options)
     assert record.status == "validated_under_checks"
+    assert record.source_review_status == "available"
+    assert record.source_review_sha256 == canonical_hash(record.source_review)
+    assert not record.source_review.source_bytes_changed and record.source_review.configuration_changed
     assert [kind for kind, _ in calls] == ["original", "candidate", "candidate", "candidate"]
     assert calls[0][1] == experiment()
     assert [p.experiment_id for _, p in calls[1:]] == [
