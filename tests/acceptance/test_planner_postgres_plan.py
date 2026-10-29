@@ -437,9 +437,11 @@ def test_each_role_gets_bounded_preflight_before_service_start(monkeypatch, tmp_
             role = command[command.index('-c') + 2]
             code = command[command.index('-c') + 1]
             compile(code, '<published-preflight>', 'exec')
+            assert 'print(' + repr(host.PROOF_MARKER) + ' + json.dumps(' in code
             paths = command[command.index('-c') + 4:]
-            return json.dumps({'role': role, 'mounts': [{'directory': path, 'effective_uid': 4321,
-                'effective_gid': 987, 'probe': 'exclusive_write_read_list_delete_passed'} for path in paths]}).encode()
+            return (host.PROOF_MARKER + json.dumps({'role': role, 'mounts': [{'directory': path, 'effective_uid': 4321,
+                'effective_gid': 987, 'observed': {'uid': 4321, 'gid': 987, 'mode': '0700'},
+                'probe': 'exclusive_write_read_list_delete_passed'} for path in paths]})).encode()
     host.preflight_writing_roles(FakeHost(), '4321:987')
     assert len(calls) == len(host.WRITING_ROLES) == 6
     for (command, name, timeout), role in zip(calls, host.WRITING_ROLES):
@@ -464,3 +466,78 @@ def test_failed_role_preflight_stops_before_remaining_roles(monkeypatch, tmp_pat
     with pytest.raises(PermissionError, match='mount denied'):
         host.preflight_writing_roles(FakeHost(), '4321:987')
     assert calls == ['mount-preflight-mock'] and not list(tmp_path.iterdir())
+
+
+# Exact Docker prefix retained from run40952295201; following marked proof is
+# synthetic new-protocol output, not a claim the old run emitted this marker.
+RETAINED_DOCKER_PREFIX = (b' Network vf-planner-pg-ci-40952295201-1_default  Creating\n'
+                          b' Network vf-planner-pg-ci-40952295201-1_default  Created\n')
+
+
+def proof_payload(role='mock'):
+    paths = ['/evidence', '/controls'] if role == 'controller' else ['/evidence']
+    return {'role': role, 'mounts': [{'directory': path, 'effective_uid': 1001, 'effective_gid': 1001,
+            'observed': {'uid': 1001, 'gid': 1001, 'mode': '0700'},
+            'probe': 'exclusive_write_read_list_delete_passed'} for path in paths]}
+
+
+def marked_proof(payload):
+    return host.PROOF_MARKER.encode() + json.dumps(payload).encode() + b'\n'
+
+
+def test_marked_proof_accepts_exact_retained_docker_progress_without_changing_raw_log():
+    payload = proof_payload()
+    raw = RETAINED_DOCKER_PREFIX + marked_proof(payload) + b'other Docker progress {not proof}\n'
+    original = bytes(raw)
+    assert host.parse_mount_proof(raw, 'mock', '1001:1001', ['/evidence']) == payload
+    assert raw == original
+
+
+@pytest.mark.parametrize('bad', ['missing', 'unmarked_json', 'duplicate', 'malformed', 'unknown_version',
+                               'leading_space', 'trailing_json', 'duplicate_key', 'nonfinite', 'oversize_line', 'oversize_output'])
+def test_marked_proof_rejects_missing_duplicate_or_malformed_protocol(bad):
+    valid = marked_proof(proof_payload())
+    cases = {
+        'missing': RETAINED_DOCKER_PREFIX,
+        'unmarked_json': RETAINED_DOCKER_PREFIX + json.dumps(proof_payload()).encode(),
+        'duplicate': valid + valid,
+        'malformed': host.PROOF_MARKER.encode() + b'{broken}\n',
+        'unknown_version': valid.replace(b'_V1=', b'_V2='),
+        'leading_space': b' ' + valid,
+        'trailing_json': valid.rstrip() + b' {}\n',
+        'duplicate_key': valid.replace(b'"role": "mock"', b'"role": "mock", "role": "mock"'),
+        'nonfinite': valid.replace(b'1001', b'NaN', 1),
+        'oversize_line': host.PROOF_MARKER.encode() + b' ' * 4096 + b'{}',
+        'oversize_output': b'x' * (1024 * 1024) + valid,
+    }
+    with pytest.raises((RuntimeError, ValueError)):
+        host.parse_mount_proof(cases[bad], 'mock', '1001:1001', ['/evidence'])
+
+
+@pytest.mark.parametrize('bad', ['role', 'path', 'uid', 'gid', 'mode', 'observed_owner', 'missing_observed',
+                               'unknown_key', 'unknown_mount_key', 'bool_uid', 'probe', 'mount_count'])
+def test_marked_proof_rejects_unknown_schema_or_wrong_association(bad):
+    payload = proof_payload()
+    mount = payload['mounts'][0]
+    if bad == 'role': payload['role'] = 'runtime-a'
+    elif bad == 'path': mount['directory'] = '/controls'
+    elif bad == 'uid': mount['effective_uid'] = 1002
+    elif bad == 'gid': mount['effective_gid'] = 1002
+    elif bad == 'mode': mount['observed']['mode'] = '0777'
+    elif bad == 'observed_owner': mount['observed']['uid'] = 0
+    elif bad == 'missing_observed': del mount['observed']
+    elif bad == 'unknown_key': payload['untrusted'] = True
+    elif bad == 'unknown_mount_key': mount['untrusted'] = True
+    elif bad == 'bool_uid': mount['effective_uid'] = True
+    elif bad == 'probe': mount['probe'] = 'not_performed'
+    else: payload['mounts'].append(dict(mount))
+    with pytest.raises(RuntimeError):
+        host.parse_mount_proof(marked_proof(payload), 'mock', '1001:1001', ['/evidence'])
+
+
+def test_marked_controller_proof_requires_both_ordered_mounts():
+    payload = proof_payload('controller')
+    assert host.parse_mount_proof(marked_proof(payload), 'controller', '1001:1001', ['/evidence', '/controls']) == payload
+    payload['mounts'].reverse()
+    with pytest.raises(RuntimeError, match='association'):
+        host.parse_mount_proof(marked_proof(payload), 'controller', '1001:1001', ['/evidence', '/controls'])

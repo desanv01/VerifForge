@@ -28,6 +28,7 @@ LIMITS = {'rounds': 8, 'deliveries': 12, 'mock_requests': 7, 'native_runs': 0, '
 STOP = False
 SHARED = None
 WRITING_ROLES = ('mock', 'api', 'runtime-a', 'runtime-b', 'runtime-c', 'controller')
+PROOF_MARKER = 'VERIFORGE_PG_MOUNT_PROOF_V1='
 
 
 def require(condition, message):
@@ -130,24 +131,55 @@ def mount_preflight(destination, user, role):
             'observed': observed, 'probe': 'exclusive_write_read_list_delete_passed'}
 
 
+def parse_mount_proof(output, role, user, paths):
+    """Progress remains in the raw log; exactly one marked proof is authoritative."""
+    expected = numeric_user(user)
+    require(role in WRITING_ROLES and paths == (['/evidence', '/controls'] if role == 'controller' else ['/evidence']),
+            'invalid expected preflight association')
+    require(type(output) is bytes and len(output) <= 1024 * 1024, 'preflight output cap/type')
+    lines = [line for line in output.splitlines() if line.lstrip().startswith(b'VERIFORGE_PG_MOUNT_PROOF_')]
+    require(len(lines) == 1, 'exactly one marked preflight proof required')
+    line = lines[0]
+    marker = PROOF_MARKER.encode('ascii')
+    require(line.startswith(marker) and len(line) <= 4096, 'unknown/malformed/oversize preflight proof marker')
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            require(key not in result, 'duplicate JSON proof key')
+            result[key] = value
+        return result
+    proof = json.loads(line[len(marker):].decode('utf-8'), object_pairs_hook=unique_pairs,
+                       parse_constant=lambda value: require(False, 'nonfinite JSON proof value'))
+    require(type(proof) is dict and set(proof) == {'role', 'mounts'} and proof['role'] == role,
+            'preflight role/proof schema differs')
+    require(type(proof['mounts']) is list and len(proof['mounts']) == len(paths), 'preflight mount count differs')
+    for mount, path in zip(proof['mounts'], paths):
+        require(type(mount) is dict and set(mount) == {'directory', 'effective_uid', 'effective_gid', 'observed', 'probe'},
+                'preflight mount proof schema differs')
+        require(mount['directory'] == path and type(mount['effective_uid']) is int and type(mount['effective_gid']) is int
+                and (mount['effective_uid'], mount['effective_gid']) == expected,
+                'preflight mount/identity association differs')
+        observed = mount['observed']
+        require(type(observed) is dict and set(observed) == {'uid', 'gid', 'mode'} and
+                type(observed['uid']) is int and type(observed['gid']) is int and
+                observed == {'uid': expected[0], 'gid': expected[1], 'mode': '0700'} and
+                mount['probe'] == 'exclusive_write_read_list_delete_passed', 'preflight directory/probe proof differs')
+    return proof
+
+
 def preflight_writing_roles(host, user):
     numeric_user(user)
     # Fixed published Python source, no fixture/runtime alteration or arbitrary RPC.
     source = 'import json, os, re, stat, sys\nfrom pathlib import Path\n'
     source += '\n'.join(inspect.getsource(function) for function in
                         (require, effective_identity, directory_identity, numeric_user, mount_preflight))
-    source += "\nprint(json.dumps({'role': sys.argv[1], 'mounts': [mount_preflight(Path(path), sys.argv[2], sys.argv[1]) for path in sys.argv[3:]]}, sort_keys=True), flush=True)\n"
+    source += "\nprint(" + repr(PROOF_MARKER) + " + json.dumps({'role': sys.argv[1], 'mounts': [mount_preflight(Path(path), sys.argv[2], sys.argv[1]) for path in sys.argv[3:]]}, sort_keys=True), flush=True)\n"
     for role in WRITING_ROLES:
         paths = ['/evidence', '/controls'] if role == 'controller' else ['/evidence']
         output = host.run(host.prefix + ['run', '--rm', '--no-deps', '--pull', 'never',
                           '--entrypoint', 'python', role, '-c', source, role, user] + paths,
                           'mount-preflight-' + role, 15)
-        proof = json.loads(output)
-        require(proof['role'] == role and [value['directory'] for value in proof['mounts']] == paths,
-                'preflight role/mount association differs')
-        require(all((value['effective_uid'], value['effective_gid']) == numeric_user(user) and
-                    value['probe'] == 'exclusive_write_read_list_delete_passed' for value in proof['mounts']),
-                'preflight proof incomplete')
+        proof = parse_mount_proof(output, role, user, paths)
         write(OUT / ('mount-preflight-' + role + '.json'), proof)
 
 
