@@ -12,6 +12,7 @@ from sqlalchemy import or_, select, update
 from veriforge.contracts import AttemptResult
 from veriforge.adapters import get_adapter
 from .families import experiment_adapter
+from .planner_experiments import resolve_attempt_experiment
 from veriforge.evidence import ExportLimits, export_bundle, load_attempt
 from . import service
 from .database import Attempt, Campaign, EvidenceExport, ReplayLink, identifier, now
@@ -98,11 +99,12 @@ def attempt_snapshot(session, attempt_id: str, *, root=None, checked_required=Fa
     if attempt.execution_status != "completed" or attempt.result is None:
         raise service.Conflict("Only finalized completed evidence is available")
     try:
+        record = resolve_attempt_experiment(session, attempt)
         directory = contained(storage_root(root), attempt.id)  # DB ID, never runner result ID
         result = AttemptResult.model_validate(attempt.result)
         on_disk = AttemptResult.model_validate_json(snapshot_bytes(contained(directory, "result.json"), LIMITS.max_bytes))
-        experiment = get_adapter(campaign.adapter_id).validate_experiment(json.loads(snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes)))
-        if result != on_disk or experiment.model_dump(mode="json") != campaign.plan:
+        experiment = get_adapter(record.adapter_id).validate_experiment(json.loads(snapshot_bytes(contained(directory, "experiment.json"), LIMITS.max_bytes)))
+        if result != on_disk or experiment.model_dump(mode="json") != get_adapter(record.adapter_id).validate_experiment(record.plan).model_dump(mode="json"):
             raise ValueError("Disk records differ from durable execution record")
         if result.experiment_id != experiment.experiment_id:
             raise ValueError("Experiment association differs")
@@ -113,7 +115,7 @@ def attempt_snapshot(session, attempt_id: str, *, root=None, checked_required=Fa
         for ref in result.artifacts:
             snapshot_bytes(contained(directory, ref.path), LIMITS.max_bytes, sha256=ref.sha256, size=ref.size_bytes)
         if result.identity is not None:
-            if any(getattr(result.identity, key) != value for key, value in campaign.identity.items()):
+            if any(getattr(result.identity, key) != value for key, value in record.identity.items()):
                 raise ValueError("Result provenance differs from immutable campaign")
             load_attempt(directory, limits=LIMITS)
         elif checked_required:
@@ -155,18 +157,19 @@ def replay_campaign(session, attempt_id, key, *, root=None):
             raise service.Conflict("Replay key already used for another attempt")
         return service.owned(session, prior.campaign_id)
     directory, experiment, result, original = attempt_snapshot(session, attempt_id, root=root, checked_required=True)
+    source_record = resolve_attempt_experiment(session, session.get(Attempt, attempt_id))
     from .worker import installed_identity
     try:
         verify_stimulus(directory, experiment, result)
-        if installed_identity(experiment) != original.identity:
+        if installed_identity(experiment) != source_record.identity:
             raise ValueError("Installed execution provenance differs")
     except (ValueError, OSError, KeyError) as error:
         raise service.Conflict("Installed source/checker/contract changed; exact replay unavailable") from error
     # ReplayLink owns public replay idempotency. Never derive a campaign-create
     # key from client input: that namespace is also accepted by POST /campaigns.
     # require_new is an explicit guard even against an internal key collision.
-    row = service.create_campaign(session, original.project_id, original.plan, "replay:" + identifier(), require_new=True, adapter_id=original.adapter_id)
-    if row.identity != original.identity:
+    row = service.create_campaign(session, original.project_id, source_record.plan, "replay:" + identifier(), require_new=True, adapter_id=source_record.adapter_id, experiment_origin="replay")
+    if row.identity != source_record.identity:
         raise service.Conflict("Current catalog provenance differs from original evidence")
     session.add(ReplayLink(campaign_id=row.id, source_attempt_id=attempt_id, request_key=key))
     service.emit(session, row, "campaign.replay_requested", {"source_attempt_id": attempt_id})

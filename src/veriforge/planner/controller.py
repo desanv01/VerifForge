@@ -3,25 +3,25 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 import random
 import time
 from collections.abc import Awaitable, Callable
 from decimal import Decimal
 
-from pydantic import ValidationError
-
 from veriforge.contracts import (
-    AttemptResult, BehavioralContract, ExecutionBudget, ExecutionStatus,
-    Experiment, ProjectRevision, Verdict, canonical_hash,
+    AttemptResult, BehavioralContract, Experiment, ProjectRevision,
 )
 from .models import (
-    Feedback, InvestigationLimits, InvestigationReport, ModelCallRecord,
-    PlannerContext, PlannerDecision, Pricing, StopProposal,
+    Feedback, InvestigationLimits, InvestigationReport, ModelCallRecord, Pricing,
 )
 from .provider import (
-    PlannerProvider, ProviderError, encode_payload, request_payload,
+    PlannerProvider, ProviderError,
+)
+from .steps import (
+    DUPLICATE_CORRECTION, INVALID_CORRECTION, PlannerStepError, admission_stop_reason,
+    build_context, build_experiment, control_stop_reason, decision_stop_reason, execution_stop_reason,
+    prepare_model_call, proposal_fingerprint, proposal_stop_reason,
+    transient_retry_allowed, validate_binding, validate_completion, validate_result, validated_feedback,
 )
 
 Executor = Callable[[Experiment], Awaitable[AttemptResult]]
@@ -46,6 +46,7 @@ class InvestigationController:
                  control: Callable[[], str] | None = None):
         if contract.review_status != "reviewed":
             raise ValueError("planner requires a reviewed contract")
+        validate_binding(revision, contract)
         self._provider = provider
         self._executor = executor
         self._revision = revision
@@ -65,12 +66,11 @@ class InvestigationController:
         self._stopped.set()
 
     def _check_control(self) -> None:
-        if self._cancelled.is_set():
-            raise _Halt("cancelled")
-        if self._stopped.is_set():
-            raise _Halt("stopped")
-        if self._control() != "RUNNING":
-            raise _Halt("paused")
+        cancelled, stopped = self._cancelled.is_set(), self._stopped.is_set()
+        reason = control_stop_reason(control="RUNNING" if cancelled or stopped else self._control(),
+                                     cancelled=cancelled, stopped=stopped)
+        if reason:
+            raise _Halt(reason)
 
     async def _bounded(self, operation: Awaitable, timeout: float):
         task = asyncio.ensure_future(operation)
@@ -90,22 +90,7 @@ class InvestigationController:
             await asyncio.gather(task, cancellation, return_exceptions=True)
 
     def _validate_result(self, result: AttemptResult, experiment: Experiment) -> None:
-        if result.experiment_id != experiment.experiment_id:
-            raise _Halt("result_identity_mismatch")
-        if result.identity is not None:
-            identity = result.identity
-            if (identity.source_hash != self._revision.source_hash or
-                identity.checker_hash != self._contract.checker.sha256 or
-                identity.contract_hash != canonical_hash(self._contract) or
-                identity.experiment_hash != canonical_hash(experiment)):
-                raise _Halt("result_identity_mismatch")
-        requirements = {r.requirement_id for r in self._contract.requirements}
-        if (not set(result.requirement_coverage) <= requirements or
-            result.failure_signature is not None and
-                result.failure_signature.requirement_id not in requirements):
-            raise _Halt("result_requirement_mismatch")
-        if result.usage.cycles > experiment.budget.max_cycles:
-            raise _Halt("executor_cycle_limit_violated")
+        validate_result(result, experiment=experiment, revision=self._revision, contract=self._contract)
 
     async def run(self) -> InvestigationReport:
         if self._used:
@@ -115,14 +100,13 @@ class InvestigationController:
         deadline = time.monotonic() + limits.max_wall_seconds
         experiments: list[Experiment] = []
         results: list[AttemptResult] = []
+        feedback: list[Feedback] = []
         calls: list[ModelCallRecord] = []
         cycles = tokens = invalid = duplicates = transient = 0
         cost = Decimal(0) if self._pricing else None
         fingerprints: set[str] = set()
         correction = None
         reason = "round_limit"
-        schema_hash = hashlib.sha256(json.dumps(PlannerDecision.model_json_schema(),
-                                               sort_keys=True).encode()).hexdigest()
         try:
             self._check_control()
             if limits.max_cost_usd is not None and self._pricing is None:
@@ -130,37 +114,27 @@ class InvestigationController:
             for round_number in range(1, limits.max_rounds + 1):
                 self._check_control()
                 remaining_time = deadline - time.monotonic()
-                if remaining_time <= 0:
-                    raise _Halt("wall_time_limit")
-                remaining = limits.max_total_cycles - cycles
-                if remaining <= 0:
-                    raise _Halt("cycle_limit")
-                context = PlannerContext(
-                    contract=self._contract, remaining_cycles=remaining,
-                    max_cycles_per_experiment=min(remaining, limits.max_cycles_per_experiment),
-                    feedback=tuple(Feedback.from_result(r) for r in results[-limits.max_feedback_items:]),
+                stop = admission_stop_reason(limits, rounds_used=round_number - 1,
+                                             reserved_cycles=cycles, remaining_wall_seconds=remaining_time)
+                if stop:
+                    raise _Halt(stop)
+                context = build_context(
+                    self._contract, limits, reserved_cycles=cycles, feedback=feedback,
                     correction=correction,
                 )
-                payload = encode_payload(request_payload(context, self._provider.model,
-                                                         limits.max_output_tokens))
-                if len(payload) > limits.max_input_bytes:
-                    raise _Halt("input_size_limit")
                 # Conservative admission estimate, not claimed as tokenizer measurement.
                 # Keep the full reservation even on failed calls/retries/invalid output.
-                input_reservation = len(payload) + 1024
-                reservation = input_reservation + limits.max_output_tokens
-                if tokens + reservation > limits.max_model_tokens:
-                    raise _Halt("model_token_limit")
-                call_cost = (self._pricing.cost(input_reservation, limits.max_output_tokens)
-                             if self._pricing else None)
-                if (limits.max_cost_usd is not None and cost + call_cost > limits.max_cost_usd):
-                    raise _Halt("cost_limit")
+                requested_model = self._provider.model
+                admission = prepare_model_call(context, requested_model, limits,
+                                               reserved_tokens=tokens, reserved_cost_usd=cost,
+                                               pricing=self._pricing)
+                reservation, call_cost = admission.reserved_tokens, admission.reserved_cost_usd
                 tokens += reservation
                 if call_cost is not None:
                     cost += call_cost
                 start = time.monotonic()
-                record = dict(round=round_number, model=self._provider.model,
-                              request_hash=hashlib.sha256(payload).hexdigest(), schema_hash=schema_hash,
+                record = dict(round=round_number, model=requested_model,
+                              request_hash=admission.request_hash, schema_hash=admission.schema_hash,
                               reserved_tokens=reservation)
                 try:
                     completion = await self._bounded(
@@ -173,7 +147,7 @@ class InvestigationController:
                                                  outcome=exc.code))
                     if exc.transient:
                         transient += 1
-                        if transient < limits.max_transient_errors:
+                        if transient_retry_allowed(limits, transient_errors=transient):
                             self._check_control()
                             await self._bounded(asyncio.sleep(min(2.0, 0.25 * 2**transient +
                                                                  random.uniform(0, 0.25))),
@@ -185,22 +159,9 @@ class InvestigationController:
                                                  outcome=exc.reason))
                     raise
                 usage = completion.usage
-                outcome = "accepted"
-                decision = None
-                if usage is None:
-                    outcome = "model_usage_unknown"
-                elif (usage.input_tokens > input_reservation or
-                      usage.output_tokens > limits.max_output_tokens):
-                    outcome = "model_usage_limit_violated"
-                elif completion.model != self._provider.model:
-                    outcome = "model_identity_mismatch"
-                else:
-                    try:
-                        if completion.finish_reason != "stop":
-                            raise ValueError("incomplete response")
-                        decision = PlannerDecision.model_validate_json(completion.content)
-                    except (ValidationError, ValueError):
-                        outcome = "invalid_proposal"
+                validated = validate_completion(completion, requested_model=requested_model,
+                                                input_allowance=admission.input_allowance, limits=limits)
+                outcome, decision = validated.outcome, validated.decision
                 calls.append(ModelCallRecord(
                     **record, latency_seconds=time.monotonic() - start, usage=usage,
                     cost_usd=(self._pricing.cost(usage.input_tokens, usage.output_tokens)
@@ -209,41 +170,35 @@ class InvestigationController:
                 self._check_control()
                 if outcome not in ("accepted", "invalid_proposal"):
                     raise _Halt(outcome)
-                if decision is not None and isinstance(decision.proposal, StopProposal):
-                    raise _Halt("model_stopped")
+                if decision is not None:
+                    stop = decision_stop_reason(decision)
+                    if stop:
+                        raise _Halt(stop)
                 try:
                     if decision is None:
                         raise ValueError("invalid proposal")
                     proposal = decision.proposal
-                    requirements = {r.requirement_id for r in self._contract.requirements}
-                    if not set(proposal.objective_ids) <= requirements:
-                        raise ValueError("unknown requirement")
-                    experiment = Experiment(
-                        experiment_id=f"planner-{round_number}", fixture_id=self._revision.fixture_id,
-                        contract_id=self._contract.contract_id,
-                        objective_ids=proposal.objective_ids, seed=proposal.seed,
-                        operations=proposal.operations, parameters=self._contract.parameters,
-                        budget=ExecutionBudget(
-                            max_cycles=context.max_cycles_per_experiment,
-                            wall_time_seconds=float(min(limits.max_execution_seconds,
-                                                        max(0.001, deadline - time.monotonic()))),
-                        ),
-                    )
-                except (ValidationError, ValueError):
+                    experiment = build_experiment(proposal, experiment_id=f"planner-{round_number}",
+                                                  revision=self._revision, contract=self._contract,
+                                                  limits=limits, reserved_cycles=cycles,
+                                                  remaining_wall_seconds=deadline - time.monotonic())
+                except ValueError:
                     invalid += 1
                     # No raw invalid output or exception strings enter feedback/logs.
-                    correction = "Proposal rejected. Use only legal typed operations, reviewed requirement IDs, reset before traffic, and the supplied cycle/width limits."
+                    correction = INVALID_CORRECTION
                     if calls[-1].outcome == "accepted":
                         calls[-1] = calls[-1].model_copy(update={"outcome": "invalid_proposal"})
-                    if invalid >= limits.max_invalid_proposals:
-                        raise _Halt("invalid_proposal_limit")
+                    stop = proposal_stop_reason(limits, invalid_proposals=invalid, duplicate_proposals=duplicates)
+                    if stop:
+                        raise _Halt(stop)
                     continue
-                fingerprint = canonical_hash(proposal)
+                fingerprint = proposal_fingerprint(proposal)
                 if fingerprint in fingerprints:
                     duplicates += 1
-                    correction = "Repeated proposal rejected. Propose different stimulus or stop."
-                    if duplicates >= limits.max_duplicate_proposals:
-                        raise _Halt("no_progress")
+                    correction = DUPLICATE_CORRECTION
+                    stop = proposal_stop_reason(limits, invalid_proposals=invalid, duplicate_proposals=duplicates)
+                    if stop:
+                        raise _Halt(stop)
                     continue
                 fingerprints.add(fingerprint)
                 correction = None
@@ -264,16 +219,15 @@ class InvestigationController:
                     raise _Halt("executor_result_invalid")
                 self._validate_result(result, experiment)
                 results.append(result)
+                if result.execution_status.value not in {"queued", "preparing", "running", "finalizing"}:
+                    feedback.append(validated_feedback(result, experiment=experiment,
+                                                       revision=self._revision, contract=self._contract))
                 self._check_control()
-                if result.execution_status != ExecutionStatus.COMPLETED:
-                    raise _Halt("execution_unavailable")
-                if result.verdict in {Verdict.DESIGN_MISMATCH, Verdict.PROPERTY_FAILURE}:
-                    if limits.stop_on_finding:
-                        raise _Halt("finding_observed")
-                elif result.verdict != Verdict.PASS_WITHIN_SCOPE:
-                    raise _Halt("execution_blocked")
-        except _Halt as exc:
-            reason = exc.reason
+                stop = execution_stop_reason(result, limits)
+                if stop:
+                    raise _Halt(stop)
+        except (_Halt, PlannerStepError) as exc:
+            reason = exc.reason if isinstance(exc, _Halt) else exc.code
         return InvestigationReport(
             stop_reason=reason, experiments=tuple(experiments), results=tuple(results),
             model_calls=tuple(calls), reserved_cycles=cycles, reserved_model_tokens=tokens,
