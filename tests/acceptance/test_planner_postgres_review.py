@@ -9,12 +9,13 @@ from types import SimpleNamespace
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+# Reviewed source pins use LF text identity across Git checkouts; tool evidence remains raw-byte hashed.
 FROZEN = {
-    'scripts/ci_planner_postgres.py': 'c0f7e25b004229cfeaa0a4ac3061752283bf76f6632a2c155b32bb79817220fa',
-    'tests/integration/planner_process_fixture.py': 'f3dce8b06c92a0eb3bab570ca027b30f6c490523a399d9f24742c1623e6d384b',
+    'scripts/ci_planner_postgres.py': '949960d9692b0f68574425dc7d6bc717e6fcac4723500e35c6fed35b44e8078a',
+    'tests/integration/planner_process_fixture.py': 'c64e7b2ae0303d0fa35735ccf5db53d92d01e49016f6431323e535d8a4910ec3',
     'infra/planner/Dockerfile.ci': 'cdad35f0edf16d4d7ae50da2a01b00e3c65f404afd4133ee24d9a1b6c9285526',
     '.github/workflows/planner-postgres-acceptance.yml': '85e3250990212537bb4e5d0cf4c70106e9bdc11e41d51bf94febeb471ca83a39',
-    'tests/acceptance/test_planner_postgres_plan.py': '9453f394a5d1e59404c3f03a9fe11b825a1fc0adf6be1a8aecbff297109065cc',
+    'tests/acceptance/test_planner_postgres_plan.py': '69d607889ecb8199770fff411c7838f3bf09b36686259fbc35796be86adee214',
     'scripts/ci_axi_application.py': 'bb47e72eb8f8c8e3a9e80055deda87758598c1a940504ae239650a5e25eeb37d',
 }
 PROJECT = 'vf-planner-pg-ci-123456789-1'
@@ -23,7 +24,7 @@ PROJECT = 'vf-planner-pg-ci-123456789-1'
 @pytest.fixture
 def modules(monkeypatch, tmp_path):
     for name, digest in FROZEN.items():
-        assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest, name
+        assert hashlib.sha256((ROOT / name).read_bytes().replace(b'\r\n', b'\n')).hexdigest() == digest, name
     def forbidden(*args, **kwargs):
         pytest.fail('independent review cannot launch processes or HTTP')
     for name in ('run', 'Popen', 'check_output'):
