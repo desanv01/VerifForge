@@ -1,0 +1,7 @@
+(kicad_pcb (version 20241229) (generator "veriforge-synthetic-test")
+  (net 0 "") (net 1 "GPIO0") (net 2 "GND")
+  (footprint "Test:TwoPads"
+    (property "Reference" "J1")
+    (property "Value" "SYNTHETIC-2P")
+    (pad "1" thru_hole circle (net 1 "GPIO0"))
+    (pad "2" thru_hole circle (net 2 "GND"))))
