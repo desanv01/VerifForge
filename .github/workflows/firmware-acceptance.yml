@@ -1,0 +1,50 @@
+name: Curated firmware MMIO acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firmware-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pinned build, three firmware cases and two saved-binary replays
+        run: python3 scripts/ci_firmware_acceptance.py
+      - name: Upload finite public evidence only
+        id: evidence
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: firmware-evidence-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-artifacts/firmware/
+          retention-days: 1
+          compression-level: 6
+          include-hidden-files: false
+          overwrite: false
+          if-no-files-found: error
+      - name: Retain artifact identity or report bounded logs-only fallback
+        if: always()
+        env:
+          OUTCOME: ${{ steps.evidence.outcome }}
+          ARTIFACT_ID: ${{ steps.evidence.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          print(json.dumps({key:os.environ.get(key) for key in ('OUTCOME','ARTIFACT_ID','ARTIFACT_URL','ARTIFACT_DIGEST')}))
+          if os.environ.get('OUTCOME') != 'success':
+              print('Artifact unavailable; inspect bounded FIRMWARE_CI_RECEIPT in logs. No quota change or image publication attempted.')
+              raise SystemExit(1)
+          PY
