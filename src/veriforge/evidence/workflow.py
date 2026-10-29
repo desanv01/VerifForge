@@ -8,14 +8,15 @@ import re
 from typing import Annotated, Callable, Literal
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, model_validator
 
 from veriforge.adapters import ValidatedExperiment
 
 from veriforge.contracts import (
-    ArtifactReference, AttemptResult, WireModel, canonical_hash,
+    ArtifactReference, AttemptResult, Sha256, WireModel, canonical_hash,
 )
-from .families import descriptor_for, validate_arithmetic_trace, validate_experiment
+from .families import descriptor_for, validate_family_trace, validate_experiment
+from .candidate_models import CandidateProvenance, CandidateSourceReview
 
 EvidenceExperiment = Annotated[ValidatedExperiment, Field(discriminator="target")]
 EvidenceRunner = Callable[[ValidatedExperiment, Path], AttemptResult]
@@ -57,6 +58,59 @@ class CandidateValidation(WireModel):
     regressions: tuple[AttemptResult, ...] = ()
     status: Literal["original_not_reproduced", "failed_under_checks", "validated_under_checks"]
     execution_basis: Literal["supplied_runner_evidence"] = "supplied_runner_evidence"
+    provenance: CandidateProvenance | None = None
+    source_review: CandidateSourceReview | None = None
+    source_review_sha256: Sha256 | None = None
+    source_review_status: Literal["legacy_unrecorded", "not_executed", "available",
+        "missing_source_snapshots", "invalid_source_snapshots"] = "legacy_unrecorded"
+
+    @model_validator(mode="after")
+    def consistent_source_review(self):
+        if self.source_review is not None:
+            if (self.source_review_status != "available" or self.source_review_sha256 != canonical_hash(self.source_review)
+                    or self.provenance != self.source_review.provenance):
+                raise ValueError("candidate source review identity or provenance mismatch")
+            review, identity = self.source_review, self.original_result.identity
+            if (identity is None or self.witness is None or self.witness.identity is None or not self.candidate_experiments
+                    or review.original_attempt_id != self.original_result.attempt_id
+                    or review.candidate_attempt_id != self.witness.attempt_id
+                    or review.original_experiment_sha256 != canonical_hash(self.original_experiment)
+                    or review.candidate_experiment_sha256 != canonical_hash(self.candidate_experiments[0])
+                    or review.checker_sha256 != identity.checker_hash
+                    or review.contract_sha256 != identity.contract_hash
+                    or review.checker_sha256 != self.witness.identity.checker_hash
+                    or review.contract_sha256 != self.witness.identity.contract_hash
+                    or review.original_source.source_identity_sha256 != identity.source_hash
+                    or review.candidate_source.source_identity_sha256 != self.witness.identity.source_hash
+                    or review.candidate_source.fixture_id != self.candidate_fixture_id):
+                raise ValueError("candidate source review is not bound to the validation attempts")
+            descriptor = descriptor_for(self.original_experiment)
+            candidate_plan = self.candidate_experiments[0]
+            expected_plan = self.original_experiment.model_dump(mode="json")
+            expected_plan["fixture_id"] = self.candidate_fixture_id
+            if (review.adapter_id != descriptor.adapter_id
+                    or descriptor_for(candidate_plan).adapter_id != descriptor.adapter_id
+                    or descriptor.validate_experiment(expected_plan) != candidate_plan
+                    or identity.experiment_hash != canonical_hash(self.original_experiment)
+                    or self.witness.identity.experiment_hash != canonical_hash(candidate_plan)):
+                raise ValueError("candidate source review family or witness metadata changed")
+            for plan, result, source in ((self.original_experiment, self.original_result, review.original_source),
+                                        (candidate_plan, self.witness, review.candidate_source)):
+                source_ref = next((ref for ref in result.artifacts if ref.path == descriptor.source_artifact), None)
+                variant = descriptor.fixture_source(plan.fixture_id)["variant"]
+                expected_source_identity = hashlib.sha256(json.dumps({"source": source.file_sha256,
+                    "variant": variant, "parameters": plan.parameters.model_dump()},
+                    sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+                if (source.path != descriptor.source_artifact or source.fixture_id != plan.fixture_id
+                        or source.curated_variant != variant or source_ref is None
+                        or source_ref.sha256 != source.file_sha256 or source_ref.size_bytes != source.size_bytes
+                        or source.source_identity_sha256 != expected_source_identity):
+                    raise ValueError("candidate source review metadata is not bound to trusted fixture snapshots")
+        elif self.source_review_status == "available" or self.source_review_sha256 is not None:
+            raise ValueError("available source review requires its exact record")
+        if self.source_review_status == "invalid_source_snapshots" and self.status == "validated_under_checks":
+            raise ValueError("invalid source snapshots cannot claim validated repair")
+        return self
 
 
 def _digest(data: bytes) -> str:
@@ -112,10 +166,18 @@ def load_attempt(attempt_dir: Path, *, limits: ExportLimits = ExportLimits()) ->
             raw = _read(_artifact(root, descriptor.trace_artifact), limits.max_bytes)
             ref = next(ref for ref in result.artifacts if ref.path == descriptor.trace_artifact)
             if len(raw) != ref.size_bytes or _digest(raw) != ref.sha256:
-                raise ValueError("arithmetic trace changed during validation")
-            validate_arithmetic_trace(raw, experiment, result)
+                raise ValueError("family trace changed during validation")
+            def artifact_reader(name):
+                reference = next((ref for ref in result.artifacts if ref.path == name), None)
+                if reference is None:
+                    raise ValueError("family evidence companion artifact is missing")
+                payload = _read(_artifact(root, reference.path), min(reference.size_bytes, limits.max_bytes))
+                if len(payload) != reference.size_bytes or _digest(payload) != reference.sha256:
+                    raise ValueError("family evidence companion artifact changed during validation")
+                return payload
+            validate_family_trace(raw, experiment, result, artifact_reader=artifact_reader)
         elif design:
-            raise ValueError("checked arithmetic result requires its family trace artifact")
+            raise ValueError("checked family result requires its family trace artifact")
     return experiment, result
 
 
@@ -193,6 +255,8 @@ def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: EvidenceRunne
     if type(max_attempts) is not int or not 1 <= max_attempts <= 1000:
         raise ValueError("max_attempts must be between 1 and 1000")
     experiment, original = load_attempt(attempt_dir)
+    if descriptor_for(experiment).trace_schema == "axi_lite.trace.v1":
+        raise NotImplementedError("AXI cycle reduction has not been independently accepted")
     if not same_failure(original, original):
         raise ValueError("reduction requires an independently checked design failure")
     root = _new_output(output_dir)
@@ -231,7 +295,10 @@ def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: EvidenceRunne
 
 def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture_id: str,
                        candidate_runner: EvidenceRunner, original_runner: EvidenceRunner,
-                       neighboring_plans: tuple[ValidatedExperiment, ...], regression_plans: tuple[ValidatedExperiment, ...]) -> CandidateValidation:
+                       neighboring_plans: tuple[ValidatedExperiment, ...], regression_plans: tuple[ValidatedExperiment, ...],
+                       provenance: CandidateProvenance | None = None) -> CandidateValidation:
+    provenance = CandidateProvenance.model_validate((provenance or CandidateProvenance()).model_dump(mode="json"))
+    _screen_content(provenance.model_dump_json().encode())
     experiment, original = load_attempt(attempt_dir)
     if not same_failure(original, original):
         raise ValueError("candidate validation requires a checked original failure")
@@ -255,9 +322,10 @@ def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture
     reproduced = original_runner(experiment, root / "original-replay")
     common = dict(original_experiment=experiment, original_result=original, original_replay=reproduced,
                   candidate_fixture_id=candidate_fixture_id, candidate_experiments=tuple(candidates),
-                  neighboring_plan_count=len(neighboring_plans), regression_plan_count=len(regression_plans))
+                  neighboring_plan_count=len(neighboring_plans), regression_plan_count=len(regression_plans),
+                  provenance=provenance)
     if not _identity_matches(reproduced, experiment, original) or not same_failure(original, reproduced):
-        record = CandidateValidation(**common, status="original_not_reproduced")
+        record = CandidateValidation(**common, status="original_not_reproduced", source_review_status="not_executed")
     else:
         results = tuple(candidate_runner(plan, root / f"candidate-{index:03d}") for index, plan in enumerate(candidates))
         candidate_source = results[0].identity.source_hash if results[0].identity else None
@@ -267,8 +335,20 @@ def validate_candidate(attempt_dir: Path, output_dir: Path, *, candidate_fixture
                      and candidate_source != original.identity.source_hash
                      for plan, result in zip(candidates, results))
         n = len(neighboring_plans)
+        review, review_status = None, "missing_source_snapshots"
+        required = {descriptor_for(experiment).source_artifact, "checker.py", "contract.json"}
+        if all(required <= {ref.path for ref in result.artifacts} for result in (original, results[0])):
+            from .candidate_sources import compare_candidate_sources
+            try:
+                review = compare_candidate_sources(attempt_dir, root / "candidate-000", provenance=provenance)
+                review_status = "available"
+            except (ValueError, OSError):
+                # Retain execution outcomes while rejecting a false validation claim.
+                passed, review_status = False, "invalid_source_snapshots"
         record = CandidateValidation(**common, witness=results[0], neighbors=results[1:n+1],
-            regressions=results[n+1:], status="validated_under_checks" if passed else "failed_under_checks")
+            regressions=results[n+1:], status="validated_under_checks" if passed else "failed_under_checks",
+            source_review=review, source_review_status=review_status,
+            source_review_sha256=canonical_hash(review) if review else None)
     _save(root / "validation.json", record)
     return record
 

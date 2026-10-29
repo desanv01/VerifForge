@@ -1,14 +1,15 @@
 # Curated adapter registry — VF-052 / VF-054C
 
 `veriforge.adapters` provides a static registry for typed validation and runner
-resolution and trusted metadata for family adoption. This registry delivery does
-not change API/core, evidence, shared schemas, checkers, or HDL. Their owners adopt
-the interface independently. No simulator runs are part of this registry delivery.
+resolution and trusted metadata for family adoption. API admission uses its typed
+experiment union; evidence support remains a separate reviewed capability. No
+simulator runs are part of the U3 registry/API delivery.
 
 | Adapter ID | Experiment schema/model | Contract model | Installed fixtures |
 |---|---|---|---|
 | `rtl.fifo.v1` | `1` / shared `Experiment` | shared `BehavioralContract` | `fifo_correct`, `fifo_reset_bug` |
 | `rtl.arithmetic.v1` | `arithmetic.v1` / `ArithmeticExperiment` | `ArithmeticContract` | `multiplier_correct`, `multiplier_latency_bug`, `multiplier_data_bug` |
+| `rtl.axi_lite.v1` | `axi_lite.v1` / `AxiLiteExperiment` | `AxiLiteContract` | `axil_registers_correct`, `axil_aw_w_order_bug`, `axil_strobe_bug`, `axil_response_stability_bug` |
 
 Identifiers are exact and versioned. Unknown identifiers, module names, paths, and
 aliases fail closed with `UnknownAdapterError`. Descriptors are frozen, their
@@ -76,8 +77,17 @@ adoption. These are installed-code helpers, never planner-supplied identity clai
 | `fixture_source(fixture_id)` | Fresh dictionary with exactly `source_file_hash` and integer `variant`; installed fixture only |
 | `expected_identity(experiment)` | Fresh dictionary with exactly `source_hash`, `checker_hash`, `contract_hash`, `experiment_hash` |
 | `expand_stimulus(experiment)` | Fresh deterministic list of typed cycle dictionaries from the family's existing oracle |
-| `source_artifact` | `fifo.sv` or `multiplier.sv` |
-| `portable_artifacts` | Fixed tuple: stimulus, contract, checker, observations and own source; arithmetic also includes `arithmetic-trace.json` |
+| `source_artifact` | `fifo.sv`, `multiplier.sv`, or `registers.sv` |
+| `portable_artifacts` | Fixed tuple: stimulus, contract, checker, observations and own source; arithmetic also includes `arithmetic-trace.json`; AXI also includes protected `checker-contracts.py` and native `check.json` |
+
+AXI uses the existing native/container backends and trusted source variants 0–3
+in the fixture order above. Its exact pre-edge cycle rows are serialized directly,
+without adaptive stimulus generation. Its typed trace is the `observed.json`
+envelope (`axi_lite.trace.v1`, `observations`), not an arithmetic or FIFO trace.
+The native runner separately writes `check.json` (`axi_lite.check.v1`). Descriptor
+registration, catalog discovery, and draft admission do not enable AXI replay,
+artifact downloads, export, or reduction: evidence acceptance and health capability
+advertising remain separately gated by the evidence owner and coordinator.
 
 Fixed source paths and source-variant declarations live in an internal frozen
 descriptor record. The public source snapshot contains no paths, commands or

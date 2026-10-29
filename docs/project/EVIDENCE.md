@@ -1,7 +1,7 @@
 # Evidence workflows — VF-040A / VF-054B
 
 The evidence package implements local, controller-invoked workflows for the shared
-FIFO and unsigned arithmetic-pipeline contracts. It accepts typed experiments and trusted Python runner callbacks,
+FIFO, unsigned arithmetic-pipeline and bounded AXI-Lite contracts. It accepts typed experiments and trusted Python runner callbacks,
 never shell strings, uploaded code, patch application, or model-generated commands.
 Candidate execution is limited to a separately selected curated fixture revision.
 
@@ -10,7 +10,7 @@ Candidate execution is limited to a separately selected curated fixture revision
 Import from `veriforge.evidence`. Paths are controller-selected local `pathlib.Path`
 values. A runner has the shared signature
 `runner(experiment: ValidatedExperiment, output_dir: Path) -> AttemptResult`, where
-`ValidatedExperiment` is the registry's `Experiment | ArithmeticExperiment`. The callback
+`ValidatedExperiment` is the registry's `Experiment | ArithmeticExperiment | AxiLiteExperiment`. The callback
 must enforce the plan's wall-time, cycle, artifact and isolation limits, use a fresh
 attempt directory, and persist exact experiment/result/artifact records. Production
 callers must supply a trusted adapter; unit-test scripted callbacks are not simulator
@@ -24,8 +24,10 @@ portable_artifact_bytes(attempt_dir, artifact_id, *, limits=ExportLimits()) -> b
 reduce_failure(attempt_dir, output_dir, *, runner, max_attempts=30) -> ReductionRecord
 validate_candidate(
     attempt_dir, output_dir, *, candidate_fixture_id,
-    candidate_runner, original_runner, neighboring_plans, regression_plans,
+    candidate_runner, original_runner, neighboring_plans, regression_plans, provenance=None,
 ) -> CandidateValidation
+compare_candidate_sources(original_attempt_dir, candidate_attempt_dir, *,
+                          provenance=None, limits=CandidateReviewLimits()) -> CandidateSourceReview
 ```
 
 Records are frozen Pydantic wire models with `model_dump(mode="json")` and
@@ -120,6 +122,72 @@ the integrated runner's own evidence. Passing these finite checks does not prove
 equivalence or arbitrary-input correctness. Callers must choose meaningful distinct
 neighboring/regression plans; duplicate suite inputs cannot increase coverage.
 
+### Inspectable source review and precise recommendation provenance
+
+`compare_candidate_sources` reads two already recorded attempts without writing or
+executing either. It requires an original checked failure and the exact original
+witness on a different installed fixture in the same adapter. Contract, checker,
+parameters, operations, seed and budget cannot change. It verifies every original
+artifact using `load_attempt`, then binds copied source bytes to the source identity
+using the trusted curated variant and recorded parameters. Copied checker bytes and
+the copied reviewed typed contract must match immutable checker/contract hashes.
+This additional snapshot binding belongs to source review; the established historical
+`load_attempt` consistency boundary is unchanged.
+
+The frozen `CandidateSourceReview` contains original/candidate attempt and experiment
+identities, source-file byte hashes, source identities, fixture IDs and variants,
+protected checker/contract hashes, and two unified diffs with safe relative labels:
+HDL text and curated fixture/variant/parameter configuration. Identical source bytes
+produce `source_bytes_changed=false` and an empty source diff; a variant change is
+shown only in the configuration diff. Current FIFO/arithmetic examples use this
+prepared variant selection. They must not be described as newly generated source
+patches. The review itself is scoped to source/configuration; it is not execution,
+functional proof or a replacement for witness/neighbor/regression checks.
+
+`CandidateReviewLimits` bounds each source to256KiB/4096lines by default and the
+combined diff to1MiB (hard configurable caps1MiB/10000lines/4MiB). Excess fails rather
+than truncating the change. Source and review metadata use the existing strict UTF-8
+and credential/local-path screening. Originals are reverified before returning and
+never modified. No arbitrary source path, shell, Python, patch application or network
+operation is accepted. Only the fixed family source artifact is inspected.
+
+Optional `CandidateProvenance` distinguishes recommendation from materialization:
+
+- `curated_catalog`: default prepared candidate selection; no external/model claim.
+- `external_recommendation`: exact proposal ID/hash plus external reference ID.
+- `model_recommendation`: exact proposal ID/hash plus `ModelRecommendation` containing
+  provider, exact model label, model-call ID and prompt/response SHA-256 hashes.
+
+Every supported provenance retains `materialization=curated_fixture_selection`,
+`authorship_claim=curated_source_not_generated_patch`, and
+`assertion_basis=controller_supplied_record`. These references record the caller's
+assertion; this module does not contact a provider or authenticate a model call.
+Incomplete or contradictory origin records are rejected. External/model-authored
+source patch materialization and execution remain unsupported; calling a curated
+selection a model-generated patch is rejected. No provider credential or raw prompt
+is stored here.
+
+New `validate_candidate` calls record recommendation provenance and automatically
+attach a source review when original and witness candidate manifests contain copied
+source/checker/contract snapshots. `source_review_sha256` binds the exact review to
+the validation record; model validation ties it to original/witness attempts, exact
+inputs, source and protected identities. Change flags and nonempty diff claims must
+agree with file hashes and fixture/variant identities; equal file hashes also require
+equal recorded lengths. Validation binds adapter, fixture, variant, relative source
+name, file hash/length and derived source identity to the original and witness plans
+and their artifact manifests. Rehashing a contradictory review does not repair these
+internal inconsistencies. A complete but inconsistent snapshot yields
+`source_review_status=invalid_source_snapshots` and `failed_under_checks`, even if
+the supplied execution results pass. Missing legacy/test snapshots are explicitly
+`missing_source_snapshots`, with no fabricated diff. If original reproduction fails,
+the review is `not_executed`. Old serialized records remain readable with provenance
+null and `legacy_unrecorded`, so historical checks gain no invented authorship.
+
+These are evidence-layer callables only. Candidate API routes, durable storage/UI
+adoption and live execution of newly provenance-bound validation remain separate
+integration gates. Pure tests and read-only review of accepted real FIFO/arithmetic
+snapshots establish source behavior, not a new simulator/model run.
+
 ## Portable ZIP and report
 
 Export verifies all original artifact references, then writes a new ZIP exclusively
@@ -192,5 +260,68 @@ test skips explicitly if those ignored local fixtures are absent. These reads an
 exports do not execute arithmetic HDL, and the stubbed callback is not actual native
 replay. **Live arithmetic replay/reduction/candidate validation remains unverified.**
 API/core evidence routing remains the API owner's separate reviewed change; source
-support here does not imply an endpoint or service upgrade is accepted. AXI-Lite
-and arbitrary uploaded/generated patch execution remain unsupported.
+support here does not imply an endpoint or service upgrade is accepted. Native AXI
+source adoption is documented below; arbitrary uploaded/generated patch execution
+remains unsupported.
+
+## Native bounded AXI-Lite evidence adoption
+
+Source support now recognizes the reviewed `rtl.axi_lite.v1` descriptor and
+`axi_lite.v1` experiment with exact `cycles`, not FIFO/arithmetic operations.
+No bus observations are converted into FIFO fields. Native `observed.json` is
+`axi_lite.trace.v1` with an observations array. Every row must explicitly contain
+exactly cycle, aw_ready, w_ready, b_valid, b_resp, ar_ready, r_valid, r_data and r_resp.
+The fixed `AxiLiteTrace`/`AxiLiteObservation` models enforce strict boolean signals,
+integer cycles, 32-bit unsigned data and two-bit responses; full length/order must
+match the stored exact experiment. Shared `AttemptResult.trace` stays empty.
+
+The fixed module helper `veriforge.evidence.families.validate_family_trace(raw,
+experiment,result,*,artifact_reader=None)` dispatches the registered arithmetic
+or AXI schema, rejecting unknown schemas. `validate_axi_trace` provides the specific
+AXI implementation. The loader supplies a bounded, path-contained reader that
+rechecks every companion's exact manifest size/hash. No input-selected import,
+command, uploaded checker, copied Python/schema execution or dynamic fallback exists.
+
+AXI requires native `check.json` (`axi_lite.check.v1`) and copied checker.py,
+checker-contracts.py, contract.json, environment.json, registers.sv and stimulus.json.
+The checks bind copied oracle bytes to checker_hash, copied schema bytes to the
+recorded environment contracts_hash, raw environment bytes/tool records to the
+recorded environment identity, typed contract to canonical contract_hash/parameters,
+raw source+trusted curated variant+parameters to source_hash, and exact typed cycles
+to stored stimulus/experiment_hash. This does not import or rerun copied code and
+does not require old snapshot bytes to equal the current installed implementation.
+Authenticated producer/DB provenance is still required; consistency is not authority.
+
+Native checked outcome must agree with result verdict, its failure requirement/class/
+cycle/expected/observed and semantic signature hash. Entire executed observation
+length and the checker's checked prefix are distinct: design failure checks through
+first_failure_cycle+1, while executed usage retains the full original trace. Passing
+requires a completely checked trace. Out-of-range prefixes, coerced booleans, missing
+signal fields, duplicate JSON keys, malformed companions and contradictory identities
+fail closed. This is recorded evidence/identity validation, not another mathematical
+oracle verdict or a newly executed simulator result. Product-specific progress
+requirements remain scoped by the unchanged contract, not universal AXI deadlines.
+
+Portable names come from the trusted descriptor: common stimulus/contract/checker/
+observations plus registers.sv, checker-contracts.py and check.json. No invented
+axi-trace filename, generic FIFO sidecar, raw job/log or environment diagnostic is
+exported. Native checker failure text is retained in check.json as bounded screened
+semantic evidence, not an arbitrary execution log. Existing UTF-8, credential/path,
+file count, byte, containment and duplicate-reference checks continue to apply.
+
+Typed native replay preflight/dispatch and same-witness curated candidate/source
+review utilities support the fixed AXI types through the registry union. Their
+new AXI callback tests use labeled synthetic observations only. **AXI cycle reduction
+is explicitly unsupported**: `reduce_failure` raises `NotImplementedError` before
+creating an output directory or calling a runner. The operations-based reducer is
+not applied to a cycle protocol. A future strategy needs its own acceptance for
+handshake validity, bounded environments and same-semantic failure preservation.
+
+`tests/evidence/test_axi_evidence.py` validates all seven previously accepted native
+attempts read-only, exports them and checks all original file hashes unchanged.
+It also tests rehashed malformed trace/check envelopes, oracle/schema/environment/
+source/stimulus drift, typed stubbed native replay, synthetic candidate provenance
+and unsupported reduction. No new HDL, model, Docker, build or runtime work ran.
+Actual new AXI replay/candidate validation and backend/browser adoption remain
+separate gates. API evidence capability must remain off until independent source
+review and explicitly assigned backend adoption.
