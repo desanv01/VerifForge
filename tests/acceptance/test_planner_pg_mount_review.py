@@ -18,8 +18,8 @@ ROLES = ('mock', 'api', 'runtime-a', 'runtime-b', 'runtime-c', 'controller')
 def controller(monkeypatch, tmp_path):
     path = ROOT / 'scripts/ci_planner_postgres.py'
     # Source identity is portable across checkouts; tool evidence is never normalized.
-    assert hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest() == '9dfe17083a31a46d39f284dc440fdacc366bd47ffe371fca2d597b2406a34e18'
-    assert hashlib.sha256((ROOT / 'tests/acceptance/test_planner_postgres_plan.py').read_bytes().replace(b'\r\n', b'\n')).hexdigest() == 'ea64ad516adf57b852ddcac78645efbf29e1f9789edd15bcf18a7e1947f3aecd'
+    assert hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest() == '3dd41e80bd492ad0ac53ad8e02d5c07c718fc181cfe8d8ed1bee76f9933b9694'
+    assert hashlib.sha256((ROOT / 'tests/acceptance/test_planner_postgres_plan.py').read_bytes().replace(b'\r\n', b'\n')).hexdigest() == 'ffbbd5fb68e2e22df37aac2db071732743e222d39e87373c863d1305ac54af90'
     def forbidden(*args, **kwargs): pytest.fail('no external operation during mount review')
     for name in ('run', 'Popen', 'check_output'): monkeypatch.setattr(subprocess, name, forbidden)
     spec = importlib.util.spec_from_file_location('independent_pg_mount', path)
@@ -162,7 +162,7 @@ def test_six_bounded_exact_role_preflights_and_early_failure(controller, monkeyp
                 elif fault == 'wrong-path': proof['mounts'][0]['directory'] = '/unowned'
                 elif fault == 'wrong-role': proof['role'] = 'controller'
                 elif fault == 'incomplete': proof['mounts'][0]['probe'] = 'write-only'
-            return json.dumps(proof).encode()
+            return controller.PROOF_MARKER.encode() + json.dumps(proof).encode() + b'\n'
     if fault is None:
         controller.preflight_writing_roles(FakeHost(), USER)
         assert len(calls) == 6

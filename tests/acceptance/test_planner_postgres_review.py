@@ -11,11 +11,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 # Reviewed source pins use LF text identity across Git checkouts; tool evidence remains raw-byte hashed.
 FROZEN = {
-    'scripts/ci_planner_postgres.py': '9dfe17083a31a46d39f284dc440fdacc366bd47ffe371fca2d597b2406a34e18',
+    'scripts/ci_planner_postgres.py': '3dd41e80bd492ad0ac53ad8e02d5c07c718fc181cfe8d8ed1bee76f9933b9694',
     'tests/integration/planner_process_fixture.py': 'c64e7b2ae0303d0fa35735ccf5db53d92d01e49016f6431323e535d8a4910ec3',
     'infra/planner/Dockerfile.ci': 'cdad35f0edf16d4d7ae50da2a01b00e3c65f404afd4133ee24d9a1b6c9285526',
     '.github/workflows/planner-postgres-acceptance.yml': '85e3250990212537bb4e5d0cf4c70106e9bdc11e41d51bf94febeb471ca83a39',
-    'tests/acceptance/test_planner_postgres_plan.py': 'ea64ad516adf57b852ddcac78645efbf29e1f9789edd15bcf18a7e1947f3aecd',
+    'tests/acceptance/test_planner_postgres_plan.py': 'ffbbd5fb68e2e22df37aac2db071732743e222d39e87373c863d1305ac54af90',
     'scripts/ci_axi_application.py': '1ef06a8e1fb855724d919046b8b1835edd01874ffc538280ab8d1f2dbdeb9624',
 }
 PROJECT = 'vf-planner-pg-ci-123456789-1'
