@@ -17,6 +17,7 @@ from .database import PlannerCleanup, PlannerModelCall, PlannerRound, PlannerRun
 
 RESOURCE = 'local_planner_provider'
 ROLE = 'planner_runtime'
+SUPERVISOR_ROLE = 'planner_supervisor'
 MAX_FENCE = 2 ** 63 - 1
 
 
@@ -222,6 +223,61 @@ def mark_owner_lost(session, grant, *, role, at):
         # Existing round API preserves known completed outcomes, and marks only
         # still-authorized running work uncertain. No replay or refund follows.
         rounds.fail_model_round(session, grant.lease, code='model_transport_error', at=at, remote_unknown=True)
+        _next(slot, at)
+        slot.state, slot.owner_lost_at = 'unknown', at
+        session.flush()
+    return True
+
+
+def quarantine_lost_owner(session, *, expected_fence, expected_round_id, expected_incarnation,
+                          owner_loss_observed, role, at, control):
+    """Supervisor-only exact CAS after an explicit positive owner-loss observation.
+
+    The boolean is a trusted internal liveness assertion, not public input or
+    proof that remote/local work stopped. TTL, restart, an empty task map or a
+    different incarnation alone NEVER authorize this operation. No old grant,
+    lease object or cleanup ticket is returned/reconstructed. No slot is freed.
+    Enter in a fresh transaction, resource first; commit quarantine separately
+    from any original-owner cleanup acknowledgment or later settled CAS release.
+    """
+    at = _at(at)
+    if type(expected_fence) is not int or expected_fence <= 0 or type(owner_loss_observed) is not bool:
+        raise ValueError('Expected an exact positive fence and boolean owner-loss observation')
+    if type(expected_round_id) is not str or not 1 <= len(expected_round_id) <= 36 or type(expected_incarnation) is not str:
+        raise ValueError('Expected exact persisted runtime association')
+    try:
+        if str(UUID(expected_incarnation)) != expected_incarnation:
+            raise ValueError
+    except ValueError:
+        raise ValueError('Expected exact persisted runtime association') from None
+    if type(control) is not str or control not in {'RUNNING', 'PAUSED', 'STOPPED'}:
+        raise ValueError('Expected explicit trusted service control')
+    if type(role) is not str or role != SUPERVISOR_ROLE or not owner_loss_observed:
+        return False
+    slot = _lock(session)
+    def matches():
+        return (slot.state == 'active' and slot.fence == expected_fence and
+            slot.active_round_id == expected_round_id and slot.incarnation == expected_incarnation)
+    if not matches():
+        return False
+    service.lock(session, slot.campaign_id)
+    if not matches():
+        return False
+    row = session.get(PlannerRound, slot.active_round_id)
+    call = session.get(PlannerModelCall, slot.active_round_id)
+    owner = session.get(PlannerCleanup, slot.active_round_id)
+    if (row is None or call is None or owner is None or row.campaign_id != slot.campaign_id or
+        owner.campaign_id != slot.campaign_id or owner.generation != row.generation or owner.request_hash != call.request_hash):
+        return False
+    latest = max(_utc(slot.changed_at), _utc(owner.registered_at), _utc(owner.owner_lost_at or owner.registered_at),
+        _utc(owner.settled_at or owner.registered_at))
+    if at < latest or slot.fence >= MAX_FENCE:
+        raise ValueError('Non-monotonic owner-loss observation or exhausted fence')
+    with session.begin_nested():
+        cleanup.mark_owner_lost(session, slot.active_round_id, at=at)
+        rounds.quarantine_model_round(session, slot.active_round_id, campaign_id=slot.campaign_id,
+            generation=owner.generation, request_hash=owner.request_hash, execution_lease=owner.execution_lease,
+            at=at, control=control)
         _next(slot, at)
         slot.state, slot.owner_lost_at = 'unknown', at
         session.flush()

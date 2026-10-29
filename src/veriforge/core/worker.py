@@ -9,9 +9,10 @@ from pathlib import Path
 from veriforge.contracts import AttemptResult
 from veriforge.adapters import get_adapter
 from .families import experiment_adapter
-from .database import Attempt, make_engine, now as service_now, session_factory
+from .database import Attempt, PlannerState, make_engine, now as service_now, session_factory
 from . import service
 from . import planner_driver, planner_rounds
+from .runtime_configuration import resolve_control
 
 
 def installed_identity(experiment) -> dict:
@@ -35,17 +36,23 @@ class LeaseCancellation:
     def is_set(self):
         if time.monotonic() - self.last_check > 0.2:
             with self.sessions() as session:
-                self.cancelled = planner_driver.read_control(self.control) != "RUNNING" or not service.authorized(session, self.attempt_id, self.lease)
+                self.cancelled = self.cancelled or planner_driver.read_control(self.control) != "RUNNING" or not service.authorized(session, self.attempt_id, self.lease)
             self.last_check = time.monotonic()
         return self.cancelled
 
 
 def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_root=None,
-                    now=service_now, control=planner_driver.running_control):
+                    now=service_now, control=None, configuration=None):
     sessions = sessions or session_factory(make_engine())
     with sessions.begin() as session:
-        claimed, planner_owned = planner_driver.claim_attempt(session, attempt_id, at=planner_driver.stamp(now),
-                                                              control=planner_driver.read_control(control))
+        attempt = session.get(Attempt, attempt_id)
+        planner_hint = bool(attempt and session.get(PlannerState, attempt.campaign_id))
+        effective_control = resolve_control(planner_owned=planner_hint, explicit_control=control, configuration=configuration)
+        current_control = planner_driver.read_control(effective_control)
+        if current_control == "RUNNING":
+            claimed, planner_owned = planner_driver.claim_attempt(session, attempt_id, at=planner_driver.stamp(now), control=current_control)
+        else:
+            claimed, planner_owned = None, planner_hint
     if claimed is None:
         return {"accepted": False}
     lease, plan, project_id = claimed
@@ -62,6 +69,15 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
 
     heartbeat_thread = threading.Thread(target=keepalive, daemon=True)
     heartbeat_thread.start()
+    cancellation = None
+
+    def final_control():
+        # A runner that observed cancellation cannot publish a late result even
+        # if the control file returns to RUNNING before finalization.
+        if cancellation is not None and cancellation.cancelled:
+            return "STOPPED"
+        return planner_driver.read_control(effective_control)
+
     try:
         from .database import Campaign, ReplayLink
         with sessions() as session:
@@ -75,7 +91,8 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
         if runner is None:
             runner = descriptor.resolve_runner("container" if os.name == "nt" else "native")
         output = Path(artifact_root or os.getenv("VERIFORGE_ARTIFACT_ROOT", "artifacts")) / attempt_id
-        result = AttemptResult.model_validate(runner(experiment, output, cancel_event=LeaseCancellation(sessions, attempt_id, lease, control)))
+        cancellation = LeaseCancellation(sessions, attempt_id, lease, effective_control)
+        result = AttemptResult.model_validate(runner(experiment, output, cancel_event=cancellation))
         validate_identity(experiment, result)
         if is_replay:
             from .artifacts import verify_replay_output
@@ -83,25 +100,33 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
         with sessions.begin() as session:
             if planner_owned:
                 accepted = planner_rounds.finish_execution_step(session, attempt_id, lease, result.model_dump(mode="json"),
-                    at=planner_driver.stamp(now), control=planner_driver.read_control(control))
+                    at=planner_driver.stamp(now), control=final_control())
             else:
-                accepted = service.finalize(session, attempt_id, lease, result.model_dump(mode="json"))
+                if final_control() != "RUNNING":
+                    service.cancel(session, session.get(Attempt, attempt_id).campaign_id)
+                    accepted = False
+                else:
+                    accepted = service.finalize(session, attempt_id, lease, result.model_dump(mode="json"))
         return {"accepted": accepted}
     except Exception as error:
         with sessions.begin() as session:
             failure = {"error_type": type(error).__name__, "uncertainties": ["Worker failed before a checked result was finalized"]}
             if planner_owned:
                 accepted = planner_rounds.finish_execution_step(session, attempt_id, lease, failure,
-                    infrastructure_error=True, at=planner_driver.stamp(now), control=planner_driver.read_control(control))
+                    infrastructure_error=True, at=planner_driver.stamp(now), control=final_control())
             else:
-                accepted = service.finalize(session, attempt_id, lease, failure, infrastructure_error=True)
+                if final_control() != "RUNNING":
+                    service.cancel(session, session.get(Attempt, attempt_id).campaign_id)
+                    accepted = False
+                else:
+                    accepted = service.finalize(session, attempt_id, lease, failure, infrastructure_error=True)
         return {"accepted": accepted, "infrastructure_error": True}
     finally:
         stop.set()
         heartbeat_thread.join(timeout=2)
 
 
-def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=planner_driver.running_control):
+def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=None, configuration=None):
     from .dispatch import RQDispatcher, dispatch_pending
     from .artifacts import dispatch_exports, recover_exports
     sessions = sessions or session_factory(make_engine())
@@ -109,8 +134,9 @@ def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=p
         interrupted = service.recover_stale(session)
         interrupted_exports = recover_exports(session)
     dispatcher = dispatcher if dispatcher is not None else RQDispatcher()
-    planner = planner_driver.reconcile_once(sessions, dispatcher, now=now, control=control)
-    return {**dispatch_pending(sessions, dispatcher, clock=now, control=control), "interrupted": interrupted,
+    planner_control = resolve_control(planner_owned=True, explicit_control=control, configuration=configuration)
+    planner = planner_driver.reconcile_once(sessions, dispatcher, now=now, control=planner_control)
+    return {**dispatch_pending(sessions, dispatcher, clock=now, control=control, configuration=configuration), "interrupted": interrupted,
             "exports": dispatch_exports(sessions, dispatcher), "interrupted_exports": interrupted_exports,
             "planner": planner}
 

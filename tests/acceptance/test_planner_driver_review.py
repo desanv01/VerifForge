@@ -173,7 +173,7 @@ def test_model_id_has_no_runtime_fallback_and_uncertain_work_never_resends(db):
 def test_execution_waits_for_separate_committed_cas_release_and_lock_order(db):
     campaign, attempt_id = proposed(db)
     broker = Broker()
-    assert dispatch.dispatch_pending(db[1], broker, clock=lambda: AT)['sent'] == 0
+    assert dispatch.dispatch_pending(db[1], broker, clock=lambda: AT, control=lambda: "RUNNING")['sent'] == 0
     assert driver.release_settled_resource(db[1], now=lambda: AT)
     with db[1]() as session:
         assert resources.safe_snapshot(session).state == 'idle'
@@ -221,7 +221,7 @@ def test_planner_worker_finalization_is_authoritative_no_generic_fallback(db, tm
     def fake_runner(experiment, output, *, cancel_event):
         if infrastructure: raise RuntimeError('Synthetic runner failure')
         with db[1]() as session: return result(resolve_attempt_experiment(session, session.get(Attempt, attempt_id)))
-    assert worker.execute_attempt(attempt_id, sessions=db[1], runner=fake_runner, artifact_root=tmp_path, now=lambda: AT)['accepted']
+    assert worker.execute_attempt(attempt_id, sessions=db[1], runner=fake_runner, artifact_root=tmp_path, now=lambda: AT, control=lambda: "RUNNING")['accepted']
     assert calls == [infrastructure]
     with db[1]() as session:
         attempt = session.get(Attempt, attempt_id)
@@ -238,7 +238,7 @@ def test_planner_finalizer_refusal_cannot_publish_generic_result(db, tmp_path, m
     monkeypatch.setattr(service, 'finalize', forbidden)
     def fake_runner(experiment, output, *, cancel_event):
         with db[1]() as session: return result(resolve_attempt_experiment(session, session.get(Attempt, attempt_id)))
-    assert not worker.execute_attempt(attempt_id, sessions=db[1], runner=fake_runner, artifact_root=tmp_path, now=lambda: AT)['accepted']
+    assert not worker.execute_attempt(attempt_id, sessions=db[1], runner=fake_runner, artifact_root=tmp_path, now=lambda: AT, control=lambda: "RUNNING")['accepted']
     with db[1]() as session: assert session.get(Attempt, attempt_id).result is None
 
 
@@ -298,7 +298,7 @@ def test_committed_result_recovery_consumes_once_without_runner_or_model_replay(
     second = driver.reconcile_once(db[1], broker, now=lambda: AT)
     assert first['recovered'] == 1 and second['recovered'] == 0
     assert len(broker.ids) == 1 and not broker.attempts
-    assert dispatch.dispatch_pending(db[1], broker, clock=lambda: AT)['sent'] == 0
+    assert dispatch.dispatch_pending(db[1], broker, clock=lambda: AT, control=lambda: "RUNNING")['sent'] == 0
     with db[1]() as session:
         assert session.scalar(sa.select(sa.func.count()).select_from(PlannerFeedback)) == 2
         assert session.scalar(sa.select(sa.func.count()).select_from(PlannerModelCall)) == 1
