@@ -7,9 +7,10 @@ from datetime import timedelta, timezone
 from sqlalchemy import select, update
 from veriforge.contracts import AttemptResult, Verdict, canonical_hash
 from veriforge.adapters import get_adapter
-from .families import FIFO_ADAPTER, project_adapter, campaign_contract
+from .families import FIFO_ADAPTER, project_adapter
+from .planner_experiments import record_experiment, resolve_attempt_experiment, queue_experiment, validate_record
 
-from .database import Attempt, Campaign, Contract, Dispatch, Finding, Project, ReplayLink, RunEvent, identifier, now
+from .database import Attempt, Campaign, Contract, ExperimentRecord, Finding, Project, ReplayLink, RunEvent, identifier, now
 
 TERMINAL = {"completed", "cancelled", "interrupted", "infrastructure_error"}
 VERDICTS = {v.value for v in Verdict}
@@ -51,15 +52,21 @@ def emit(session, campaign: Campaign, kind: str, payload: dict | None = None):
     session.add(RunEvent(campaign_id=campaign.id, sequence=campaign.event_sequence, kind=kind, payload=payload or {}))
 
 
-def create_campaign(session, project_id: str, plan: dict, key: str, *, require_new: bool = False, adapter_id: str = FIFO_ADAPTER) -> Campaign:
+def create_campaign(session, project_id: str, plan: dict, key: str, *, require_new: bool = False, adapter_id: str = FIFO_ADAPTER, completion_policy: str = "single", experiment_origin: str = "manual") -> Campaign:
+    if completion_policy not in {"single", "sequential"}:
+        raise ValueError("Unknown campaign completion policy")
     request_hash = digest({"project_id": project_id, "plan": plan})
     if adapter_id != FIFO_ADAPTER:
         request_hash = digest({"adapter_id": adapter_id, "project_id": project_id, "plan": plan})
+    if completion_policy != "single":
+        request_hash = digest({"request_hash": request_hash, "completion_policy": completion_policy})
+    if experiment_origin != "manual":
+        request_hash = digest({"request_hash": request_hash, "experiment_origin": experiment_origin})
     prior = session.scalar(select(Campaign).where(Campaign.owner == "local", Campaign.create_key == key))
     if prior:
         if require_new:
             raise Conflict("Fresh campaign creation cannot reuse an existing record")
-        if prior.request_hash != request_hash or prior.adapter_id != adapter_id:
+        if prior.request_hash != request_hash or prior.adapter_id != adapter_id or prior.completion_policy != completion_policy:
             raise Conflict("Idempotency key already used for a different request")
         return prior
     project = session.get(Project, project_id)
@@ -77,9 +84,10 @@ def create_campaign(session, project_id: str, plan: dict, key: str, *, require_n
     source_hash = digest({"source": project.data["source_file_hash"], "variant": project.data["variant"], "parameters": experiment.parameters.model_dump()})
     reviewed = descriptor.contract_model.model_validate(contract.data).model_copy(update={"parameters": experiment.parameters})
     identity = {**contract.identity, "contract_hash": canonical_hash(reviewed), "source_hash": source_hash, "experiment_hash": canonical_hash(experiment)}
-    campaign = Campaign(project_id=project.id, contract_id=project.contract_id, adapter_id=adapter_id, create_key=key, request_hash=request_hash, plan=plan, identity=identity)
+    campaign = Campaign(project_id=project.id, contract_id=project.contract_id, adapter_id=adapter_id, completion_policy=completion_policy, create_key=key, request_hash=request_hash, plan=plan, identity=identity)
     session.add(campaign)
     session.flush()
+    record_experiment(session, campaign, plan, "initial", origin=experiment_origin, initial=True)
     emit(session, campaign, "campaign.created")
     return campaign
 
@@ -88,10 +96,10 @@ def start(session, campaign_id: str) -> Campaign:
     campaign = lock(session, campaign_id)
     if campaign.execution_status != "draft":
         return campaign
-    attempt = Attempt(campaign_id=campaign.id)
-    session.add(attempt)
-    session.flush()
-    session.add(Dispatch(attempt_id=attempt.id))
+    record = session.scalar(select(ExperimentRecord).where(ExperimentRecord.campaign_id == campaign.id, ExperimentRecord.ordinal == 1))
+    if record is None:
+        raise ValueError("Campaign has no immutable experiment; backfill is required")
+    attempt = queue_experiment(session, campaign, record)
     campaign.execution_status = "queued"
     emit(session, campaign, "attempt.queued", {"attempt_id": attempt.id})
     return campaign
@@ -117,13 +125,15 @@ def claim(session, attempt_id: str) -> tuple[str, dict, str] | None:
         return None
     campaign = lock(session, attempt.campaign_id)
     attempt = session.get(Attempt, attempt_id)
-    if campaign.execution_status != "queued" or attempt.execution_status != "queued":
+    eligible = {"queued", "running"} if campaign.completion_policy == "sequential" else {"queued"}
+    if campaign.execution_status not in eligible or attempt.execution_status != "queued":
         return None
+    record = resolve_attempt_experiment(session, attempt)
     attempt.execution_status = "running"
     attempt.heartbeat_at = now()
     campaign.execution_status = "running"
     emit(session, campaign, "attempt.running", {"attempt_id": attempt.id})
-    return attempt.lease, campaign.plan, campaign.project_id
+    return attempt.lease, record.plan, campaign.project_id
 
 
 def authorized(session, attempt_id: str, lease: str) -> bool:
@@ -143,15 +153,16 @@ def finalize(session, attempt_id: str, lease: str, result: dict, infrastructure_
     attempt = session.get(Attempt, attempt_id)
     if attempt.lease != lease or attempt.execution_status != "running" or campaign.execution_status != "running":
         return False
+    record = resolve_attempt_experiment(session, attempt)
     if not infrastructure_error:
         checked = AttemptResult.model_validate(result)
-        if checked.experiment_id != campaign.plan["experiment_id"]:
+        if checked.experiment_id != record.plan["experiment_id"]:
             raise ValueError("Result belongs to a different experiment")
         if checked.execution_status not in TERMINAL:
             raise ValueError("Result is not terminal")
-        if get_adapter(campaign.adapter_id).trace_schema is not None and checked.trace:
+        if get_adapter(record.adapter_id).trace_schema is not None and checked.trace:
             raise ValueError("Family-specific trace must not be coerced into FIFO trace")
-        if checked.identity is not None and any(getattr(checked.identity, key) != expected for key, expected in campaign.identity.items()):
+        if checked.identity is not None and any(getattr(checked.identity, key) != expected for key, expected in record.identity.items()):
             raise ValueError("Result source/checker/contract/stimulus identity differs from the immutable campaign snapshot")
     verdict = result.get("verdict")
     status = "infrastructure_error" if infrastructure_error else result["execution_status"]
@@ -161,10 +172,15 @@ def finalize(session, attempt_id: str, lease: str, result: dict, infrastructure_
     attempt.verdict = None if infrastructure_error else verdict
     attempt.execution_status = status
     attempt.finished_at = now()
-    campaign.execution_status = attempt.execution_status
-    campaign.verdict = attempt.verdict
+    if campaign.completion_policy == "single":
+        campaign.execution_status = attempt.execution_status
+        campaign.verdict = attempt.verdict
+    else:
+        # Child outcomes never become an aggregate functional verdict or close
+        # the parent. A future bounded coordinator owns explicit settlement.
+        campaign.verdict = None
     if verdict in {"design_mismatch", "property_failure"} and not infrastructure_error:
-        session.add(Finding(campaign_id=campaign.id, attempt_id=attempt.id, data={"status": "observed", "verdict": verdict, "result": result, "contract_id": campaign.contract_id, "plan_hash": digest(campaign.plan)}))
+        session.add(Finding(campaign_id=campaign.id, attempt_id=attempt.id, data={"status": "observed", "verdict": verdict, "result": result, "contract_id": campaign.contract_id, "plan_hash": record.plan_hash, "experiment_record_id": record.id}))
     emit(session, campaign, "attempt." + attempt.execution_status, {"attempt_id": attempt.id, "verdict": attempt.verdict})
     return True
 
@@ -186,7 +202,8 @@ def recover_stale(session, stale_seconds: int = 300) -> int:
         attempt.execution_status = "interrupted"
         attempt.lease = identifier()
         attempt.finished_at = now()
-        campaign.execution_status = "interrupted"
+        if campaign.completion_policy == "single":
+            campaign.execution_status = "interrupted"
         campaign.verdict = None
         emit(session, campaign, "attempt.interrupted", {"attempt_id": attempt.id, "reason": "worker lease expired"})
         recovered += 1
@@ -197,18 +214,22 @@ def campaign_view(session, campaign: Campaign) -> dict:
     def utc(value):
         return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
     replay = session.get(ReplayLink, campaign.id)
-    descriptor = get_adapter(campaign.adapter_id)
-    experiment = descriptor.validate_experiment(campaign.plan)
+    initial = session.scalar(select(ExperimentRecord).where(ExperimentRecord.campaign_id == campaign.id, ExperimentRecord.ordinal == 1))
+    if initial is None:
+        raise ValueError("Campaign has no immutable initial experiment")
+    experiment = validate_record(initial)
+    descriptor = get_adapter(initial.adapter_id)
     return {
         "id": campaign.id, "project_id": campaign.project_id, "contract_id": campaign.contract_id,
-        "adapter_id": campaign.adapter_id, "experiment_schema_version": experiment.schema_version,
+        "adapter_id": initial.adapter_id, "experiment_schema_version": experiment.schema_version,
+        "completion_policy": campaign.completion_policy,
         "trace_schema": descriptor.trace_schema, "trace_artifact": descriptor.trace_artifact,
         "execution_status": campaign.execution_status, "verdict": campaign.verdict,
-        "version": campaign.version, "plan": campaign.plan,
+        "version": campaign.version, "plan": initial.plan,
         "source_attempt_id": replay.source_attempt_id if replay else None,
-        "identity": campaign.identity,
-        "contract_snapshot": campaign_contract(session, campaign, experiment).model_dump(mode="json"),
+        "identity": initial.identity,
+        "contract_snapshot": initial.contract_snapshot,
         "created_at": utc(campaign.created_at), "updated_at": utc(campaign.updated_at),
-        "attempts": [{"id": a.id, "execution_status": a.execution_status, "verdict": a.verdict, "result": a.result, "created_at": utc(a.created_at), "finished_at": utc(a.finished_at)} for a in session.scalars(select(Attempt).where(Attempt.campaign_id == campaign.id).order_by(Attempt.created_at))],
+        "attempts": [{"id": a.id, "experiment_record_id": resolve_attempt_experiment(session, a).id, "execution_status": a.execution_status, "verdict": a.verdict, "result": a.result, "created_at": utc(a.created_at), "finished_at": utc(a.finished_at)} for a in session.scalars(select(Attempt).where(Attempt.campaign_id == campaign.id).order_by(Attempt.created_at))],
         "findings": [{"id": f.id, "attempt_id": f.attempt_id, **f.data} for f in session.scalars(select(Finding).where(Finding.campaign_id == campaign.id))],
     }

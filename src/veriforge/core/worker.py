@@ -63,10 +63,11 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
         with sessions() as session:
             from .database import Attempt
             campaign = session.get(Campaign, session.get(Attempt, attempt_id).campaign_id)
-            descriptor = get_adapter(campaign.adapter_id)
-            experiment = descriptor.validate_experiment(plan)
+            record = service.resolve_attempt_experiment(session, session.get(Attempt, attempt_id))
+            descriptor = get_adapter(record.adapter_id)
+            experiment = descriptor.validate_experiment(record.plan)
             is_replay = session.get(ReplayLink, campaign.id) is not None
-            if campaign.identity != installed_identity(experiment):
+            if record.identity != installed_identity(experiment):
                 raise ValueError("Installed execution provenance changed since campaign creation")
         if runner is None:
             runner = descriptor.resolve_runner("container" if os.name == "nt" else "native")
