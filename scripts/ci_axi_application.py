@@ -95,7 +95,7 @@ def compose_plan(project, image):
     app = {'image': image, 'environment': environment, 'volumes': ['artifacts:/artifacts'],
            'labels': labels, 'restart': 'no', 'pids_limit': 128, 'cpus': 1,
            'mem_limit': '512m', 'cap_drop': ['ALL'], 'security_opt': ['no-new-privileges:true'],
-           'logging': {'driver': 'local', 'options': {'max-size': '2m', 'max-file': '1'}}}
+           'logging': {'driver': 'local', 'options': {'max-size': '2m', 'max-file': '1', 'compress': 'false'}}}
     services = {
         'postgres': {'image': 'postgres:16-alpine', 'environment': {'POSTGRES_USER': 'veriforge',
                      'POSTGRES_DB': 'veriforge', 'POSTGRES_HOST_AUTH_METHOD': 'trust'},
@@ -575,6 +575,18 @@ def hosted_main():
         raise first_failure
 
 
+def final_receipt_bytes(summary, retained):
+    """Count the final UTF-8 receipt itself, including the count's digit width."""
+    summary['evidence_bytes'] = retained
+    for _ in range(16):
+        payload = (json.dumps(summary, indent=2, sort_keys=True) + '\n').encode('utf-8')
+        total = retained + len(payload)
+        if summary['evidence_bytes'] == total:
+            return payload
+        summary['evidence_bytes'] = total
+    raise RuntimeError('final receipt byte count did not converge')
+
+
 def finish_owned(project, work, summary, first_failure=None):
     """No success until owned cleanup passes; retain the first failure object."""
     try:
@@ -590,21 +602,21 @@ def finish_owned(project, work, summary, first_failure=None):
         first_failure = RuntimeError('cancelled before final acceptance')
     if first_failure is None and summary['status'] != 'application_checks_passed_pending_cleanup':
         first_failure = RuntimeError('application checks incomplete')
+    summary.update(status='actual_hosted_gate_passed' if first_failure is None else 'failed_or_cancelled',
+                   evidence_bytes=None, evidence_budget_bytes=CAP, evidence_budget_status='within_budget')
+    if first_failure is not None:
+        summary['error'] = type(first_failure).__name__ + ': ' + str(first_failure)[:500]
+    retained = None
     try:
         existing = OUT / 'summary.json'
-        retained = evidence_size(OUT) - (existing.stat().st_size if existing.exists() else 0)
-        candidate = {**summary, 'status': 'actual_hosted_gate_passed' if first_failure is None else 'failed_or_cancelled',
-                     'evidence_bytes': retained, 'evidence_budget_bytes': CAP}
-        # Include this receipt itself in the terminal artifact budget. The
-        # byte-count field reaches a stable width after a few iterations.
-        for _ in range(8):
-            projected = retained + len((json.dumps(candidate, indent=2, sort_keys=True) + '\n').encode())
-            if candidate['evidence_bytes'] == projected:
-                break
-            candidate['evidence_bytes'] = projected
-        require(candidate['evidence_bytes'] <= CAP, 'final evidence cap')
-        summary.update(candidate)
+        measured = evidence_size(OUT) - (existing.stat().st_size if existing.exists() else 0)
+        require(measured >= 0, 'invalid final evidence measurement')
+        retained = measured
+        final_receipt_bytes(summary, retained)
+        require(summary['evidence_bytes'] <= CAP, 'final evidence cap')
     except Exception as budget_error:
+        summary['evidence_budget_status'] = 'unavailable' if retained is None else 'exceeded'
+        summary['evidence_bytes'] = None
         summary['evidence_budget_error'] = type(budget_error).__name__ + ': ' + str(budget_error)[:500]
         if first_failure is None:
             first_failure = budget_error
@@ -613,7 +625,13 @@ def finish_owned(project, work, summary, first_failure=None):
     if first_failure is not None:
         summary.update(status='failed_or_cancelled', error=type(first_failure).__name__ + ': ' + str(first_failure)[:500])
     try:
-        write(OUT / 'summary.json', summary)
+        # Failure, cleanup and budget metadata must all precede the final count.
+        # Preserve evidence even over budget; the bounded diagnostic receipt
+        # reports the actual excess rather than deleting files to claim success.
+        payload = (final_receipt_bytes(summary, retained) if retained is not None else
+                   (json.dumps(summary, indent=2, sort_keys=True) + '\n').encode('utf-8'))
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / 'summary.json').write_bytes(payload)
         print('AXI_APPLICATION_RECEIPT=' + json.dumps(summary, sort_keys=True), flush=True)
     except BaseException as transport_error:
         if first_failure is None:

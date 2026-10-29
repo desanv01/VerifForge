@@ -45,6 +45,12 @@ def test_ephemeral_plan_has_loopback_only_and_finite_separate_caps():
                         'PYTHONDONTWRITEBYTECODE', 'VERIFORGE_CI_EPHEMERAL_PROJECT'}
     assert '${' not in json.dumps(plan) and '.env' not in json.dumps(plan)
     assert all(v['labels'][ci.OWNER] == 'vf-axi-ci-123-1' for v in plan['volumes'].values())
+    # Actual hosted run40934406068 failed before migration: Docker's local
+    # driver rejects default compression when only one log file is retained.
+    for role in ('api', 'worker', 'reconciler'):
+        logging = plan['services'][role]['logging']
+        assert logging['driver'] == 'local'
+        assert logging['options'] == {'max-size': '2m', 'max-file': '1', 'compress': 'false'}
 
 
 def test_migration_target_is_explicit_complete_literal_chain():
@@ -217,6 +223,108 @@ def test_cleanup_failure_never_leaves_success_or_masks_first_cause(monkeypatch, 
         assert returned is primary and 'first checker failure' in summary['error']
     else:
         assert isinstance(returned, RuntimeError) and 'secondary cleanup' in summary['error']
+
+
+@pytest.mark.parametrize('primary_message,cleanup_fails,cancelled', [
+    (None, False, False), ('checker failure ' + '9' * 120 + '\u2713', False, False),
+    (None, True, False), ('original failure', True, False), (None, False, True),
+])
+def test_final_receipt_counts_complete_failure_cleanup_and_utf8_bytes(monkeypatch, tmp_path,
+        primary_message, cleanup_fails, cancelled):
+    output = tmp_path / 'evidence'
+    output.mkdir()
+    evidence = b'preserved native evidence\x00\xff'
+    (output / 'native.bin').write_bytes(evidence)
+    (output / 'summary.json').write_bytes(b'obsolete receipt must be excluded')
+    monkeypatch.setattr(ci, 'OUT', output)
+    monkeypatch.setattr(ci, 'STOP', cancelled)
+    cleanup_error = RuntimeError('cleanup failed with digits 1234567890')
+    def cleanup(*_):
+        if cleanup_fails:
+            raise cleanup_error
+    monkeypatch.setattr(ci, 'cleanup', cleanup)
+    primary = ValueError(primary_message) if primary_message else None
+    summary = {'status': 'application_checks_passed_pending_cleanup', 'diagnostic': '\u03bb'}
+    result = ci.finish_owned('vf-axi-ci-123-1', tmp_path / 'work', summary, primary)
+    if primary:
+        assert result is primary
+    elif cleanup_fails:
+        assert result is cleanup_error
+    elif cancelled:
+        assert result is not None and 'cancelled' in summary['error']
+    else:
+        assert result is None
+    actual = sum(path.stat().st_size for path in output.rglob('*') if path.is_file())
+    saved = json.loads((output / 'summary.json').read_bytes())
+    assert saved == summary and saved['evidence_bytes'] == actual
+    assert saved['evidence_budget_status'] == 'within_budget'
+    assert saved['status'] == ('actual_hosted_gate_passed' if result is None else 'failed_or_cancelled')
+    assert (output / 'native.bin').read_bytes() == evidence
+    if result is not None:
+        assert saved['error'] == type(result).__name__ + ': ' + str(result)[:500]
+
+
+def test_final_receipt_exact_cap_and_one_byte_over_preserve_original_evidence(monkeypatch, tmp_path):
+    monkeypatch.setattr(ci, 'cleanup', lambda *_: None)
+    monkeypatch.setattr(ci, 'STOP', False)
+    def finish(directory, cap):
+        directory.mkdir()
+        (directory / 'native.bin').write_bytes(b'x' * 950)
+        monkeypatch.setattr(ci, 'OUT', directory)
+        monkeypatch.setattr(ci, 'CAP', cap)
+        summary = {'status': 'application_checks_passed_pending_cleanup'}
+        result = ci.finish_owned('vf-axi-ci-123-1', tmp_path / 'work', summary)
+        actual = sum(p.stat().st_size for p in directory.iterdir())
+        assert summary['evidence_bytes'] == actual
+        assert json.loads((directory / 'summary.json').read_bytes()) == summary
+        assert (directory / 'native.bin').read_bytes() == b'x' * 950
+        return result, summary
+    # Same-width cap digits keep the exact-boundary serialization stable.
+    _, probe = finish(tmp_path / 'probe', 9999)
+    boundary = probe['evidence_bytes']
+    assert 1000 <= boundary < 9999
+    result, exact = finish(tmp_path / 'exact', boundary)
+    assert result is None and exact['evidence_bytes'] == boundary
+    result, over = finish(tmp_path / 'over', boundary - 1)
+    assert isinstance(result, RuntimeError) and 'final evidence cap' in str(result)
+    assert over['status'] == 'failed_or_cancelled' and over['evidence_budget_status'] == 'exceeded'
+    assert over['evidence_bytes'] > over['evidence_budget_bytes']
+    assert 'evidence_budget_error' in over and 'error' in over
+
+
+def test_over_budget_receipt_keeps_primary_failure_and_counts_added_metadata(monkeypatch, tmp_path):
+    monkeypatch.setattr(ci, 'OUT', tmp_path)
+    monkeypatch.setattr(ci, 'CAP', 1)
+    monkeypatch.setattr(ci, 'STOP', False)
+    monkeypatch.setattr(ci, 'cleanup', lambda *_: None)
+    (tmp_path / 'native.log').write_bytes(b'original retained evidence')
+    primary = ValueError('primary checker failure 987654321')
+    summary = {'status': 'started'}
+    assert ci.finish_owned('vf-axi-ci-123-1', tmp_path / 'work', summary, primary) is primary
+    assert 'primary checker failure' in summary['error']
+    assert summary['evidence_budget_status'] == 'exceeded'
+    assert summary['evidence_bytes'] == sum(p.stat().st_size for p in tmp_path.iterdir())
+    assert any('Final evidence budget' in note for note in primary.__notes__)
+    assert (tmp_path / 'native.log').read_bytes() == b'original retained evidence'
+
+
+@pytest.mark.parametrize('primary_exists', [False, True])
+def test_unavailable_evidence_measurement_reports_null_and_preserves_primary(monkeypatch, tmp_path, primary_exists):
+    monkeypatch.setattr(ci, 'OUT', tmp_path)
+    monkeypatch.setattr(ci, 'STOP', False)
+    monkeypatch.setattr(ci, 'cleanup', lambda *_: None)
+    def fail_measurement(_):
+        raise OSError('metadata unavailable')
+    monkeypatch.setattr(ci, 'evidence_size', fail_measurement)
+    primary = ValueError('original failure') if primary_exists else None
+    summary = {'status': 'application_checks_passed_pending_cleanup'}
+    returned = ci.finish_owned('vf-axi-ci-123-1', tmp_path / 'work', summary, primary)
+    assert returned is primary if primary_exists else isinstance(returned, OSError)
+    saved = json.loads((tmp_path / 'summary.json').read_bytes())
+    assert saved['evidence_bytes'] is None and saved['evidence_budget_status'] == 'unavailable'
+    assert saved['status'] == 'failed_or_cancelled'
+    assert ('original failure' if primary_exists else 'metadata unavailable') in saved['error']
+    assert 'metadata unavailable' in saved['evidence_budget_error']
 
 
 def test_cleanup_refuses_foreign_container_before_down_or_builder_removal(monkeypatch, tmp_path):
