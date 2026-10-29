@@ -1,6 +1,6 @@
 # VerifForge implementation
 
-Read docs/project/IMPLEMENTATION_GAMEPLAN.md and your assigned scope before editing. The user authorized implementation and persistent phase worker chats, with no three-worker limit. The active main coordinator is recorded in private canonical state. Human resumed implementation, workers and the existing schedule on 24 October 2026. Read .coordination/current-state.json for the latest controls; migration archive remains historical.
+Read docs/project/IMPLEMENTATION_GAMEPLAN.md and your assigned scope before editing. In the coordinator's local checkout, also read the latest private planning handoff and .coordination/current-state.json. The user authorized implementation and persistent phase worker chats, with no three-worker limit. Human resumed implementation, workers and the existing schedule on 29 October 2026, explicitly superseding the October24 pause. The active coordinator and current controls are recorded in private canonical state; migration archives remain historical.
 
 ## Coordination
 - Main owns integration, root configuration, shared dependency locks, canonical .coordination/current-state.json, worker-registry.json, and MASTER_CHECKLIST.md unless explicitly delegated.
@@ -11,11 +11,11 @@ Read docs/project/IMPLEMENTATION_GAMEPLAN.md and your assigned scope before edit
 - Record actual commands, outcomes, limitations, and changed paths. Never mark mock execution as real simulator/model/Vivado evidence.
 
 ## Product constraints
-- One investigation engine, initially RTL verification and Vivado project investigation.
+- One engineering investigation engine. October29 direction retains sequences 1-6: RTL, real RISC-V, firmware/MMIO, live Vivado, KiCad and independent cross-domain checks. Sequence7 is stretch; broader software sequence8 deferred.
 - Model proposes typed experiments; independent immutable checker determines verdict. Execution status and design verdict are separate.
 - Preserve exact stimulus, source/checker/contract identity, tool versions, evidence, and failure signature.
 - A timeout is not automatically a design defect. A successful build is not functional correctness.
-- Supported initial targets: FIFO, arithmetic pipeline, bounded AXI-Lite. General software adapters remain roadmap.
+- Existing RTL targets: FIFO, arithmetic pipeline, bounded AXI-Lite. Expanded adapters need explicit supported configurations and independent acceptance. Track Import / Execute / Repair separately.
 - Curated trusted fixtures first; no arbitrary shell commands or uploaded Python execution. Credentials stay out of simulator jobs and reports.
 - Initial implementation is local. Public deployment/release needs separate authorization.
 - Use official current documentation for evolving dependencies. Read required relevant skills, especially 12ui before substantial UI creation.

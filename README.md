@@ -2,7 +2,7 @@
 
 # VerifForge
 
-**Investigate RTL behavior with bounded experiments, independent checks, and replayable evidence.**
+**Investigate engineering failures with bounded experiments, independent checks, and replayable evidence.**
 
 [![CI](https://github.com/desanv01/VerifForge/actions/workflows/ci.yml/badge.svg)](https://github.com/desanv01/VerifForge/actions/workflows/ci.yml)
 
@@ -14,7 +14,7 @@
 
 <p align="center"><em>Original architecture illustration · not a product screenshot or execution evidence.</em></p>
 
-VerifForge is a local investigation workbench for digital hardware and engineering-tool failures. Start from a reviewed behavioral contract, run controlled experiments, inspect expected versus observed behavior, and retain the exact stimulus and evidence needed to replay a finding.
+VerifForge is a local engineering investigation assistant connecting specifications, source files, tools and test results. Its supported configurations grow from RTL into RISC-V, firmware, FPGA tools, PCB checks and cross-domain evidence. Start from reviewed requirements, run controlled experiments, inspect expected versus observed behavior, and retain the exact stimulus and evidence needed to replay a finding.
 
 The model proposes experiments. The independent checker determines the verdict. A completed execution can contain a mismatch, timeout, or build failure; a passing result establishes only the checked scope.
 
@@ -32,18 +32,21 @@ Deterministic FIFO execution and replay require no model key. Model-driven plann
 
 ## Current capabilities
 
-Active development, as of 24 October 2026. These statuses describe scoped local evidence, not a completed release or benchmark result.
+Active development, as of 30 October 2026 MYT. These statuses describe scoped evidence, not a completed release or benchmark result. The [support matrix](docs/project/SUPPORT_MATRIX.md) separates Import, Execute and Repair gates.
 
 | Area | Available today | Boundary / remaining work |
 |---|---|---|
 | FIFO verification | Real correct-fixture pass, curated reset-mutant mismatch, exact replay and independent checking | Only installed curated fixtures; no arbitrary RTL upload support |
 | Evidence workflows | Curated local replay, bounded reduction, export and candidate-validation evidence accepted | Real API export/download accepted on the tested runtime image; exact API replay passed on that image and browser integration remains pending |
-| API and local runtime | FIFO runtime baseline plus backup, migration and real export/download accepted on the tested image | Exact API replay accepted; complete browser workflow remains pending; health is not functional verification |
-| Workbench | Local React interface for contracts, campaigns, traces and artifacts | Complete browser-to-replay/export qualification remains in progress |
-| Meta planner | Typed provider adapter, bounded controller, cancellation-aware local bridge and CLI tested with mocks/controlled processes | No API key configured; live inference and real model feedback are deferred |
-| Arithmetic pipeline | Real WIDTH=8, latency=2 directed checks accepted: correct multiplier plus latency and data mutants | Three scoped simulator cases passed; broader coverage and API integration remain separate |
-| AXI-Lite | Bounded peripheral schema and oracle delivered with 79 pure tests | Independent contract review accepted; runner source work underway; no live AXI execution accepted |
-| Vivado investigation | Bounded log import and curated candidate preparation | **Import-only**; no live Vivado, timing, equivalence or functional-repair claim |
+| API and local runtime | Actual FIFO/arithmetic API attempts, exact replay and export independently checked; three-family image adopted with earlier data preserved | AXI application execution and broader recovery/browser gates remain; health is not functional verification |
+| Workbench | Local contract/campaign/trace/artifact controls and immutable engineering-investigation views | Native investigation runtime admission and complete browser qualification remain in progress |
+| Meta planner | Typed provider, durable experiments/rounds/reservations/feedback and cleanup source independently reviewed | Live inference, broker/runtime adoption and real Meta feedback remain deferred; no key available |
+| Arithmetic pipeline | Real WIDTH=8, latency=2 control plus latency/data mutants, API execution and replay accepted | Broader coverage, candidate regression and actual browser gate remain |
+| AXI-Lite | Seven real bounded peripheral cases independently accepted; native evidence/API source merged | Local API execution blocked before first campaign by memory; application, replay/candidate and browser gates remain |
+| RISC-V | Actual pinned PicoRV32/Spike control and seeded divergence; exact recompiled object/ELF/binary/trace replay independently accepted | [Inspect curated raw evidence](docs/evidence/riscv/2026-10-30/README.md); no full ISA certification, saved-executable replay or firmware claim |
+| Firmware | Register-map facts, curated executable preparation, native MMIO observation and independent checker source merged | Actual compiler/core execution and candidate validation remain pending |
+| Vivado | Actual version/part readiness, bounded imports and recorded-attempt inspection | Synthesis attempt hit a resource limit; no successful timing, CDC or functional-repair claim |
+| KiCad and cross-domain | Actual configured ERC/DRC correction; native source/fact/relationship admission source | Ignored checks remain unchanged; exact-part/physical/electrical gates remain; common ancestry keeps recorded system verdicts inconclusive |
 
 There is no hosted application release or general-purpose code-execution service. A successful build is not functional correctness, and a timeout is not automatically a design defect.
 
@@ -92,7 +95,7 @@ Named volumes preserve database history and artifacts. Removing volumes deletes 
 - **Durable execution records:** PostgreSQL holds campaign authority; Valkey/RQ delivers bounded work to a separate worker. Attempts retain their own results and artifacts.
 - **Replay without inference:** stored typed stimulus, source/checker/contract hashes and tool evidence let a finding be inspected and replayed independently of a new model call.
 
-The frontend uses React, Vite, TypeScript and TanStack Query. The initial RTL path uses cocotb and Verilator. Meta and Vivado integrations retain explicit unavailable/import-only states where live acceptance is missing.
+The frontend uses React, Vite, TypeScript and TanStack Query. RTL execution uses cocotb and Verilator. Each adapter reports its supported configuration and separates imported evidence, actual execution and independently checked repair.
 
 ## Development
 

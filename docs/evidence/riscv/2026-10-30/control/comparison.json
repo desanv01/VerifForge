@@ -1,0 +1,6 @@
+{
+  "verdict": "pass_within_scope",
+  "compared": 17,
+  "first_divergence": null,
+  "reason": "architectural events agree through completion; no cycle comparison"
+}

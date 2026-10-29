@@ -1,0 +1,189 @@
+{
+  "schema_version": "1",
+  "attempt_id": "attempt-e845135395204d61b526d707bae1ef2f",
+  "experiment_id": "rv32i-control-v1",
+  "execution_status": "completed",
+  "verdict": "pass_within_scope",
+  "identity": {
+    "source_hash": "f540da03da87c2630a07d5e39d139ab4c1108ccd5debfc7b59870f2fd03dc257",
+    "checker_hash": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+    "contract_hash": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+    "experiment_hash": "eeb118107b5750fa549d51c9b00f6d91d1bb13cc384b5843e7b85efae5efba13",
+    "environment_hash": "a1847e25bfa0edd6648402c0928ffaf64732443fc79217100994da2b37b20fcd"
+  },
+  "tool_versions": [
+    {
+      "name": "verilator",
+      "version": "Verilator 5.042 2025-11-02 rev v5.042"
+    },
+    {
+      "name": "riscv-gcc",
+      "version": "riscv64-unknown-elf-gcc (13.2.0-11ubuntu1+12) 13.2.0"
+    },
+    {
+      "name": "spike-revision",
+      "version": "4c6a9bc79dab80616932949707e7c0471d8e9e54"
+    },
+    {
+      "name": "cocotb",
+      "version": "2.0.1"
+    },
+    {
+      "name": "python",
+      "version": "3.12.3"
+    }
+  ],
+  "trace": [],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-0",
+      "path": "assembler/execution.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-1",
+      "path": "checker-manifest.json",
+      "sha256": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+      "size_bytes": 241,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-2",
+      "path": "comparison.json",
+      "sha256": "f7809a00307c5ee68834a0ed4b231eb7ba6f511df15eb72d18fece9312dc70c7",
+      "size_bytes": 164,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-3",
+      "path": "compiler/execution.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-4",
+      "path": "dut/built.marker",
+      "sha256": "f4a9d341ef9ae12e2a1880af7d64b8d60280f8e2f728ea756e1cd6fca969166b",
+      "size_bytes": 44,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-5",
+      "path": "dut/execution.log",
+      "sha256": "9cb071bfa97dc0f1415ddaf2ca73d7cf73750737cd9fb7c45c2a75b5c2915999",
+      "size_bytes": 15867,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-6",
+      "path": "dut/results.xml",
+      "sha256": "6c994566e185c49b86573938bc3ea4012ee3b0919ee235142e50b756b54466b1",
+      "size_bytes": 361,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-7",
+      "path": "dut/rvfi.json",
+      "sha256": "1b1d7f3ca8533ac4eba9da45b8ff275d9ff8457480112aedc7356e23976db9fc",
+      "size_bytes": 5143,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-8",
+      "path": "environment.json",
+      "sha256": "a1847e25bfa0edd6648402c0928ffaf64732443fc79217100994da2b37b20fcd",
+      "size_bytes": 1757,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-9",
+      "path": "experiment.json",
+      "sha256": "e14a4eadc7d9ca1769fe9ca890128160b6a6c1acb069bb8b28961130ca94206d",
+      "size_bytes": 254,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-10",
+      "path": "job.json",
+      "sha256": "24ea2a2ecb739f9dd1f92c9e7a244a46dc8a6b1ab342b10cc18af01bdc68fbba",
+      "size_bytes": 199,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-11",
+      "path": "objcopy/execution.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-12",
+      "path": "profile.json",
+      "sha256": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+      "size_bytes": 193,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-13",
+      "path": "reference/commit.log",
+      "sha256": "213c93cdfd314501e0c0ab32fbe1a2431e3c0b75a091955af05692466d434b55",
+      "size_bytes": 9478,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-14",
+      "path": "reference/execution.log",
+      "sha256": "7eda7cf3b733d553b9dd6e984b2310f1ac950ef30d4b0b3781c650f97cb50ed0",
+      "size_bytes": 79,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-15",
+      "path": "retirement.json",
+      "sha256": "efded32d7c7e32b347598659b89e4ca1324a335318724964775ec66ed0726a6a",
+      "size_bytes": 7473,
+      "media_type": "application/json"
+    },
+    {
+      "artifact_id": "artifact-16",
+      "path": "smoke.bin",
+      "sha256": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "size_bytes": 76,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-17",
+      "path": "smoke.elf",
+      "sha256": "d441470ea48605be9f29a95d503a4be492bcd8c5dcff0258b0ee571f33b22afc",
+      "size_bytes": 4708,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-18",
+      "path": "smoke.o",
+      "sha256": "77b316af350edc3805d465db21d88d9678aa7fb9925e5dc41db346c94c3018f3",
+      "size_bytes": 884,
+      "media_type": "application/octet-stream"
+    },
+    {
+      "artifact_id": "artifact-19",
+      "path": "source-manifest.json",
+      "sha256": "f540da03da87c2630a07d5e39d139ab4c1108ccd5debfc7b59870f2fd03dc257",
+      "size_bytes": 505,
+      "media_type": "application/json"
+    }
+  ],
+  "failure_signature": null,
+  "requirement_coverage": [],
+  "usage": {
+    "cycles": 68,
+    "wall_time_seconds": 10.904286885000033,
+    "artifact_bytes": 47426
+  },
+  "uncertainties": [
+    "Experimental RV32I subset; comparison.json records retirement order; first_cycle is DUT diagnostic timing only."
+  ]
+}

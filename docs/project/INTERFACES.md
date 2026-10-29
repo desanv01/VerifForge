@@ -1,6 +1,6 @@
 # VerifForge shared interfaces — schema version 1
 
-Owner: VF-010. Import public types from `veriforge.contracts`. This is the initial FIFO interface; arithmetic and AXI-Lite execution are not yet supported.
+Owner: main coordinator. This preserves the initial FIFO wire contract in `veriforge.contracts`. Arithmetic has separate reviewed schemas and API/evidence support. AXI-Lite has accepted standalone execution; application adoption remains separate. See [ADAPTERS.md](ADAPTERS.md), [ENGINEERING_INTERFACES.md](ENGINEERING_INTERFACES.md) and [SUPPORT_MATRIX.md](SUPPORT_MATRIX.md).
 
 ## Execution boundary
 
