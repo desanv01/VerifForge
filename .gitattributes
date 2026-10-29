@@ -1,0 +1,4 @@
+# Published evidence identities cover exact bytes, including line endings.
+docs/evidence/** -text
+targets/kicad/** -text
+docs/project/KICAD.md -text

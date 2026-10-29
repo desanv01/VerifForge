@@ -1,0 +1,301 @@
+{
+  "kind": "board_pad_assignments",
+  "raw_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+  "components": [
+    {
+      "reference": "J1",
+      "value": "MPN_UNRESOLVED",
+      "symbol": null,
+      "footprint": "VerifForge:Header2x6_2.54_Unreviewed",
+      "manufacturer": null,
+      "mpn": null,
+      "datasheet": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]"
+      },
+      "review_status": "unreviewed_source_claim"
+    },
+    {
+      "reference": "J2",
+      "value": "MPN_UNRESOLVED",
+      "symbol": null,
+      "footprint": "VerifForge:Header2x6_2.54_Unreviewed",
+      "manufacturer": null,
+      "mpn": null,
+      "datasheet": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]"
+      },
+      "review_status": "unreviewed_source_claim"
+    }
+  ],
+  "endpoints": [
+    {
+      "reference": "J1",
+      "number": "1",
+      "net": "JA1",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[1]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "2",
+      "net": "JA7",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "3",
+      "net": "JA2",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[3]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "4",
+      "net": "JA8",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[4]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "5",
+      "net": "JA3",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[5]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "6",
+      "net": "JA9",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[6]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "7",
+      "net": "JA4",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[7]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "8",
+      "net": "JA10",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[8]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "9",
+      "net": "GND",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[9]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "10",
+      "net": "GND",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[10]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "11",
+      "net": "VCC3V3",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[11]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "12",
+      "net": "VCC3V3",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[1]/pad[12]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "1",
+      "net": "JA1",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "2",
+      "net": "JA7",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[2]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "3",
+      "net": "JA2",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[3]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "4",
+      "net": "JA8",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[4]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "5",
+      "net": "JA3",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[5]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "6",
+      "net": "JA9",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[6]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "7",
+      "net": "JA4",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[7]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "8",
+      "net": "JA10",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[8]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "9",
+      "net": "GND",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[9]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "10",
+      "net": "GND",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[10]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "11",
+      "net": "VCC3V3",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[11]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "12",
+      "net": "VCC3V3",
+      "function": null,
+      "electrical_type": null,
+      "source": {
+        "source_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+        "location": "/kicad_pcb/footprint[2]/pad[12]"
+      }
+    }
+  ],
+  "parser_version": "kicad-connectivity-v1"
+}

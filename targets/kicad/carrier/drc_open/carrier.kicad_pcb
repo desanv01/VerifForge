@@ -1,0 +1,71 @@
+(kicad_pcb (version 20241229) (generator "veriforge")
+      (general (thickness 1.6)) (paper "A4")
+      (layers (0 "F.Cu" signal) (2 "B.Cu" signal) (5 "F.SilkS" user) (1 "F.Mask" user)
+        (3 "B.Mask" user) (25 "Edge.Cuts" user) (31 "F.CrtYd" user) (35 "F.Fab" user))
+      (setup (pad_to_mask_clearance 0))
+      (net 0 "") (net 1 "JA1") (net 2 "JA7") (net 3 "JA2") (net 4 "JA8") (net 5 "JA3") (net 6 "JA9") (net 7 "JA4") (net 8 "JA10") (net 9 "GND") (net 10 "VCC3V3")
+      (footprint "VerifForge:Header2x6_2.54_Unreviewed" (layer "F.Cu")
+      (at 40 40)
+      (path "/5ee0c6c7-e9b9-55f3-9e10-7cc9439620b7/fd02745d-c92c-591b-86dd-16605f12562d")
+      (attr through_hole) (property "Reference" "J1" (at 1.27 -3 0) (layer "F.SilkS") (effects (font (size 1.27 1.27))))
+        (property "Value" "MPN_UNRESOLVED" (at 1.27 16 0) (layer "F.Fab") (effects (font (size 1.27 1.27))))
+      (fp_rect (start -1.4 -1.4) (end 3.94 14.1) (stroke (width 0.12) (type default)) (fill none) (layer "F.SilkS"))
+      (fp_rect (start -1.65 -1.65) (end 4.19 14.35) (stroke (width 0.05) (type default)) (fill none) (layer "F.CrtYd"))
+      (pad "1" thru_hole rect
+          (at 0 0.0)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 1 "JA1")) (pad "2" thru_hole circle
+          (at 2.54 0.0)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 2 "JA7")) (pad "3" thru_hole circle
+          (at 0 2.54)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 3 "JA2")) (pad "4" thru_hole circle
+          (at 2.54 2.54)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 4 "JA8")) (pad "5" thru_hole circle
+          (at 0 5.08)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 5 "JA3")) (pad "6" thru_hole circle
+          (at 2.54 5.08)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 6 "JA9")) (pad "7" thru_hole circle
+          (at 0 7.62)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 7 "JA4")) (pad "8" thru_hole circle
+          (at 2.54 7.62)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 8 "JA10")) (pad "9" thru_hole circle
+          (at 0 10.16)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 9 "GND")) (pad "10" thru_hole circle
+          (at 2.54 10.16)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 9 "GND")) (pad "11" thru_hole circle
+          (at 0 12.7)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 10 "VCC3V3")) (pad "12" thru_hole circle
+          (at 2.54 12.7)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 10 "VCC3V3"))) (footprint "VerifForge:Header2x6_2.54_Unreviewed" (layer "F.Cu")
+      (at 65 40)
+      (path "/5ee0c6c7-e9b9-55f3-9e10-7cc9439620b7/6440f962-c95b-5e21-8041-3c3ea54d4432")
+      (attr through_hole) (property "Reference" "J2" (at 1.27 -3 0) (layer "F.SilkS") (effects (font (size 1.27 1.27))))
+        (property "Value" "MPN_UNRESOLVED" (at 1.27 16 0) (layer "F.Fab") (effects (font (size 1.27 1.27))))
+      (fp_rect (start -1.4 -1.4) (end 3.94 14.1) (stroke (width 0.12) (type default)) (fill none) (layer "F.SilkS"))
+      (fp_rect (start -1.65 -1.65) (end 4.19 14.35) (stroke (width 0.05) (type default)) (fill none) (layer "F.CrtYd"))
+      (pad "1" thru_hole rect
+          (at 0 0.0)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 1 "JA1")) (pad "2" thru_hole circle
+          (at 2.54 0.0)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 2 "JA7")) (pad "3" thru_hole circle
+          (at 0 2.54)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 3 "JA2")) (pad "4" thru_hole circle
+          (at 2.54 2.54)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 4 "JA8")) (pad "5" thru_hole circle
+          (at 0 5.08)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 5 "JA3")) (pad "6" thru_hole circle
+          (at 2.54 5.08)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 6 "JA9")) (pad "7" thru_hole circle
+          (at 0 7.62)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 7 "JA4")) (pad "8" thru_hole circle
+          (at 2.54 7.62)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 8 "JA10")) (pad "9" thru_hole circle
+          (at 0 10.16)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 9 "GND")) (pad "10" thru_hole circle
+          (at 2.54 10.16)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 9 "GND")) (pad "11" thru_hole circle
+          (at 0 12.7)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 10 "VCC3V3")) (pad "12" thru_hole circle
+          (at 2.54 12.7)
+          (size 1.7 1.7) (drill 1) (layers "*.Cu" "*.Mask") (net 10 "VCC3V3")))
+      (gr_rect (start 35 34) (end 73 60) (stroke (width 0.05) (type default)) (fill none) (layer "Edge.Cuts") (uuid "3a52d4f2-e3d6-52cc-8b2a-2f1ccf33962e"))
+      (segment (start 40 40.0) (end 40 38.73) (width 0.2) (layer "B.Cu") (net 1) (uuid "8ecb3a79-0ba5-53f7-b016-05975696888b")) (segment (start 65 38.73) (end 65 40.0) (width 0.2) (layer "B.Cu") (net 1) (uuid "283fb64c-057d-5149-9b77-a6b0a33603ba")) (segment (start 42.54 40.0) (end 42.54 41.27) (width 0.2) (layer "F.Cu") (net 2) (uuid "15438b1b-698b-58d0-9062-c062b6a6c4ff")) (segment (start 42.54 41.27) (end 67.54 41.27) (width 0.2) (layer "F.Cu") (net 2) (uuid "cfe28fc7-6c1e-5b9f-873a-a55b680427e4")) (segment (start 67.54 41.27) (end 67.54 40.0) (width 0.2) (layer "F.Cu") (net 2) (uuid "8e6ef752-23b6-5224-9eb7-7cf444e9f48c")) (segment (start 40 42.54) (end 40 41.269999999999996) (width 0.2) (layer "B.Cu") (net 3) (uuid "6e4b24fb-88ac-5b3a-a717-a8d24ae12980")) (segment (start 40 41.269999999999996) (end 65 41.269999999999996) (width 0.2) (layer "B.Cu") (net 3) (uuid "09d895e5-257d-5d53-bf75-2a92f4b6d81c")) (segment (start 65 41.269999999999996) (end 65 42.54) (width 0.2) (layer "B.Cu") (net 3) (uuid "7f915190-ca36-5aa3-a063-0c6c5d636a94")) (segment (start 42.54 42.54) (end 42.54 43.81) (width 0.2) (layer "F.Cu") (net 4) (uuid "86db7e35-d7ef-504c-b907-b8b6c9a74a6f")) (segment (start 42.54 43.81) (end 67.54 43.81) (width 0.2) (layer "F.Cu") (net 4) (uuid "35b36a24-8c58-5ace-8433-300ca6020224")) (segment (start 67.54 43.81) (end 67.54 42.54) (width 0.2) (layer "F.Cu") (net 4) (uuid "ce5d0bb7-de37-54ff-b0e2-dadbd30804b6")) (segment (start 40 45.08) (end 40 43.809999999999995) (width 0.2) (layer "B.Cu") (net 5) (uuid "af39555b-5fa3-5ba8-a8b7-edeb8f1fd92f")) (segment (start 40 43.809999999999995) (end 65 43.809999999999995) (width 0.2) (layer "B.Cu") (net 5) (uuid "c5e44768-3134-56e6-a74b-258b7f75b152")) (segment (start 65 43.809999999999995) (end 65 45.08) (width 0.2) (layer "B.Cu") (net 5) (uuid "a3bc7515-2f33-57b6-845f-315ea85d9dee")) (segment (start 42.54 45.08) (end 42.54 46.35) (width 0.2) (layer "F.Cu") (net 6) (uuid "63bcf0b4-1e51-5f2e-891a-d337a3d6fbda")) (segment (start 42.54 46.35) (end 67.54 46.35) (width 0.2) (layer "F.Cu") (net 6) (uuid "ca99197f-8b35-5fb9-b14a-b3f32eb52112")) (segment (start 67.54 46.35) (end 67.54 45.08) (width 0.2) (layer "F.Cu") (net 6) (uuid "45f868fd-85d4-56c5-a9e2-889ced220f7f")) (segment (start 40 47.62) (end 40 46.349999999999994) (width 0.2) (layer "B.Cu") (net 7) (uuid "6476e140-9c4b-553b-abcc-0eebf7b4916d")) (segment (start 40 46.349999999999994) (end 65 46.349999999999994) (width 0.2) (layer "B.Cu") (net 7) (uuid "072bdddb-8b5f-5dd9-a72b-4c9db0509aab")) (segment (start 65 46.349999999999994) (end 65 47.62) (width 0.2) (layer "B.Cu") (net 7) (uuid "8bad00a4-ea5b-5f5c-ba29-37ec2e769d16")) (segment (start 42.54 47.62) (end 42.54 48.89) (width 0.2) (layer "F.Cu") (net 8) (uuid "543ddad0-104d-5c54-822b-d786d8e5106e")) (segment (start 42.54 48.89) (end 67.54 48.89) (width 0.2) (layer "F.Cu") (net 8) (uuid "08b24a36-e320-51d7-9adb-b543659a0f20")) (segment (start 67.54 48.89) (end 67.54 47.62) (width 0.2) (layer "F.Cu") (net 8) (uuid "c295f230-d609-52f2-9df0-750cd2f6a9bc")) (segment (start 40 50.16) (end 40 48.88999999999999) (width 0.2) (layer "B.Cu") (net 9) (uuid "516fddbe-53fe-5e07-8267-1eb7bef4eed4")) (segment (start 40 48.88999999999999) (end 65 48.88999999999999) (width 0.2) (layer "B.Cu") (net 9) (uuid "7bb9de8c-8267-5896-a0c5-37f039408b91")) (segment (start 65 48.88999999999999) (end 65 50.16) (width 0.2) (layer "B.Cu") (net 9) (uuid "2cc67f00-49f2-537e-a2db-bdfa7c406eb4")) (segment (start 42.54 50.16) (end 42.54 51.43) (width 0.2) (layer "F.Cu") (net 9) (uuid "14cd4605-723d-5c82-94f7-42fd1bb5ff44")) (segment (start 42.54 51.43) (end 67.54 51.43) (width 0.2) (layer "F.Cu") (net 9) (uuid "a76607f3-c77f-5822-be41-54e6e9bf9343")) (segment (start 67.54 51.43) (end 67.54 50.16) (width 0.2) (layer "F.Cu") (net 9) (uuid "a815f869-d428-55ed-a215-fab360a4108b")) (segment (start 40 52.7) (end 40 51.43) (width 0.2) (layer "B.Cu") (net 10) (uuid "c8a3318e-8626-5930-9271-77d19026cead")) (segment (start 40 51.43) (end 65 51.43) (width 0.2) (layer "B.Cu") (net 10) (uuid "81dbba5c-20b3-5cdf-93e9-59806f09292e")) (segment (start 65 51.43) (end 65 52.7) (width 0.2) (layer "B.Cu") (net 10) (uuid "ea99225d-e084-5fa6-9867-a65619be2d13")) (segment (start 42.54 52.7) (end 42.54 53.970000000000006) (width 0.2) (layer "F.Cu") (net 10) (uuid "3355244c-30ea-55a8-aab9-d61cccfe35c8")) (segment (start 42.54 53.970000000000006) (end 67.54 53.970000000000006) (width 0.2) (layer "F.Cu") (net 10) (uuid "e2fadfff-d725-5811-b71a-321f1262ae4e")) (segment (start 67.54 53.970000000000006) (end 67.54 52.7) (width 0.2) (layer "F.Cu") (net 10) (uuid "0fb00dc0-e880-5d73-849d-4d6a2900be10")) (segment (start 40 50.16) (end 42.54 50.16) (width 0.2) (layer "F.Cu") (net 9) (uuid "91c3d144-f0a0-55d7-a33f-0f9a6a82a60f")) (segment (start 40 52.7) (end 42.54 52.7) (width 0.2) (layer "F.Cu") (net 10) (uuid "f7c1e65c-1c5b-564a-bfa1-1fee1a141c89")))

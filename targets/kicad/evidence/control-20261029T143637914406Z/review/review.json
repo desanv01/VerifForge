@@ -1,0 +1,39 @@
+{
+  "scope": "single control readiness only; no retries or seeded/candidate executions",
+  "erc_rule_counts": {
+    "endpoint_off_grid": 26
+  },
+  "drc_rule_counts": {
+    "footprint_symbol_field_mismatch": 2,
+    "net_conflict": 24
+  },
+  "renders_reviewed": [
+    "schematic.png",
+    "schematic-detail.png",
+    "pcb.png",
+    "pcb-detail.png"
+  ],
+  "visual_observations": [
+    "Both connector symbols render with all 12 numbered pins and readable matching logical labels.",
+    "MPN_UNRESOLVED remains visible.",
+    "Board outline and both connectors render; selected front/back traces are visible.",
+    "Full-sheet views contain excessive whitespace; detailed crops needed.",
+    "No exact-part, cable orientation, 3D interference or fabrication acceptance."
+  ],
+  "diagnosis": [
+    "Schematic placement70mm/140mm is off1.27mm grid; adjust in a separate candidate.",
+    "Local schematic labels export with leading slash; board net names lack that hierarchy prefix.",
+    "Manufacturer symbol field missing in PCB footprint; keep unresolved but parity-consistent fields."
+  ],
+  "tool_diagnostics": "Nonfatal HKCU registry and Fontconfig/SHGetFolderPathA warnings preserved in raw stderr.",
+  "electrical_acceptance": "not_established",
+  "rule_clean_control": false,
+  "source_original_unchanged": true,
+  "source_receipt_sha256": "468c941536114440c2294d7e9fd824297fdd0f9caca0bfacd40216178eaa7b6c",
+  "render_sha256": {
+    "schematic.png": "f428ed6f1a29b55fb5bab280b1cc134e4b057d2ebf66862542f0e8b8a4926191",
+    "schematic-detail.png": "d2bd1f7ba8cf69f9542ff143e8d7b2f4576fbc59553bdcfac633384b6edd18c5",
+    "pcb.png": "a9f70dcec610dc59e29527ff0192a4bb211d25d33f8d56692cb0a1dbd06957a2",
+    "pcb-detail.png": "81f5065f9c0435647a65b5a8e3a43473ff23297e070ba74a8553641c64cfee69"
+  }
+}

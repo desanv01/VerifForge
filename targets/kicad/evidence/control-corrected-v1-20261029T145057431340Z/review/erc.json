@@ -1,0 +1,24 @@
+{
+  "kind": "erc",
+  "raw_sha256": "04e618b8ad6895361d9fe9e9c78bad205cfe6ea239b093bf3f5aa66d03bd226f",
+  "claimed_tool_version": "10.0.6",
+  "claimed_source": "carrier.kicad_sch",
+  "coordinate_units": "mm",
+  "included_severities": [
+    "error",
+    "warning",
+    "exclusion"
+  ],
+  "ignored_checks": [
+    "single_global_label",
+    "four_way_junction",
+    "simulation_model_issue",
+    "footprint_filter"
+  ],
+  "findings": [],
+  "rule_status": "no_active_violations_reported",
+  "parser_version": "kicad-report-v1",
+  "execution_status": "not_observed",
+  "design_verdict": "inconclusive",
+  "evidence_origin": "imported_unverified"
+}

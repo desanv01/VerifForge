@@ -1,0 +1,30 @@
+{
+  "base_erc_findings": 26,
+  "candidate_erc_findings": 0,
+  "base_drc_findings": 26,
+  "candidate_drc_findings": 0,
+  "all_24_schematic_endpoint_semantics_unchanged": true,
+  "all_24_candidate_board_nets_match_export": true,
+  "rules_changed": false,
+  "original_control_unchanged": true,
+  "first_evidence_unchanged": true,
+  "candidate_unchanged_during_execution": true,
+  "tool_version": "10.0.6",
+  "subprocess_total_seconds": 7.406,
+  "electrical_acceptance": "not_established",
+  "exact_part_mapping": "unresolved",
+  "render_review": [
+    "Full and detailed views read; all labels and pin numbers retained and legible.",
+    "PCB detail pixels match first-run PCB detail; geometry unchanged.",
+    "Large sheet whitespace and inherited control title remain; receipt identifies separate candidate.",
+    "No physical, cable, 3D or manufacturing claim."
+  ],
+  "render_hashes": {
+    "schematic.png": "7c931502a7b0ce4b492bc8fe7f3b45e6e5af547a5dd0eda8cb35097988198de0",
+    "pcb.png": "a9f70dcec610dc59e29527ff0192a4bb211d25d33f8d56692cb0a1dbd06957a2",
+    "schematic-detail.png": "4160628df24ae194ee66627eecd51170595c6ad3e245d6f32e8feed9141f47e9",
+    "pcb-detail.png": "81f5065f9c0435647a65b5a8e3a43473ff23297e070ba74a8553641c64cfee69"
+  },
+  "receipt_sha256": "ee7cc692428a475f96bc4ae31f5026aa4d7c3ba267548b0558146a421dd5ecda",
+  "audit_script_sha256": "573d999460255e90c554feec05add6b0ef9b81b44397a097e1b3e4e6f43afe17"
+}

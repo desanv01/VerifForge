@@ -1,0 +1,311 @@
+{
+  "kind": "erc",
+  "raw_sha256": "d7f5a71c54ab402e93b925dd4aaf6405a2e9072e3f0a365196785f504b2ecbc4",
+  "claimed_tool_version": "10.0.6",
+  "claimed_source": "carrier.kicad_sch",
+  "coordinate_units": "mm",
+  "included_severities": [
+    "error",
+    "warning",
+    "exclusion"
+  ],
+  "ignored_checks": [
+    "single_global_label",
+    "four_way_junction",
+    "simulation_model_issue",
+    "footprint_filter"
+  ],
+  "findings": [
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/0",
+      "item_uuids": [
+        "a90ca249-0f5c-5cc5-8383-739a0e4c9c5f"
+      ],
+      "signature": "8d6ea40073fac9bdfe8a06b7d407898a4991cc514e0861d6cece1827637edc3b"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/1",
+      "item_uuids": [
+        "ae35f8bf-447f-5914-86cc-2d0e9f877604"
+      ],
+      "signature": "fbd74437f24e86785974533c9d88b0f02d12e15a189127678fee15f66114cd1a"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/2",
+      "item_uuids": [
+        "6a8fcd81-3b3a-52b2-bcc3-f1e220bd1f28"
+      ],
+      "signature": "4f9378a1df8004c18bb8702fcc51355bcbd2fbe549ddda02604a4a6e712dc897"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/3",
+      "item_uuids": [
+        "81257df1-273c-52e6-9855-aaff2d927223"
+      ],
+      "signature": "83df78d2d9e544fd247c6b7d1442ce889c282396acbe3ed95f07a3d7b062eeff"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/4",
+      "item_uuids": [
+        "595b3f97-30fd-500e-85e1-78ff0b4fb276"
+      ],
+      "signature": "c876782e4b6ae8c6b24c81a63f82d9af2a97ed59cf098263142295707fdbe7be"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/5",
+      "item_uuids": [
+        "08942091-4165-590e-84f4-930e4434e1b5"
+      ],
+      "signature": "e5b9d82d735d7e821d79a7669787625025f5913fe9e973d0122e15577817508e"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/6",
+      "item_uuids": [
+        "a1237165-5905-501e-b594-1b173adfc780"
+      ],
+      "signature": "fb54f28444bf9ce7aec9d4e468cdaf1dc19dd32e3fd96e97c9facf6f8a146c03"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/7",
+      "item_uuids": [
+        "9373354f-d224-51e2-abd9-3030197a0e53"
+      ],
+      "signature": "337dcf82b4aa4f6b96881091d2762496eb45e79c4cf6526065c4d07ce8300aa2"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/8",
+      "item_uuids": [
+        "ac518034-a1d8-54d3-a650-7392eea36c99"
+      ],
+      "signature": "03e60ae233648243822755bcf88cf7808972c6cd1ca07aeec9e551549c7525fe"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/9",
+      "item_uuids": [
+        "1469cdd6-a1cb-5471-9019-04d96ee1e765"
+      ],
+      "signature": "6074c6bb6f8993376b51af976f6faf27836567d476685d39a15a738688d6f938"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/10",
+      "item_uuids": [
+        "2b39d277-c54f-5017-a114-bfa53c4f48d1"
+      ],
+      "signature": "f414445db4285ed21f17742164de50ecf59b58303d29c1a00e4173de63dd539b"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/11",
+      "item_uuids": [
+        "12f3de0f-761e-5487-ad37-2d7817e1267c"
+      ],
+      "signature": "608c107a2e00f158a1bc8c58b8efd2217d6cde7f9b703f519ce3c53482c31c7b"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/12",
+      "item_uuids": [
+        "c03a8deb-019b-5311-a23d-6c7f7c42fe3c"
+      ],
+      "signature": "71c4ed4341cb6e99521e69dea41817b3ff80290ef91320a696fc734e1237a86f"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/13",
+      "item_uuids": [
+        "1fc8341b-e041-543e-9847-8d786958a501"
+      ],
+      "signature": "c2c13242e205644091a93df50b75858ce0bad5d4c7802f1496f1dd2c0899d6c3"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/14",
+      "item_uuids": [
+        "8c39571c-93be-5a10-9372-c073387cd1b9"
+      ],
+      "signature": "5c89c2de83afd62b136f9f6c9c1d42bf22513f79131f76bb1f7c25075090d193"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/15",
+      "item_uuids": [
+        "4d03b50c-de80-5f70-9210-71f314851b93"
+      ],
+      "signature": "7977679b5c9b23fd54465f7a102a6750632e53e030d97440eb276d6aa78526d9"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/16",
+      "item_uuids": [
+        "c5f9dadb-a432-5bd2-a5e0-c5c92a535e4f"
+      ],
+      "signature": "4706446ea8b401da6adc1cd432eb4d3000bd04ecefd68232c1d1031c1e12c267"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/17",
+      "item_uuids": [
+        "8d90f771-96a0-58db-abcd-c9c9332be9af"
+      ],
+      "signature": "a82a5f156c4443bc5aacf4f826a5967958a1cc67600a3bf0b04eddc5d71a9f1d"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/18",
+      "item_uuids": [
+        "19e8c8cd-cc14-563e-9ac7-d53ce457a086"
+      ],
+      "signature": "af96bd69bfcdf34f796db9e9cc3dd69d31c14a9536ce01bb99108a0f98c931bf"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/19",
+      "item_uuids": [
+        "76363b35-81e5-5f97-9624-fb7930ebb19d"
+      ],
+      "signature": "5a644c3eb4740685246d8f773c439aa6ff4e1df58fcea0c5e5974d5cd8766721"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/20",
+      "item_uuids": [
+        "63a7463c-ec71-5591-ba59-71cb72223c4f"
+      ],
+      "signature": "b2576a58a2dcf968c8e115bbc7dde9fd70345ec67459b51c38e11c0ae54a121a"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/21",
+      "item_uuids": [
+        "78ca4b7d-d116-5aab-b68d-4b0555baecc9"
+      ],
+      "signature": "40f097ffbc948e63c58d05d55cdbd4320893a83c3777fda17f620aad9f443881"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/22",
+      "item_uuids": [
+        "152bf843-eefc-5978-b5ae-fd3aa4332188"
+      ],
+      "signature": "7a1473b8741418bcc7167a43f8a2cc64855a59e0c23fdf2bd5df15ae44aa82f7"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/23",
+      "item_uuids": [
+        "8563ed37-22dc-5d34-aa80-26c016a4a600"
+      ],
+      "signature": "de4918d4025da865c4d9ac6ce9c04db548dcaeff9aa8e37fb5867bf51ead2a3c"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/24",
+      "item_uuids": [
+        "b0cd1900-ec5a-50a7-b795-011229a63de7"
+      ],
+      "signature": "411df87ef476a487daf01235b90d4b505c32343e23b5ec454646b3b6c372793e"
+    },
+    {
+      "rule_id": "endpoint_off_grid",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Symbol pin or wire end off connection grid",
+      "location": "/sheets/0/violations/25",
+      "item_uuids": [
+        "ecb1865a-d4ec-5454-89a5-a5bb80f47244"
+      ],
+      "signature": "5ba2f068fd8b252b2cad56b97a10b387187e3a538746b1411388d6506b72169f"
+    }
+  ],
+  "rule_status": "reported_violations",
+  "parser_version": "kicad-report-v1",
+  "execution_status": "not_observed",
+  "design_verdict": "inconclusive",
+  "evidence_origin": "imported_unverified"
+}
