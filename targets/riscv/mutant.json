@@ -1,0 +1,1 @@
+{"schema_version":"riscv.v1","experiment_id":"rv32i-functional-register-mutant-v1","fixture_id":"picorv32_reg_write_bug","program_id":"rv32i-smoke-v1","max_retired":256,"max_cycles":100000,"wall_time_seconds":120.0}

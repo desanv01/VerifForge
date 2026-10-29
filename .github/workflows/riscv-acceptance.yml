@@ -1,0 +1,50 @@
+name: Curated RISC-V acceptance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riscv-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build, pure compatibility and three actual bounded attempts
+        run: python3 scripts/ci_riscv_acceptance.py
+      - name: Upload only curated bounded evidence
+        id: evidence
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: riscv-evidence-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-artifacts/riscv/
+          retention-days: 1
+          compression-level: 6
+          include-hidden-files: false
+          overwrite: false
+          if-no-files-found: error
+      - name: Record artifact identity or logs-only transport failure
+        if: always()
+        env:
+          ARTIFACT_OUTCOME: ${{ steps.evidence.outcome }}
+          ARTIFACT_ID: ${{ steps.evidence.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          print(json.dumps({k:os.environ.get(k) for k in ('ARTIFACT_OUTCOME','ARTIFACT_ID','ARTIFACT_URL','ARTIFACT_DIGEST')}))
+          if os.environ.get('ARTIFACT_OUTCOME') != 'success':
+              print('Evidence upload unavailable; bounded RISCV_CI_RECEIPT is in the job log. No quota increase or image publication attempted.')
+              raise SystemExit(1)
+          PY
