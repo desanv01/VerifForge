@@ -8,6 +8,7 @@ from typing import Protocol
 from sqlalchemy import or_, select
 
 from .database import Attempt, Dispatch, now
+from .planner_driver import planner_attempt_allowed, read_control, running_control, stamp
 
 
 class Dispatcher(Protocol):
@@ -19,6 +20,7 @@ class RQDispatcher:
         from redis import Redis
         from rq import Queue
         self.queue = Queue("veriforge", connection=Redis.from_url(redis_url or os.getenv("VERIFORGE_REDIS_URL", "redis://127.0.0.1:6379/0")))
+        self.planner_queue = Queue("veriforge-planner", connection=self.queue.connection)
 
     def enqueue(self, attempt_id: str) -> None:
         # Broker may receive a duplicate if process crashes before sent_at commits.
@@ -28,12 +30,20 @@ class RQDispatcher:
     def enqueue_export(self, export_id: str) -> None:
         self.queue.enqueue("veriforge.core.artifacts.execute_export", export_id, job_timeout=60, result_ttl=0)
 
+    def enqueue_planner(self, intent_id: str) -> None:
+        # The generic handler has no configured model runtime/provider fallback.
+        self.planner_queue.enqueue("veriforge.core.planner_driver.execute_intent", intent_id,
+                                   job_timeout=180, result_ttl=0)
 
-def dispatch_pending(sessions, dispatcher: Dispatcher) -> dict:
+
+def dispatch_pending(sessions, dispatcher: Dispatcher, *, clock=now, control=running_control) -> dict:
     sent = failed = 0
     with sessions() as session:
-        ids = list(session.scalars(select(Dispatch.attempt_id).join(Attempt).where(or_(Dispatch.sent_at.is_(None), Dispatch.sent_at < now() - timedelta(seconds=60)), Attempt.execution_status == "queued").limit(100)))
+        ids = list(session.scalars(select(Dispatch.attempt_id).join(Attempt).where(or_(Dispatch.sent_at.is_(None), Dispatch.sent_at < stamp(clock) - timedelta(seconds=60)), Attempt.execution_status == "queued").limit(100)))
     for attempt_id in ids:
+        with sessions.begin() as session:
+            if not planner_attempt_allowed(session, attempt_id, at=stamp(clock), control=read_control(control)):
+                continue
         try:
             dispatcher.enqueue(attempt_id)
         except Exception as error:
@@ -45,6 +55,6 @@ def dispatch_pending(sessions, dispatcher: Dispatcher) -> dict:
         else:
             with sessions.begin() as session:
                 row = session.get(Dispatch, attempt_id)
-                row.sent_at, row.error = now(), None
+                row.sent_at, row.error = stamp(clock), None
             sent += 1
     return {"sent": sent, "failed": failed}

@@ -78,6 +78,15 @@ def _lock(session):
     return slot
 
 
+def lock_resource(session) -> None:
+    """Acquire the global transaction lock only; grants NO admission authority.
+
+    Trusted recovery/pause callers take this before any campaign lock. The lock
+    remains held until the caller commits/rolls back; no slot/proof is changed.
+    """
+    _lock(session)
+
+
 def _unresolved(session, *, except_round=None):
     query = select(PlannerCleanup.round_id).where(PlannerCleanup.local_state.in_(['pending', 'unknown']))
     if except_round is not None:
