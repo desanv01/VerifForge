@@ -40,9 +40,24 @@ class CreateCampaign(BaseModel):
 Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]
 
 
-def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
+def create_app(engine=None, *, initialize_catalog=True, artifact_root=None,
+               planner_policy=None, planner_control=None, planner_clock=None):
     engine = engine if engine is not None else make_engine()
     sessions = session_factory(engine)
+    from datetime import datetime, timezone
+    from .planner import PlannerPolicy, planner_router
+    planner_policy = PlannerPolicy.model_validate_json((planner_policy or PlannerPolicy()).model_dump_json())
+    planner_control = planner_control if planner_control is not None else lambda: "STOPPED"
+    planner_clock = planner_clock if planner_clock is not None else lambda: datetime.now(timezone.utc)
+
+    def planner_at():
+        try:
+            at = planner_clock()
+            if not isinstance(at, datetime) or at.tzinfo is None or at.utcoffset() is None:
+                raise ValueError("Unusable clock")
+            return at.astimezone(timezone.utc)
+        except Exception:
+            raise HTTPException(503, "Planner clock is unavailable") from None
 
     @asynccontextmanager
     async def lifespan(app):
@@ -58,6 +73,7 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
     app.include_router(evidence_router(sessions, artifact_root))
     from .investigations import investigations_router
     app.include_router(investigations_router(sessions))
+    app.include_router(planner_router(sessions, policy=planner_policy, control=planner_control, now=planner_at))
 
     @app.exception_handler(service.NotFound)
     async def missing(request, error):
@@ -74,7 +90,7 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
         with sessions() as session:
             session.execute(text("SELECT 1"))
         from veriforge.core.artifacts import EVIDENCE_ADAPTERS
-        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "investigation_api": "1", "evidence_adapters": sorted(EVIDENCE_ADAPTERS)}
+        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "investigation_api": "1", "evidence_adapters": sorted(EVIDENCE_ADAPTERS), "planner_api": "1", "planner_admission_enabled": planner_policy.enabled}
 
     @app.get("/api/projects")
     def projects():
@@ -135,7 +151,14 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None):
     @app.post("/api/campaigns/{campaign_id}/cancel")
     def cancel(campaign_id: str, idempotency_key: Key):
         with sessions.begin() as session:
-            row = service.cancel(session, campaign_id)
+            from veriforge.core.database import PlannerState
+            from veriforge.core import planner_rounds
+            row = service.lock(session, campaign_id)
+            if session.get(PlannerState, campaign_id) is not None:
+                planner_rounds.cancel_investigation(session, campaign_id, at=planner_at())
+                row = service.owned(session, campaign_id)
+            else:
+                row = service.cancel(session, campaign_id)
             session.flush()
             return service.campaign_view(session, row)
 
