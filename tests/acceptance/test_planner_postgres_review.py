@@ -11,11 +11,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 # Reviewed source pins use LF text identity across Git checkouts; tool evidence remains raw-byte hashed.
 FROZEN = {
-    'scripts/ci_planner_postgres.py': '949960d9692b0f68574425dc7d6bc717e6fcac4723500e35c6fed35b44e8078a',
+    'scripts/ci_planner_postgres.py': '6ed2eb2e84fd2fb2e453f083e9032b5232513ef9c26dc3fb60839c3b6051be42',
     'tests/integration/planner_process_fixture.py': 'c64e7b2ae0303d0fa35735ccf5db53d92d01e49016f6431323e535d8a4910ec3',
     'infra/planner/Dockerfile.ci': 'cdad35f0edf16d4d7ae50da2a01b00e3c65f404afd4133ee24d9a1b6c9285526',
     '.github/workflows/planner-postgres-acceptance.yml': '85e3250990212537bb4e5d0cf4c70106e9bdc11e41d51bf94febeb471ca83a39',
-    'tests/acceptance/test_planner_postgres_plan.py': '69d607889ecb8199770fff411c7838f3bf09b36686259fbc35796be86adee214',
+    'tests/acceptance/test_planner_postgres_plan.py': '84cda048e9a1c6a9343757c458cc67b35de8bcd0d2666a0d787ffd040bda35a0',
     'scripts/ci_axi_application.py': '1ef06a8e1fb855724d919046b8b1835edd01874ffc538280ab8d1f2dbdeb9624',
 }
 PROJECT = 'vf-planner-pg-ci-123456789-1'
@@ -45,7 +45,7 @@ def modules(monkeypatch, tmp_path):
 def test_topology_has_only_bounded_private_fixture_roles(modules, tmp_path):
     host, fixture = modules
     controls, evidence = tmp_path / 'controls', tmp_path / 'evidence'
-    plan = host.compose_plan(PROJECT, 'sha256:' + 'c' * 64, controls, evidence)
+    plan = host.compose_plan(PROJECT, 'sha256:' + 'c' * 64, controls, evidence, '4321:987')
     assert set(plan['services']) == {'postgres', 'valkey', 'mock', 'api', 'runtime-a', 'runtime-b', 'runtime-c', 'controller'}
     assert plan['networks']['default']['internal'] is True
     assert plan['networks']['default']['labels'][host.OWNER] == PROJECT
@@ -223,7 +223,8 @@ def test_failed_host_phases_keep_every_identity_known_before_failure(modules, mo
                 return json.dumps({'Memory': 4 * 1024**3, 'MemorySwap': 4 * 1024**3,
                     'CpuQuota': 200000, 'CpuPeriod': 100000}).encode()
             return {'builder-stopped': b'false', 'image': image.encode(),
-                'empty-schema': b'0', 'actual-revision': b'13engineeringprojects'}.get(name, b'')
+                'empty-schema': b'0', 'actual-revision': b'13engineeringprojects',
+                'image-default-user': b'""'}.get(name, b'')
     def sources(work):
         host.write(host.OUT / 'source-manifest.json', {'files': {}})
         return commit, '13engineeringprojects'
@@ -231,6 +232,13 @@ def test_failed_host_phases_keep_every_identity_known_before_failure(modules, mo
         stage_sources=sources, evidence_size=lambda out: sum(p.stat().st_size for p in out.rglob('*') if p.is_file()))
     monkeypatch.setattr(host, 'host_module', lambda: shared)
     monkeypatch.setattr(host, 'cleanup', lambda *args: None)
+    def synthetic_mount():
+        evidence = host.OUT / 'data'
+        evidence.mkdir()
+        return evidence, '4321:987'
+    monkeypatch.setattr(host, 'prepare_evidence_mount', synthetic_mount)
+    monkeypatch.setattr(host, 'directory_identity', lambda path: {'uid': 4321, 'gid': 987, 'mode': '0700'})
+    monkeypatch.setattr(host, 'preflight_writing_roles', lambda *args: None)
     monkeypatch.setattr(host.subprocess, 'check_output', lambda *args, **kwargs: b'inert synthetic staged bytes')
     monkeypatch.setattr(host.subprocess, 'run', lambda *args, **kwargs: SimpleNamespace(returncode=0))
     with pytest.raises(RuntimeError) as error: host.main()

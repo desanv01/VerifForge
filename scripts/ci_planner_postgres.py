@@ -6,11 +6,13 @@ is gated on main's accepted/published role wiring and exclusive hosted grant.
 import argparse
 import importlib.util
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
 import re
 import signal
+import stat
 import subprocess
 import sys
 import threading
@@ -25,6 +27,7 @@ CASES = ('duplicate', 'pg-fence', 'known-unknown', 'pause', 'late-cancel', 'kill
 LIMITS = {'rounds': 8, 'deliveries': 12, 'mock_requests': 7, 'native_runs': 0, 'real_provider_calls': 0}
 STOP = False
 SHARED = None
+WRITING_ROLES = ('mock', 'api', 'runtime-a', 'runtime-b', 'runtime-c', 'controller')
 
 
 def require(condition, message):
@@ -52,15 +55,112 @@ def host_module():
     return module
 
 
-def compose_plan(project, image, controls, evidence):
+def effective_identity():
+    uid, gid = os.geteuid(), os.getegid()
+    require(type(uid) is int and type(gid) is int and 0 < uid < 2**32 - 1 and 0 <= gid < 2**32 - 1,
+            'hosted qualification requires valid non-root numeric identity')
+    return uid, gid
+
+
+def directory_identity(path):
+    info = path.stat()
+    return {'uid': info.st_uid, 'gid': info.st_gid, 'mode': format(stat.S_IMODE(info.st_mode), '04o')}
+
+
+def numeric_user(user):
+    require(isinstance(user, str) and re.fullmatch(r'[0-9]{1,10}:[0-9]{1,10}', user), 'unsafe numeric application user')
+    uid, gid = map(int, user.split(':'))
+    require(0 < uid < 2**32 - 1 and 0 <= gid < 2**32 - 1, 'invalid numeric application identity')
+    return uid, gid
+
+
+def prepare_evidence_mount():
+    """Create only the new fixed owned bind directory; never chmod/chown."""
+    uid, gid = effective_identity()
+    output = OUT.resolve()
+    require(not OUT.is_symlink() and output.is_relative_to(ROOT.resolve()), 'unsafe evidence output root')
+    evidence = OUT / 'data'
+    require(not evidence.exists() and not evidence.is_symlink() and evidence.resolve() == output / 'data',
+            'evidence directory already exists or unsafe')
+    evidence.mkdir(mode=0o700)
+    observed = directory_identity(evidence)
+    require(observed == {'uid': uid, 'gid': gid, 'mode': '0700'}, 'evidence directory identity/mode differs')
+    user = f'{uid}:{gid}'
+    write(OUT / 'evidence-mount.json', {'container_user': user, 'directory': observed})
+    return evidence.resolve(), user
+
+
+def mount_preflight(destination, user, role):
+    """Executed as each exact Compose role identity, before fixture writes."""
+    require(role in ('mock', 'api', 'runtime-a', 'runtime-b', 'runtime-c', 'controller'), 'invalid preflight role')
+    expected = numeric_user(user)
+    require(effective_identity() == expected, 'preflight effective identity differs')
+    require(destination.is_dir() and not destination.is_symlink(), 'unsafe preflight mount')
+    observed = directory_identity(destination)
+    require((observed['uid'], observed['gid']) == expected and observed['mode'] == '0700',
+            'preflight directory ownership/mode differs')
+    probe = destination / ('.veriforge-' + role + '-mount-probe')
+    payload = b'veriforge-owned-mount-preflight\n'
+    created, first = None, None
+    try:
+        with probe.open('xb') as stream:
+            created = os.fstat(stream.fileno())
+            stream.write(payload)
+        require(probe.name in {path.name for path in destination.iterdir()}, 'preflight listing failed')
+        with probe.open('rb') as stream:
+            current = os.fstat(stream.fileno())
+            require((current.st_dev, current.st_ino) == (created.st_dev, created.st_ino), 'preflight probe replaced')
+            require(stream.read(len(payload) + 1) == payload, 'preflight readback differs')
+    except BaseException as error:
+        first = error
+        raise
+    finally:
+        if created is not None:
+            try:
+                current = probe.lstat()
+                require(not probe.is_symlink() and (current.st_dev, current.st_ino) == (created.st_dev, created.st_ino),
+                        'refuse deleting replaced preflight probe')
+                probe.unlink()
+                require(not probe.exists(), 'preflight probe deletion failed')
+            except BaseException as error:
+                if first is None:
+                    raise
+                first.add_note('Probe deletion also failed: ' + type(error).__name__)
+    return {'directory': str(destination), 'effective_uid': expected[0], 'effective_gid': expected[1],
+            'observed': observed, 'probe': 'exclusive_write_read_list_delete_passed'}
+
+
+def preflight_writing_roles(host, user):
+    numeric_user(user)
+    # Fixed published Python source, no fixture/runtime alteration or arbitrary RPC.
+    source = 'import json, os, re, stat, sys\nfrom pathlib import Path\n'
+    source += '\n'.join(inspect.getsource(function) for function in
+                        (require, effective_identity, directory_identity, numeric_user, mount_preflight))
+    source += "\nprint(json.dumps({'role': sys.argv[1], 'mounts': [mount_preflight(Path(path), sys.argv[2], sys.argv[1]) for path in sys.argv[3:]]}, sort_keys=True), flush=True)\n"
+    for role in WRITING_ROLES:
+        paths = ['/evidence', '/controls'] if role == 'controller' else ['/evidence']
+        output = host.run(host.prefix + ['run', '--rm', '--no-deps', '--no-build', '--pull', 'never',
+                          '--entrypoint', 'python', role, '-c', source, role, user] + paths,
+                          'mount-preflight-' + role, 15)
+        proof = json.loads(output)
+        require(proof['role'] == role and [value['directory'] for value in proof['mounts']] == paths,
+                'preflight role/mount association differs')
+        require(all((value['effective_uid'], value['effective_gid']) == numeric_user(user) and
+                    value['probe'] == 'exclusive_write_read_list_delete_passed' for value in proof['mounts']),
+                'preflight proof incomplete')
+        write(OUT / ('mount-preflight-' + role + '.json'), proof)
+
+
+def compose_plan(project, image, controls, evidence, user):
     require(re.fullmatch(r'vf-planner-pg-ci-[0-9]+-[0-9]+', project), 'unsafe project')
+    numeric_user(user)
     labels = {OWNER: project}
     log = {'driver': 'local', 'options': {'max-size': '1m', 'max-file': '1', 'compress': 'false'}}
     env = {'VERIFORGE_DATABASE_URL': 'postgresql+psycopg://veriforge@postgres:5432/veriforge',
            'VERIFORGE_REDIS_URL': 'redis://valkey:6379/0', 'VF_PG_CI_PROJECT': project,
            'VERIFORGE_CONTROL_PATH': '/controls/state.json', 'VERIFORGE_PLANNER_ENABLED': '1',
            'PYTHONDONTWRITEBYTECODE': '1'}
-    common = {'image': image, 'environment': env, 'labels': labels, 'restart': 'no',
+    common = {'image': image, 'user': user, 'environment': env, 'labels': labels, 'restart': 'no',
               'mem_limit': '512m', 'cpus': 1, 'pids_limit': 128,
               'cap_drop': ['ALL'], 'security_opt': ['no-new-privileges:true'],
               'volumes': [str(controls) + ':/controls:ro', str(evidence) + ':/evidence'],
@@ -318,10 +418,17 @@ def main(cleanup_only=False):
         require(host.run(['docker', 'inspect', 'buildx_buildkit_' + host.builder + '0', '--format', '{{.State.Running}}'], 'builder-stopped').strip() == b'false', 'builder not settled')
         image = host.run(['docker', 'image', 'inspect', tag, '--format', '{{.Id}}'], 'image').decode().strip()
         summary['image_id'] = image
-        (work / 'controls').mkdir()
+        summary['image_default_user'] = json.loads(host.run(
+            ['docker', 'image', 'inspect', image, '--format', '{{json .Config.User}}'], 'image-default-user'))
+        evidence, user = prepare_evidence_mount()
+        summary['application_user'] = user
+        (work / 'controls').mkdir(mode=0o700)
+        uid, gid = numeric_user(user)
+        require(directory_identity(work / 'controls') == {'uid': uid, 'gid': gid, 'mode': '0700'},
+                'controls directory identity/mode differs')
         write(work / 'controls/state.json', {'control': 'RUNNING'})
-        (OUT / 'data').mkdir()
-        write(work / 'compose.json', compose_plan(project, image, (work / 'controls').resolve(), (OUT / 'data').resolve()))
+        write(work / 'compose.json', compose_plan(project, image, (work / 'controls').resolve(), evidence, user))
+        preflight_writing_roles(host, user)
         host.run(host.prefix + ['up', '-d', '--no-deps', '--no-build', 'postgres', 'valkey'], 'storage')
         deadline = time.monotonic() + 60
         while True:
