@@ -1,0 +1,451 @@
+{
+  "schema_version": "veriforge.public-riscv-evidence.v1",
+  "run_id": 40920450439,
+  "run_attempt": 1,
+  "commit": "44b8b5e40ce7841f076e4178df13f38ecdbd05fd",
+  "actions_url": "https://github.com/desanv01/VerifForge/actions/runs/40920450439",
+  "artifact_id": 12919420477,
+  "transport_zip_sha256": {
+    "value": "035f1cfce1a8010250db0498a89db387539b7122cb6adee173d2b1105f3dfd68",
+    "basis": "GitHub-reported transport digest supplied with the public CI download; not independently recomputed locally; no ZIP retained"
+  },
+  "extracted_receipt_sha256": "616d07c02df1d437c09c2d6b578fcc0b6e1fd8ef7eb9b2ea60c33c9107247429",
+  "complete_extracted_bundle": {
+    "files_including_receipt": 125,
+    "bytes": 1508745,
+    "retention": "Complete extracted public CI bundle retained locally; this directory is only a curated subset, not the complete artifact."
+  },
+  "file_records": [
+    {
+      "path": "summary.json",
+      "bytes": 3725,
+      "sha256": "e7bbc022d92b3b08b6d316daf799cee1462b0cb8daff5a354ef7f5e5de6973ca",
+      "origin_run": 40920450439,
+      "origin_relative_path": "summary.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 3091,
+      "sha256": "474e91456137cc12aecae1b28bd64fae43c8a701381041460bb52282685e3f23",
+      "origin_run": 40920450439,
+      "origin_relative_path": "source-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/checker-manifest.json",
+      "bytes": 241,
+      "sha256": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/checker-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/comparison.json",
+      "bytes": 164,
+      "sha256": "f7809a00307c5ee68834a0ed4b231eb7ba6f511df15eb72d18fece9312dc70c7",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/comparison.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/environment.json",
+      "bytes": 1757,
+      "sha256": "a1847e25bfa0edd6648402c0928ffaf64732443fc79217100994da2b37b20fcd",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/environment.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/experiment.json",
+      "bytes": 254,
+      "sha256": "e14a4eadc7d9ca1769fe9ca890128160b6a6c1acb069bb8b28961130ca94206d",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/experiment.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/profile.json",
+      "bytes": 193,
+      "sha256": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/profile.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/result.json",
+      "bytes": 6167,
+      "sha256": "4e0f31888db58d2615f0ff54fafddb5aecd04433f912dd0d19a7817ff227e9a3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/result.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/retirement.json",
+      "bytes": 7473,
+      "sha256": "efded32d7c7e32b347598659b89e4ca1324a335318724964775ec66ed0726a6a",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/retirement.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/source-manifest.json",
+      "bytes": 505,
+      "sha256": "f540da03da87c2630a07d5e39d139ab4c1108ccd5debfc7b59870f2fd03dc257",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/source-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/dut/rvfi.json",
+      "bytes": 5143,
+      "sha256": "1b1d7f3ca8533ac4eba9da45b8ff275d9ff8457480112aedc7356e23976db9fc",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/dut/rvfi.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/reference/commit.log",
+      "bytes": 9478,
+      "sha256": "213c93cdfd314501e0c0ab32fbe1a2431e3c0b75a091955af05692466d434b55",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/reference/commit.log",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/smoke.o",
+      "bytes": 884,
+      "sha256": "77b316af350edc3805d465db21d88d9678aa7fb9925e5dc41db346c94c3018f3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/smoke.o",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/smoke.elf",
+      "bytes": 4708,
+      "sha256": "d441470ea48605be9f29a95d503a4be492bcd8c5dcff0258b0ee571f33b22afc",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/smoke.elf",
+      "byte_preserved": true
+    },
+    {
+      "path": "control/smoke.bin",
+      "bytes": 76,
+      "sha256": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control/smoke.bin",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/checker-manifest.json",
+      "bytes": 241,
+      "sha256": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/checker-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/comparison.json",
+      "bytes": 273,
+      "sha256": "2ecba976b66de507bc8d609d38d374a974d8b88dcb4711079d335083e240159d",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/comparison.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/environment.json",
+      "bytes": 1757,
+      "sha256": "a1847e25bfa0edd6648402c0928ffaf64732443fc79217100994da2b37b20fcd",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/environment.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/experiment.json",
+      "bytes": 281,
+      "sha256": "b3f586c5efca83f153e9b1c0c7b0c05a7e63126219638e52b1dc66b9091a6948",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/experiment.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/profile.json",
+      "bytes": 193,
+      "sha256": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/profile.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/result.json",
+      "bytes": 6443,
+      "sha256": "1d30d338ecd0e504c7d81040da91799e6654de1362bcef3b357bf538d43e0f2d",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/result.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/retirement.json",
+      "bytes": 6856,
+      "sha256": "aabf895ee26fc040d4311d7896618ce6f39680f1b3f66440b173e9666ed585d1",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/retirement.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/source-manifest.json",
+      "bytes": 513,
+      "sha256": "a51deaadb1cecb665ba475b9ae709f09ffc1054c605e612921bb4175401bea38",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/source-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/dut/rvfi.json",
+      "bytes": 4256,
+      "sha256": "2d06529feb7e773ffc70d4bb2a4577f7f5280995555414b6e2e5070e880ac7ee",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/dut/rvfi.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/reference/commit.log",
+      "bytes": 9478,
+      "sha256": "213c93cdfd314501e0c0ab32fbe1a2431e3c0b75a091955af05692466d434b55",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/reference/commit.log",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/smoke.o",
+      "bytes": 884,
+      "sha256": "77b316af350edc3805d465db21d88d9678aa7fb9925e5dc41db346c94c3018f3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/smoke.o",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/smoke.elf",
+      "bytes": 4708,
+      "sha256": "d441470ea48605be9f29a95d503a4be492bcd8c5dcff0258b0ee571f33b22afc",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/smoke.elf",
+      "byte_preserved": true
+    },
+    {
+      "path": "mutant/smoke.bin",
+      "bytes": 76,
+      "sha256": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "mutant/smoke.bin",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/checker-manifest.json",
+      "bytes": 241,
+      "sha256": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/checker-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/comparison.json",
+      "bytes": 164,
+      "sha256": "f7809a00307c5ee68834a0ed4b231eb7ba6f511df15eb72d18fece9312dc70c7",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/comparison.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/environment.json",
+      "bytes": 1757,
+      "sha256": "a1847e25bfa0edd6648402c0928ffaf64732443fc79217100994da2b37b20fcd",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/environment.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/experiment.json",
+      "bytes": 254,
+      "sha256": "e14a4eadc7d9ca1769fe9ca890128160b6a6c1acb069bb8b28961130ca94206d",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/experiment.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/profile.json",
+      "bytes": 193,
+      "sha256": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/profile.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/result.json",
+      "bytes": 6167,
+      "sha256": "7b6ea3432c4f69c253367888c7194be9487feebc375b84a69aa5207a07578524",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/result.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/retirement.json",
+      "bytes": 7473,
+      "sha256": "efded32d7c7e32b347598659b89e4ca1324a335318724964775ec66ed0726a6a",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/retirement.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/source-manifest.json",
+      "bytes": 505,
+      "sha256": "f540da03da87c2630a07d5e39d139ab4c1108ccd5debfc7b59870f2fd03dc257",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/source-manifest.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/dut/rvfi.json",
+      "bytes": 5143,
+      "sha256": "1b1d7f3ca8533ac4eba9da45b8ff275d9ff8457480112aedc7356e23976db9fc",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/dut/rvfi.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/reference/commit.log",
+      "bytes": 9478,
+      "sha256": "213c93cdfd314501e0c0ab32fbe1a2431e3c0b75a091955af05692466d434b55",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/reference/commit.log",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/smoke.o",
+      "bytes": 884,
+      "sha256": "77b316af350edc3805d465db21d88d9678aa7fb9925e5dc41db346c94c3018f3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/smoke.o",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/smoke.elf",
+      "bytes": 4708,
+      "sha256": "d441470ea48605be9f29a95d503a4be492bcd8c5dcff0258b0ee571f33b22afc",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/smoke.elf",
+      "byte_preserved": true
+    },
+    {
+      "path": "control-replay/smoke.bin",
+      "bytes": 76,
+      "sha256": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "origin_run": 40920450439,
+      "origin_relative_path": "control-replay/smoke.bin",
+      "byte_preserved": true
+    },
+    {
+      "path": "upstream.json",
+      "bytes": 1147,
+      "sha256": "6f546c19290c53a1533ed67f7e13ba8d50cd83bf76173ccb241a782b1e18eb54",
+      "origin_run": 40920450439,
+      "origin_relative_path": "source/targets/riscv/upstream.json",
+      "byte_preserved": true
+    },
+    {
+      "path": "earlier-failure/summary.json",
+      "bytes": 3502,
+      "sha256": "8d525bb7b089023138138547ee83479dd06ec0be59af2598522a6ae8c2e06afe",
+      "origin_run": 40912735570,
+      "origin_relative_path": "summary.json",
+      "byte_preserved": true
+    }
+  ],
+  "omitted_from_current_run": [
+    "build-metadata.json",
+    "build.log",
+    "builder-before.log",
+    "builder-caps.json",
+    "builder-create.log",
+    "builder-final.log",
+    "builder-stop.log",
+    "commands.json",
+    "control-replay.log",
+    "control-replay/assembler/execution.log",
+    "control-replay/compiler/execution.log",
+    "control-replay/dut/built.marker",
+    "control-replay/dut/execution.log",
+    "control-replay/dut/results.xml",
+    "control-replay/job.json",
+    "control-replay/objcopy/execution.log",
+    "control-replay/reference/execution.log",
+    "control.log",
+    "control/assembler/execution.log",
+    "control/compiler/execution.log",
+    "control/dut/built.marker",
+    "control/dut/execution.log",
+    "control/dut/results.xml",
+    "control/job.json",
+    "control/objcopy/execution.log",
+    "control/reference/execution.log",
+    "host.json",
+    "image-id.txt",
+    "image-inspect.json",
+    "image-inspect.log",
+    "metadata.log",
+    "mutant.log",
+    "mutant/assembler/execution.log",
+    "mutant/compiler/execution.log",
+    "mutant/dut/built.marker",
+    "mutant/dut/execution.log",
+    "mutant/dut/results.xml",
+    "mutant/job.json",
+    "mutant/objcopy/execution.log",
+    "mutant/reference/execution.log",
+    "pure.log",
+    "source/infra/riscv/Dockerfile",
+    "source/infra/riscv/README.md",
+    "source/scripts/ci_riscv_acceptance.py",
+    "source/src/veriforge/__init__.py",
+    "source/src/veriforge/contracts/__init__.py",
+    "source/src/veriforge/riscv/__init__.py",
+    "source/src/veriforge/riscv/__main__.py",
+    "source/src/veriforge/riscv/checker.py",
+    "source/src/veriforge/riscv/contracts.py",
+    "source/src/veriforge/riscv/memory.py",
+    "source/src/veriforge/riscv/profile.py",
+    "source/src/veriforge/riscv/runner.py",
+    "source/src/veriforge/riscv/sim_job.py",
+    "source/src/veriforge/riscv/sim_test.py",
+    "source/src/veriforge/riscv/trace.py",
+    "source/src/veriforge/rtl/__init__.py",
+    "source/src/veriforge/rtl/container.py",
+    "source/src/veriforge/rtl/oracle.py",
+    "source/src/veriforge/rtl/runner.py",
+    "source/targets/riscv/control.json",
+    "source/targets/riscv/link.ld",
+    "source/targets/riscv/mutant.json",
+    "source/targets/riscv/picorv32_top.sv",
+    "source/targets/riscv/smoke.S",
+    "source/targets/riscv/upstream/SPIKE-LICENSE",
+    "source/targets/riscv/upstream/picorv32.v",
+    "source/tests/riscv/test_baseline.py",
+    "source/tests/riscv/test_ci_acceptance_plan.py",
+    "source/workflow/riscv-acceptance.yml",
+    "stop-control-replay.log",
+    "stop-control.log",
+    "stop-metadata.log",
+    "stop-mutant.log",
+    "stop-pure.log",
+    "stop-validate-control-replay.log",
+    "stop-validate-control.log",
+    "stop-validate-mutant.log",
+    "tool-metadata.json",
+    "validate-control-replay.log",
+    "validate-control.log",
+    "validate-mutant.log",
+    "receipt-sha256.json"
+  ],
+  "selection_policy": "Only public CI raw traces, structured outcomes, identity/config manifests, compiled smoke bytes and upstream metadata; omit build/runtime logs, host/image inventories, commands with host mounts, temporary job paths and duplicated source. environment.json is an explicitly reviewed tool/command/identity schema, not an arbitrary environment-variable dump. result.json retains original artifact references, including omitted files; those references do not imply local closure.",
+  "earlier_failure_scope": "Only byte-preserved summary from public run40912735570; complete earlier failure evidence retained locally and not republished here."
+}

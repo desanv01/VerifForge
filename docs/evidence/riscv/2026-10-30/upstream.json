@@ -1,0 +1,26 @@
+{
+  "schema_version": "riscv.upstream.v1",
+  "core": {
+    "repository": "https://github.com/YosysHQ/picorv32",
+    "revision": "ef203c2b0a3fb793280f5114941416c425c5b461",
+    "path": "upstream/picorv32.v",
+    "git_blob": "cc45fa998f1857b06a856ea59b931f6c37e06b34",
+    "sha256": "0836050971b3c6cdd28ac3b1e5719a67fb645161912bef1e472e63995ceb0622",
+    "license": "ISC; retained in file header",
+    "role": "DUT RTL; unmodified upstream file"
+  },
+  "reference": {
+    "repository": "https://github.com/riscv-software-src/riscv-isa-sim",
+    "revision": "4c6a9bc79dab80616932949707e7c0471d8e9e54",
+    "license_path": "upstream/SPIKE-LICENSE",
+    "license_git_blob": "34f576ba819ce4b37747be1fda2ba6196b63f98d",
+    "license_sha256": "c65e436d18972c9c4bd192494fe4870bd2e158179474975b80a3559f27631632",
+    "license": "BSD-3-Clause",
+    "role": "Independent architectural reference; built from pinned public source, source not vendored"
+  },
+  "mutation": {
+    "fixture": "picorv32_reg_write_bug",
+    "define": "PICORV32_TESTBUG_002",
+    "effect": "Upstream functional register-file write corruption; RVFI instrumentation is not edited"
+  }
+}

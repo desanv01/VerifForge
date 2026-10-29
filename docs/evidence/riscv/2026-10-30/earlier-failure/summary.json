@@ -1,0 +1,70 @@
+{
+  "accepted": false,
+  "attempts": {
+    "control": {
+      "binary_hash": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "compared": 17,
+      "cycles": 68,
+      "elf_hash": "46e9ac2401f046c02eda50856a1e763cd99fdc4c84b342b79f50b5ebe9e6eb58",
+      "first_divergence": null,
+      "identity": {
+        "checker_hash": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+        "contract_hash": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+        "environment_hash": "23f22f09a35360edc68314b0cc32c31fb5bf0e8b2ba389096a00e58fb2e9aa77",
+        "experiment_hash": "eeb118107b5750fa549d51c9b00f6d91d1bb13cc384b5843e7b85efae5efba13",
+        "source_hash": "025ca63394436027d651ed62a8a9b837c82f9e2ba1056aaf710f82de6f0609a8"
+      },
+      "pair_hash": "efded32d7c7e32b347598659b89e4ca1324a335318724964775ec66ed0726a6a",
+      "reference_hash": "a5d2343f66b1150e5a22ddaf86a76f188e979315aa6610f490ee0bb6f198df4c",
+      "verdict": "pass_within_scope"
+    },
+    "control-replay": {
+      "binary_hash": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "compared": 17,
+      "cycles": 68,
+      "elf_hash": "9490219d1f1a98a909ab5a2dfe61d52fd0287140fe3aca01db1a80dc978214c9",
+      "first_divergence": null,
+      "identity": {
+        "checker_hash": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+        "contract_hash": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+        "environment_hash": "f56904b7f38b7577859bf3d475e9de75656216c155237e4a486f8de883241228",
+        "experiment_hash": "eeb118107b5750fa549d51c9b00f6d91d1bb13cc384b5843e7b85efae5efba13",
+        "source_hash": "025ca63394436027d651ed62a8a9b837c82f9e2ba1056aaf710f82de6f0609a8"
+      },
+      "pair_hash": "efded32d7c7e32b347598659b89e4ca1324a335318724964775ec66ed0726a6a",
+      "reference_hash": "a5d2343f66b1150e5a22ddaf86a76f188e979315aa6610f490ee0bb6f198df4c",
+      "verdict": "pass_within_scope"
+    },
+    "mutant": {
+      "binary_hash": "eb74f604790a38471fe7b65e2a2be2fc3e89f2aef0bf94f21fa5142213d1fcf3",
+      "compared": 2,
+      "cycles": 59,
+      "elf_hash": "b365363dc12a3b18c3fc4a308040f2c44e7aefca0e654513131f6be3a9ae5f8b",
+      "first_divergence": {
+        "expected": "2147548912",
+        "field": "rd_value",
+        "observed": "2147548913",
+        "order": 1,
+        "requirement_id": "RISCV_ARCH_RETIREMENT"
+      },
+      "identity": {
+        "checker_hash": "c52097ccc32725797a6dbec73dea022e5dbba0fd7238b847a25de9ccbf522d50",
+        "contract_hash": "22d234426ca7b9306cdc17dd2e18e3f37a318a485b0093537ebc01137dbbebb5",
+        "environment_hash": "ef4ee54bf2fbcd98930d1737424b841865243a7079648fb92a648e89b0fe508d",
+        "experiment_hash": "aa8129352ad670784c70fdf7a2a0bac80048017dcc0e8e717b96ca781753c09a",
+        "source_hash": "792a862e2b8958549812fbd426b8262233cb0cd2dcb112e75a78db81495845f7"
+      },
+      "pair_hash": "aabf895ee26fc040d4311d7896618ce6f39680f1b3f66440b173e9666ed585d1",
+      "reference_hash": "a5d2343f66b1150e5a22ddaf86a76f188e979315aa6610f490ee0bb6f198df4c",
+      "verdict": "design_mismatch"
+    }
+  },
+  "builder_settled": true,
+  "commit": "f6a85ea8c91620b934ff95b43b692f61b5f72df4",
+  "error": "exact control replay differs",
+  "image_id": "sha256:5fd610b32e3de74a317945494bd726781e475b34184a80e927bed543e4f6df27",
+  "run_attempt": "1",
+  "run_id": "40912735570",
+  "schema_version": "riscv.ci.v1",
+  "wall_seconds": 619.860101729
+}

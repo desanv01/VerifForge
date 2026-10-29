@@ -1,0 +1,12 @@
+{
+  "verdict": "design_mismatch",
+  "compared": 2,
+  "first_divergence": {
+    "order": 1,
+    "field": "rd_value",
+    "expected": "2147548912",
+    "observed": "2147548913",
+    "requirement_id": "RISCV_ARCH_RETIREMENT"
+  },
+  "reason": "first architectural divergence"
+}
