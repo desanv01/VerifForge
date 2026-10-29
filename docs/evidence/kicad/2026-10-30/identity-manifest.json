@@ -1,0 +1,1556 @@
+{
+  "schema_version": "veriforge.derived-kicad-provenance.v2",
+  "projection_kind": "AUTHORED_DERIVED_PUBLIC_PROJECTION_NOT_ORIGINAL_TOOL_RECEIPT",
+  "prepared_date_myt": "2026-10-30",
+  "transformation_policy": [
+    "Select safe scalar/status/hash data from original retained receipts and previously accepted records; preserve originals unchanged.",
+    "Replace executable and absolute run-root argv operands only as documented per stage; never publish original personal prefixes.",
+    "Publish file/hash inventories and config difference pointers without raw config/working-directory values; omit raw path-bearing XML/receipts.",
+    "Do not relabel normalized importer statuses, replace historical parser hashes with current hashes, or infer full closure from selected hashes."
+  ],
+  "acceptance_scope": "Previously independently reviewed original control26ERC/26DRC -> separate corrected control0ERC/0DRC under unchanged configured checks; not electrical/physical/exact-part/manufacturing/product acceptance. This projection awaits independent publication review.",
+  "selected_publication_files": [
+    {
+      "repository_path": "docs/project/KICAD.md",
+      "sha256": "fe249ab0265dba49ac096c5aa1dfdf154ef499964f6aeccf42d33a32ef3d72be",
+      "bytes": 16949,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "79c8c1986eb4839df30932bb9e28ef063c627369600b2d8ccee62a6375ca4229",
+      "initial_audit_bytes": 16077,
+      "byte_preserved_from_initial_audit": false,
+      "publication_revision": "Public-availability documentation only; initial audit hash identifies older bytes, not this revision."
+    },
+    {
+      "repository_path": "targets/kicad/README.md",
+      "sha256": "01e7bc8ddb6c883b0b13613df696f0b8447f8627ab1a5fa0bef92dd918cda655",
+      "bytes": 2162,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "eaffeced13b3f472ba74251be5b4c326a8ae5613d8fd121ce82dee3c7f8bc536",
+      "initial_audit_bytes": 1219,
+      "byte_preserved_from_initial_audit": false,
+      "publication_revision": "Public-availability documentation only; initial audit hash identifies older bytes, not this revision."
+    },
+    {
+      "repository_path": "targets/kicad/build_fixture.py",
+      "sha256": "ec6e8758a7b8e1b489142d71a62d38a6b7892fa631fb4648e0859a4360d2b065",
+      "bytes": 7594,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "ec6e8758a7b8e1b489142d71a62d38a6b7892fa631fb4648e0859a4360d2b065",
+      "initial_audit_bytes": 7594,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/README.md",
+      "sha256": "7aa0cc204a23461c617e54e01bb8d21cc80b0da83b915a2aeb98d4cf72103c39",
+      "bytes": 3059,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "c7c679da966d7ed921a9da6fb31e7e4c908dcb9d79bf5132ebdf7eaba119dcba",
+      "initial_audit_bytes": 2050,
+      "byte_preserved_from_initial_audit": false,
+      "publication_revision": "Public-availability documentation only; initial audit hash identifies older bytes, not this revision."
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/VerifForge.kicad_sym",
+      "sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "bytes": 2528,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "initial_audit_bytes": 2528,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "bytes": 1916,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "initial_audit_bytes": 1916,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/carrier.kicad_pcb",
+      "sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+      "bytes": 10057,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+      "initial_audit_bytes": 10057,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/carrier.kicad_pro",
+      "sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "bytes": 59,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "initial_audit_bytes": 59,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/carrier.kicad_sch",
+      "sha256": "7b259a04a7e5c0eac3ea3582e7f2f9b8f3a1efef7ac2ddccf0c48c76e7276dc3",
+      "bytes": 13335,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "7b259a04a7e5c0eac3ea3582e7f2f9b8f3a1efef7ac2ddccf0c48c76e7276dc3",
+      "initial_audit_bytes": 13335,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/fp-lib-table",
+      "sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "bytes": 182,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "initial_audit_bytes": 182,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/candidate/sym-lib-table",
+      "sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "bytes": 166,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "initial_audit_bytes": 166,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/VerifForge.kicad_sym",
+      "sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "bytes": 2528,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "initial_audit_bytes": 2528,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "bytes": 1916,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "initial_audit_bytes": 1916,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/carrier.kicad_pcb",
+      "sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+      "bytes": 10057,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+      "initial_audit_bytes": 10057,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/carrier.kicad_pro",
+      "sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "bytes": 59,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "initial_audit_bytes": 59,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/carrier.kicad_sch",
+      "sha256": "99d480d15a7bba50c191567822e46039e28564dadd1861c0ebe9315681d4f869",
+      "bytes": 13333,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "99d480d15a7bba50c191567822e46039e28564dadd1861c0ebe9315681d4f869",
+      "initial_audit_bytes": 13333,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/fp-lib-table",
+      "sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "bytes": 182,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "initial_audit_bytes": 182,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control/sym-lib-table",
+      "sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "bytes": 166,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "initial_audit_bytes": 166,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/VerifForge.kicad_sym",
+      "sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "bytes": 2528,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "initial_audit_bytes": 2528,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "sha256": "38b41d596a6d7608a12fd389b0016d1a62f784a71546aa97b1258b56ade3b9e4",
+      "bytes": 2207,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "38b41d596a6d7608a12fd389b0016d1a62f784a71546aa97b1258b56ade3b9e4",
+      "initial_audit_bytes": 2207,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/carrier.kicad_pcb",
+      "sha256": "6491491d6030c7a7319775fac4ba7b9216aa5a7f6665a855bb3004ecb6b6667c",
+      "bytes": 10673,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "6491491d6030c7a7319775fac4ba7b9216aa5a7f6665a855bb3004ecb6b6667c",
+      "initial_audit_bytes": 10673,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/carrier.kicad_pro",
+      "sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "bytes": 59,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "initial_audit_bytes": 59,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/carrier.kicad_sch",
+      "sha256": "25b4d0cbf6c86e234bc640e5a573561c4e4ebafbd3f29aa5cfae5488f36358fb",
+      "bytes": 13446,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "25b4d0cbf6c86e234bc640e5a573561c4e4ebafbd3f29aa5cfae5488f36358fb",
+      "initial_audit_bytes": 13446,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/fp-lib-table",
+      "sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "bytes": 182,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "initial_audit_bytes": 182,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/control_corrected_v1/sym-lib-table",
+      "sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "bytes": 166,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "initial_audit_bytes": 166,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/VerifForge.kicad_sym",
+      "sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "bytes": 2528,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "initial_audit_bytes": 2528,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "bytes": 1916,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "initial_audit_bytes": 1916,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/carrier.kicad_pcb",
+      "sha256": "1d76b78d8476eea03a7fd4271450b1f5f814ef7855f273da41cdcc8bf04530b8",
+      "bytes": 9934,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "1d76b78d8476eea03a7fd4271450b1f5f814ef7855f273da41cdcc8bf04530b8",
+      "initial_audit_bytes": 9934,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/carrier.kicad_pro",
+      "sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "bytes": 59,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "initial_audit_bytes": 59,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/carrier.kicad_sch",
+      "sha256": "559c32f36cedd39f253cdf866e1d89288f2f5dc4d7c2065396b8a469847cc129",
+      "bytes": 13334,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "559c32f36cedd39f253cdf866e1d89288f2f5dc4d7c2065396b8a469847cc129",
+      "initial_audit_bytes": 13334,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/fp-lib-table",
+      "sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "bytes": 182,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "initial_audit_bytes": 182,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/drc_open/sym-lib-table",
+      "sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "bytes": 166,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "initial_audit_bytes": 166,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/VerifForge.kicad_sym",
+      "sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "bytes": 2528,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "initial_audit_bytes": 2528,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "bytes": 1916,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "initial_audit_bytes": 1916,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/carrier.kicad_pcb",
+      "sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+      "bytes": 10057,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+      "initial_audit_bytes": 10057,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/carrier.kicad_pro",
+      "sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "bytes": 59,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "initial_audit_bytes": 59,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/carrier.kicad_sch",
+      "sha256": "b2a90310231bb10ab7386e55577cfd184d70a743d1e943c316b83858492e7979",
+      "bytes": 13029,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "b2a90310231bb10ab7386e55577cfd184d70a743d1e943c316b83858492e7979",
+      "initial_audit_bytes": 13029,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/fp-lib-table",
+      "sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "bytes": 182,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "initial_audit_bytes": 182,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/erc_open/sym-lib-table",
+      "sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "bytes": 166,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "initial_audit_bytes": 166,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/VerifForge.kicad_sym",
+      "sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "bytes": 2528,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+      "initial_audit_bytes": 2528,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "bytes": 1916,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+      "initial_audit_bytes": 1916,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/carrier.kicad_pcb",
+      "sha256": "1028b866291649ba4ade2ed64a5eab3cf0ed36f6c229c6e2d149309cf2e05e81",
+      "bytes": 10078,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "1028b866291649ba4ade2ed64a5eab3cf0ed36f6c229c6e2d149309cf2e05e81",
+      "initial_audit_bytes": 10078,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/carrier.kicad_pro",
+      "sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "bytes": 59,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+      "initial_audit_bytes": 59,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/carrier.kicad_sch",
+      "sha256": "c425d8f1d08595de5613354dc22cdc12356e606d822791e9049d6755d364aeff",
+      "bytes": 13353,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "c425d8f1d08595de5613354dc22cdc12356e606d822791e9049d6755d364aeff",
+      "initial_audit_bytes": 13353,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/fp-lib-table",
+      "sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "bytes": 182,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+      "initial_audit_bytes": 182,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/carrier/mapping_wrong/sym-lib-table",
+      "sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "bytes": 166,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+      "initial_audit_bytes": 166,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/corrections/U7-CONTROL-CORRECTION/candidate.patch",
+      "sha256": "91bb9d15c1c30dc673b997b484cda0467b7a350f1f266a67053bd1e234298998",
+      "bytes": 34238,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "91bb9d15c1c30dc673b997b484cda0467b7a350f1f266a67053bd1e234298998",
+      "initial_audit_bytes": 34238,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/corrections/U7-CONTROL-CORRECTION/manifest.json",
+      "sha256": "a780a8457d68489d0ad3ca084d128ac71b4295c6bddce48028963afd63840920",
+      "bytes": 7976,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "a780a8457d68489d0ad3ca084d128ac71b4295c6bddce48028963afd63840920",
+      "initial_audit_bytes": 7976,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/reports/drc.json",
+      "sha256": "093b4adf9f31cfa4b30a6a97f97158344675349b637aea13cefd48f53275a6ce",
+      "bytes": 14621,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "093b4adf9f31cfa4b30a6a97f97158344675349b637aea13cefd48f53275a6ce",
+      "initial_audit_bytes": 14621,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/reports/erc.json",
+      "sha256": "d7f5a71c54ab402e93b925dd4aaf6405a2e9072e3f0a365196785f504b2ecbc4",
+      "bytes": 17731,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "d7f5a71c54ab402e93b925dd4aaf6405a2e9072e3f0a365196785f504b2ecbc4",
+      "initial_audit_bytes": 17731,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/board-facts.json",
+      "sha256": "7f456717eb385bf48983a9562e51fe1555d1b9261a25415ee8da62ab2fa2def7",
+      "bytes": 8759,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "7f456717eb385bf48983a9562e51fe1555d1b9261a25415ee8da62ab2fa2def7",
+      "initial_audit_bytes": 8759,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/code-identity.json",
+      "sha256": "e52ebe31bb58795b7fbd8715cd331110fd69629c5327b5a84a2e6d3508faa08d",
+      "bytes": 775,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "e52ebe31bb58795b7fbd8715cd331110fd69629c5327b5a84a2e6d3508faa08d",
+      "initial_audit_bytes": 775,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/drc.json",
+      "sha256": "f36d7dca396dd8125a8843cb667706239a3a6765b879f4f7cc84dbbe2ffaa424",
+      "bytes": 11128,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "f36d7dca396dd8125a8843cb667706239a3a6765b879f4f7cc84dbbe2ffaa424",
+      "initial_audit_bytes": 11128,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/erc.json",
+      "sha256": "fe2bdc3da4a92a5d76a93f58267adf6e9bfcb5ccc3baf9c742cb898f8ff785b9",
+      "bytes": 10841,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "fe2bdc3da4a92a5d76a93f58267adf6e9bfcb5ccc3baf9c742cb898f8ff785b9",
+      "initial_audit_bytes": 10841,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/netlist-facts.json",
+      "sha256": "2e1dde1a255dea72512616c3b6ea0021e5e51187c44e7993e3e5efbaf426e03e",
+      "bytes": 9013,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "2e1dde1a255dea72512616c3b6ea0021e5e51187c44e7993e3e5efbaf426e03e",
+      "initial_audit_bytes": 9013,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/review.json",
+      "sha256": "93e2b5da6460babbe28c5fb2c5258745fdd1f6bde419a87bd5671eb91bd87b75",
+      "bytes": 1834,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "93e2b5da6460babbe28c5fb2c5258745fdd1f6bde419a87bd5671eb91bd87b75",
+      "initial_audit_bytes": 1834,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/drc.json",
+      "sha256": "abe441adde2ca11fb620d051af9dc2e87c9659b2328afb57e5619201d51f14b6",
+      "bytes": 1122,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "abe441adde2ca11fb620d051af9dc2e87c9659b2328afb57e5619201d51f14b6",
+      "initial_audit_bytes": 1122,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/erc.json",
+      "sha256": "04e618b8ad6895361d9fe9e9c78bad205cfe6ea239b093bf3f5aa66d03bd226f",
+      "bytes": 1038,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "04e618b8ad6895361d9fe9e9c78bad205cfe6ea239b093bf3f5aa66d03bd226f",
+      "initial_audit_bytes": 1038,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/board-facts.json",
+      "sha256": "ae2f53b91ad5cdf44c893885667dd6ffba3b7f26a27c9491ca408cf5582ff63e",
+      "bytes": 8771,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "ae2f53b91ad5cdf44c893885667dd6ffba3b7f26a27c9491ca408cf5582ff63e",
+      "initial_audit_bytes": 8771,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/comparison.json",
+      "sha256": "4e1312403f4a7b0c6fba083741b056a5997ef30d4ac7e827ddaa9c40468ff6eb",
+      "bytes": 1462,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "4e1312403f4a7b0c6fba083741b056a5997ef30d4ac7e827ddaa9c40468ff6eb",
+      "initial_audit_bytes": 1462,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/drc.json",
+      "sha256": "c105862f7242c15fb8c8dfa635ac80d4f2c0a2041c50bd5dd20ea1cba16f1ef9",
+      "bytes": 723,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "c105862f7242c15fb8c8dfa635ac80d4f2c0a2041c50bd5dd20ea1cba16f1ef9",
+      "initial_audit_bytes": 723,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/erc.json",
+      "sha256": "ab3136fd5c4960c81993e38088850dc9c1f03957f7daa8b3ba25e609196ba9b1",
+      "bytes": 666,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "ab3136fd5c4960c81993e38088850dc9c1f03957f7daa8b3ba25e609196ba9b1",
+      "initial_audit_bytes": 666,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/netlist-facts.json",
+      "sha256": "e209c87c6e3271b67f42cb285b327d4ed6300f6e7aeea923a0ea9822371f1bbd",
+      "bytes": 9013,
+      "role": "retained_evidence",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "e209c87c6e3271b67f42cb285b327d4ed6300f6e7aeea923a0ea9822371f1bbd",
+      "initial_audit_bytes": 9013,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/synthetic/connector.pcb-fragment",
+      "sha256": "5e7cb67a24400d40336e851911b04cbfe179c4a3168390c5c10dc9a1f3b3937a",
+      "bytes": 304,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "5e7cb67a24400d40336e851911b04cbfe179c4a3168390c5c10dc9a1f3b3937a",
+      "initial_audit_bytes": 304,
+      "byte_preserved_from_initial_audit": true
+    },
+    {
+      "repository_path": "targets/kicad/synthetic/connector.xml",
+      "sha256": "623487a45053631e0a2bdb32172b730dc50425fc6587aa10b53a4fcdcc2ba87c",
+      "bytes": 776,
+      "role": "source_fixture_or_preparation",
+      "new_copy_created_here": false,
+      "initial_audit_sha256": "623487a45053631e0a2bdb32172b730dc50425fc6587aa10b53a4fcdcc2ba87c",
+      "initial_audit_bytes": 776,
+      "byte_preserved_from_initial_audit": true
+    }
+  ],
+  "selection_totals": {
+    "files": 65,
+    "bytes": 340638,
+    "source_files": 50,
+    "evidence_files": 15
+  },
+  "runs": [
+    {
+      "run_id": "control-20261029T143637914406Z",
+      "fixture": "control",
+      "original_receipt": {
+        "sha256": "468c941536114440c2294d7e9fd824297fdd0f9caca0bfacd40216178eaa7b6c",
+        "availability": "withheld original: personal absolute argv/source/output paths; hash only, no raw receipt link"
+      },
+      "tool_version_observed": "10.0.6",
+      "executable_binary_sha256": null,
+      "executable_identity_limit": "Original receipts did not provide a binary hash; version string is not a full executable/environment freeze.",
+      "source_inventory": [
+        {
+          "repository_path": "targets/kicad/carrier/control/carrier.kicad_pcb",
+          "sha256_before": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+          "sha256_after": "625a84fdd8b32f87109ac45e54bdc1215c9762d70f1d2b3a3cd3ad2af8d929b7",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control/carrier.kicad_pro",
+          "sha256_before": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+          "sha256_after": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control/carrier.kicad_sch",
+          "sha256_before": "99d480d15a7bba50c191567822e46039e28564dadd1861c0ebe9315681d4f869",
+          "sha256_after": "99d480d15a7bba50c191567822e46039e28564dadd1861c0ebe9315681d4f869",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control/fp-lib-table",
+          "sha256_before": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+          "sha256_after": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control/sym-lib-table",
+          "sha256_before": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+          "sha256_after": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control/VerifForge.kicad_sym",
+          "sha256_before": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+          "sha256_after": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+          "sha256_before": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+          "sha256_after": "807da7d0b0c9693f9b56182c4535968a026b04b80c306434a240c26d4f56cc09",
+          "matches_retained_execution_copy": true
+        }
+      ],
+      "source_unchanged_during_execution": true,
+      "stages": [
+        {
+          "stage": "erc",
+          "timeout_seconds": 30,
+          "returncode": 5,
+          "execution_status": "completed",
+          "parse_status": "valid_supported_shape",
+          "tool_version": "10.0.6",
+          "finding_count": 26,
+          "rule_status": "reported_violations",
+          "elapsed_seconds": 3.39,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "sch",
+            "erc",
+            "--format",
+            "json",
+            "--units",
+            "mm",
+            "--severity-all",
+            "--exit-code-violations",
+            "--output",
+            "reports/erc.json",
+            "project-copy/carrier.kicad_sch"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "drc",
+          "timeout_seconds": 30,
+          "returncode": 5,
+          "execution_status": "completed",
+          "parse_status": "valid_supported_shape",
+          "tool_version": "10.0.6",
+          "finding_count": 26,
+          "rule_status": "reported_violations",
+          "elapsed_seconds": 1.64,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "pcb",
+            "drc",
+            "--format",
+            "json",
+            "--units",
+            "mm",
+            "--severity-all",
+            "--schematic-parity",
+            "--refill-zones",
+            "--exit-code-violations",
+            "--output",
+            "reports/drc.json",
+            "project-copy/carrier.kicad_pcb"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "netlist",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "parse_status": "valid_supported_shape",
+          "endpoint_count": 24,
+          "elapsed_seconds": 0.828,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "sch",
+            "export",
+            "netlist",
+            "--format",
+            "kicadxml",
+            "--output",
+            "reports/netlist.xml",
+            "project-copy/carrier.kicad_sch"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "schematic-svg",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "elapsed_seconds": 0.89,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "sch",
+            "export",
+            "svg",
+            "--output",
+            "reports/schematic",
+            "project-copy/carrier.kicad_sch"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "pcb-svg",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "elapsed_seconds": 1.188,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "pcb",
+            "export",
+            "svg",
+            "--layers",
+            "F.Cu,B.Cu,F.SilkS,Edge.Cuts",
+            "--output",
+            "reports/pcb",
+            "project-copy/carrier.kicad_pcb"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        }
+      ],
+      "recorded_subprocess_sum_seconds": 7.936,
+      "total_budget_seconds": 150,
+      "native_reports": {
+        "erc": {
+          "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/reports/erc.json",
+          "sha256": "d7f5a71c54ab402e93b925dd4aaf6405a2e9072e3f0a365196785f504b2ecbc4",
+          "native_source_basename": "carrier.kicad_sch",
+          "native_date_literal": "2026-10-29T22:36:41",
+          "native_date_timezone": "Not encoded in native date field; retained run IDs encode UTC naming and dated review records supply context.",
+          "tool_version": "10.0.6",
+          "included_severities": [
+            "error",
+            "warning",
+            "exclusion"
+          ],
+          "ignored_checks": [
+            "single_global_label",
+            "four_way_junction",
+            "simulation_model_issue",
+            "footprint_filter"
+          ],
+          "finding_count": 26,
+          "rule_counts": {
+            "endpoint_off_grid": 26
+          },
+          "normalized_projection": {
+            "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/erc.json",
+            "sha256": "fe2bdc3da4a92a5d76a93f58267adf6e9bfcb5ccc3baf9c742cb898f8ff785b9",
+            "parser_version": "kicad-report-v1",
+            "execution_status": "not_observed",
+            "design_verdict": "inconclusive",
+            "evidence_origin": "imported_unverified",
+            "historical_checker_set": "historical_checker_identities"
+          }
+        },
+        "drc": {
+          "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/reports/drc.json",
+          "sha256": "093b4adf9f31cfa4b30a6a97f97158344675349b637aea13cefd48f53275a6ce",
+          "native_source_basename": "carrier.kicad_pcb",
+          "native_date_literal": "2026-10-29T22:36:42",
+          "native_date_timezone": "Not encoded in native date field; retained run IDs encode UTC naming and dated review records supply context.",
+          "tool_version": "10.0.6",
+          "included_severities": [
+            "error",
+            "warning",
+            "exclusion"
+          ],
+          "ignored_checks": [
+            "missing_courtyard",
+            "track_not_centered_on_via",
+            "tuning_profile_track_geometries",
+            "footprint_filters_mismatch",
+            "footprint_type_mismatch"
+          ],
+          "finding_count": 26,
+          "rule_counts": {
+            "footprint_symbol_field_mismatch": 2,
+            "net_conflict": 24
+          },
+          "normalized_projection": {
+            "repository_path": "targets/kicad/evidence/control-20261029T143637914406Z/review/drc.json",
+            "sha256": "f36d7dca396dd8125a8843cb667706239a3a6765b879f4f7cc84dbbe2ffaa424",
+            "parser_version": "kicad-report-v1",
+            "execution_status": "not_observed",
+            "design_verdict": "inconclusive",
+            "evidence_origin": "imported_unverified",
+            "historical_checker_set": "historical_checker_identities"
+          }
+        }
+      },
+      "withheld_native_xml_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+      "retained_raw_output_hashes": {
+        "drc.json": "093b4adf9f31cfa4b30a6a97f97158344675349b637aea13cefd48f53275a6ce",
+        "drc.stderr.txt": "f68da4461e074c3a01671f0c1cc04458fa99cefd9878fcaa4e1cd3741139ebcb",
+        "drc.stdout.txt": "1dbca5a070fde222140cc10b099bf8d0bed28c77de49aca825e8ab7210e33754",
+        "erc.json": "d7f5a71c54ab402e93b925dd4aaf6405a2e9072e3f0a365196785f504b2ecbc4",
+        "erc.stderr.txt": "1e4b3208dff7ceaf6fe69436cd20050cb5f9fb71efe6659c2c04e0ba3ab43e0b",
+        "erc.stdout.txt": "4b576b3160c5d53204dfa39263ce694683bde2c83941f910e07cbd64136da8b3",
+        "netlist.stderr.txt": "2cb5766a7e3e4cdda53b1140ef3d7c21df937708db76097fa441507efdd358f7",
+        "netlist.stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "netlist.xml": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "pcb": "ac5ce39a774ef17a2a279060f0e04a26196ffddb59ba9b08f2e129d14a596676",
+        "pcb-svg.stderr.txt": "3e00c4275b497b78267c7fdbacf6f36373b579506dca65b495e82fb8c2c1d77e",
+        "pcb-svg.stdout.txt": "4a930cd09899d39462c0e02f3ec2c2beab42fbd56ee9c6a292a7c58abddb8d65",
+        "schematic/carrier.svg": "8580d17286a91ed7af23f4c93ea6b5c2e8641d6f4c60d8b97c4210a9de036867",
+        "schematic-svg.stderr.txt": "3b3cc92551ff8f07f49915b27553feaf9d1116cfc89389e91170c514d2d95a0c",
+        "schematic-svg.stdout.txt": "21740d63ebaaabade2954948a0b06b57e6e6189dc5dec1e9544b5fe009c0a4ba"
+      },
+      "generated_config_identities": {
+        "availability": "hashes only; raw generated config and caches withheld",
+        "files": {
+          "3d_viewer.json": "3dc0ebcb073ef8496323d4c2a835532d13e2bc7bf45890f602e6bbef1a3ba56f",
+          "cvpcb.json": "b93174a3b1470f1ce0e43c90268ce83976432c5210d906a3846ee7976ea9d272",
+          "eeschema.json": "380b16f032e527e9dbb104fa3fe473fecdf3ac5877df78935b9f4b174ae7775b",
+          "fpedit.json": "9e940a9a57528403a4e62739f3bd0813a6226c20528540ce0a7843dc5f86d947",
+          "kicad.json": "0c77c3a8316704bdc547268578f0fd50520863ebc8567e67ce2c6efe5a3b1f36",
+          "kicad_common.json": "e8bf9cd5f25a293daf543a44090e2b3309d2c55d91fa9a61920a93b6b3033ab5",
+          "pcbnew.json": "86e6a78eed5b9e9ebddecf9851f39203b0f1716c0b85c4f554d92523c5d04744",
+          "symbol_editor.json": "96002a56c0827f71c82e74cfc24091095ba9fdfc1ffa1995eb6479f4bad576d7"
+        }
+      },
+      "recorded_design_verdict": "inconclusive",
+      "exact_part_status": "unresolved",
+      "electrical_acceptance": "not_established",
+      "additional_retained_claims": {}
+    },
+    {
+      "run_id": "control-corrected-v1-20261029T145057431340Z",
+      "fixture": "control_corrected_v1",
+      "original_receipt": {
+        "sha256": "ee7cc692428a475f96bc4ae31f5026aa4d7c3ba267548b0558146a421dd5ecda",
+        "availability": "withheld original: personal absolute argv/source/output paths; hash only, no raw receipt link"
+      },
+      "tool_version_observed": "10.0.6",
+      "executable_binary_sha256": null,
+      "executable_identity_limit": "Original receipts did not provide a binary hash; version string is not a full executable/environment freeze.",
+      "source_inventory": [
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/carrier.kicad_pcb",
+          "sha256_before": "6491491d6030c7a7319775fac4ba7b9216aa5a7f6665a855bb3004ecb6b6667c",
+          "sha256_after": "6491491d6030c7a7319775fac4ba7b9216aa5a7f6665a855bb3004ecb6b6667c",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/carrier.kicad_pro",
+          "sha256_before": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+          "sha256_after": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/carrier.kicad_sch",
+          "sha256_before": "25b4d0cbf6c86e234bc640e5a573561c4e4ebafbd3f29aa5cfae5488f36358fb",
+          "sha256_after": "25b4d0cbf6c86e234bc640e5a573561c4e4ebafbd3f29aa5cfae5488f36358fb",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/fp-lib-table",
+          "sha256_before": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+          "sha256_after": "4489645ea630deef19771a293e2f5d7fad3e5d724de53d357d68bbc640a56a19",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/sym-lib-table",
+          "sha256_before": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+          "sha256_after": "227b0720dda071024ca4f275915b03575e93bc624640b104900f59236d4f850d",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/VerifForge.kicad_sym",
+          "sha256_before": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+          "sha256_after": "efc7d990247429daa7fa630f87aba6d6b294651f1dce5bb17aafd6dec83f0983",
+          "matches_retained_execution_copy": true
+        },
+        {
+          "repository_path": "targets/kicad/carrier/control_corrected_v1/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+          "sha256_before": "38b41d596a6d7608a12fd389b0016d1a62f784a71546aa97b1258b56ade3b9e4",
+          "sha256_after": "38b41d596a6d7608a12fd389b0016d1a62f784a71546aa97b1258b56ade3b9e4",
+          "matches_retained_execution_copy": true
+        }
+      ],
+      "source_unchanged_during_execution": true,
+      "stages": [
+        {
+          "stage": "erc",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "parse_status": "valid_supported_shape",
+          "tool_version": "10.0.6",
+          "finding_count": 0,
+          "rule_status": "no_active_violations_reported",
+          "elapsed_seconds": 3.36,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "sch",
+            "erc",
+            "--format",
+            "json",
+            "--units",
+            "mm",
+            "--severity-all",
+            "--exit-code-violations",
+            "--output",
+            "reports/erc.json",
+            "project-copy/carrier.kicad_sch"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "drc",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "parse_status": "valid_supported_shape",
+          "tool_version": "10.0.6",
+          "finding_count": 0,
+          "rule_status": "no_active_violations_reported",
+          "elapsed_seconds": 1.531,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "pcb",
+            "drc",
+            "--format",
+            "json",
+            "--units",
+            "mm",
+            "--severity-all",
+            "--schematic-parity",
+            "--refill-zones",
+            "--exit-code-violations",
+            "--output",
+            "reports/drc.json",
+            "project-copy/carrier.kicad_pcb"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "netlist",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "parse_status": "valid_supported_shape",
+          "endpoint_count": 24,
+          "elapsed_seconds": 0.953,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "sch",
+            "export",
+            "netlist",
+            "--format",
+            "kicadxml",
+            "--output",
+            "reports/netlist.xml",
+            "project-copy/carrier.kicad_sch"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "schematic-svg",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "elapsed_seconds": 0.797,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "sch",
+            "export",
+            "svg",
+            "--output",
+            "reports/schematic",
+            "project-copy/carrier.kicad_sch"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        },
+        {
+          "stage": "pcb-svg",
+          "timeout_seconds": 30,
+          "returncode": 0,
+          "execution_status": "completed",
+          "elapsed_seconds": 0.765,
+          "argv_derived_relative": [
+            "kicad-cli",
+            "pcb",
+            "export",
+            "svg",
+            "--layers",
+            "F.Cu,B.Cu,F.SilkS,Edge.Cuts",
+            "--output",
+            "reports/pcb",
+            "project-copy/carrier.kicad_pcb"
+          ],
+          "argv_transform": "Executable replaced by generic kicad-cli; only absolute run-root prefixes replaced by relative paths. Flags/order/basenames unchanged; these are not original argv bytes."
+        }
+      ],
+      "recorded_subprocess_sum_seconds": 7.406,
+      "total_budget_seconds": 150,
+      "native_reports": {
+        "erc": {
+          "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/erc.json",
+          "sha256": "04e618b8ad6895361d9fe9e9c78bad205cfe6ea239b093bf3f5aa66d03bd226f",
+          "native_source_basename": "carrier.kicad_sch",
+          "native_date_literal": "2026-10-29T22:51:00",
+          "native_date_timezone": "Not encoded in native date field; retained run IDs encode UTC naming and dated review records supply context.",
+          "tool_version": "10.0.6",
+          "included_severities": [
+            "error",
+            "warning",
+            "exclusion"
+          ],
+          "ignored_checks": [
+            "single_global_label",
+            "four_way_junction",
+            "simulation_model_issue",
+            "footprint_filter"
+          ],
+          "finding_count": 0,
+          "rule_counts": {},
+          "normalized_projection": {
+            "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/erc.json",
+            "sha256": "ab3136fd5c4960c81993e38088850dc9c1f03957f7daa8b3ba25e609196ba9b1",
+            "parser_version": "kicad-report-v1",
+            "execution_status": "not_observed",
+            "design_verdict": "inconclusive",
+            "evidence_origin": "imported_unverified",
+            "historical_checker_set": "historical_checker_identities"
+          }
+        },
+        "drc": {
+          "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/drc.json",
+          "sha256": "abe441adde2ca11fb620d051af9dc2e87c9659b2328afb57e5619201d51f14b6",
+          "native_source_basename": "carrier.kicad_pcb",
+          "native_date_literal": "2026-10-29T22:51:02",
+          "native_date_timezone": "Not encoded in native date field; retained run IDs encode UTC naming and dated review records supply context.",
+          "tool_version": "10.0.6",
+          "included_severities": [
+            "error",
+            "warning",
+            "exclusion"
+          ],
+          "ignored_checks": [
+            "missing_courtyard",
+            "track_not_centered_on_via",
+            "tuning_profile_track_geometries",
+            "footprint_filters_mismatch",
+            "footprint_type_mismatch"
+          ],
+          "finding_count": 0,
+          "rule_counts": {},
+          "normalized_projection": {
+            "repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/drc.json",
+            "sha256": "c105862f7242c15fb8c8dfa635ac80d4f2c0a2041c50bd5dd20ea1cba16f1ef9",
+            "parser_version": "kicad-report-v1",
+            "execution_status": "not_observed",
+            "design_verdict": "inconclusive",
+            "evidence_origin": "imported_unverified",
+            "historical_checker_set": "historical_checker_identities"
+          }
+        }
+      },
+      "withheld_native_xml_sha256": "0f96ffcdbb8ace1c7c17be454f01f9438934b8147a54a63d5b6e1905a3d225ea",
+      "retained_raw_output_hashes": {
+        "drc.json": "abe441adde2ca11fb620d051af9dc2e87c9659b2328afb57e5619201d51f14b6",
+        "drc.stderr.txt": "aca2bac7a2f69c620e817903c4bd6cb0a64291e884f4e2910ac18c4920ce2e7b",
+        "drc.stdout.txt": "40ea7ec6871595ec4bbc25477a7ae5ae0e42f0821e9cfaddaa3897feb5904135",
+        "erc.json": "04e618b8ad6895361d9fe9e9c78bad205cfe6ea239b093bf3f5aa66d03bd226f",
+        "erc.stderr.txt": "0c3227e6b3cedaef938c2e6dfd3322d575a358e19f7d7c702c0e31dc27f8a3be",
+        "erc.stdout.txt": "89d56c3e8f276599832401b342fff0ce5fd8bfaab5c09bccebb900f013c86dea",
+        "netlist.stderr.txt": "991c06d286ae11a35a00dab0482e1f8bb4a1073b76c0b3c3d8e8e6e4fe3c5261",
+        "netlist.stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "netlist.xml": "0f96ffcdbb8ace1c7c17be454f01f9438934b8147a54a63d5b6e1905a3d225ea",
+        "pcb": "16b0d04c0f2587c69bef9b543d7e49d27f0a63b330556380d3c26dc6421e260c",
+        "pcb-svg.stderr.txt": "a50fa0acb3de072f24c5355485e075f0b8771eea3abf161abf4bc767fffebd0b",
+        "pcb-svg.stdout.txt": "a7932d55211c8890e11ba4192335937a9f05f0e4160c631de21a70a9c6615151",
+        "schematic/carrier.svg": "33eea7e1d863ca079c1c896cac5306d4b3e5e9a717716022b36df93307b9e9ca",
+        "schematic-svg.stderr.txt": "215eeb69146f8b2969f507f957a64cadb1bd22f7fa1f223432467c03563a080b",
+        "schematic-svg.stdout.txt": "5e115abc1e5e4044d91a6d77c362cc87d7c6a8f2505b81df8f70b7c101e17756"
+      },
+      "generated_config_identities": {
+        "availability": "hashes only; raw generated config and caches withheld",
+        "files": {
+          "3d_viewer.json": "3dc0ebcb073ef8496323d4c2a835532d13e2bc7bf45890f602e6bbef1a3ba56f",
+          "cvpcb.json": "b93174a3b1470f1ce0e43c90268ce83976432c5210d906a3846ee7976ea9d272",
+          "eeschema.json": "380b16f032e527e9dbb104fa3fe473fecdf3ac5877df78935b9f4b174ae7775b",
+          "fpedit.json": "9e940a9a57528403a4e62739f3bd0813a6226c20528540ce0a7843dc5f86d947",
+          "kicad.json": "0c77c3a8316704bdc547268578f0fd50520863ebc8567e67ce2c6efe5a3b1f36",
+          "kicad_common.json": "e333b10f1b556bcd016aefbf8d1e74fcb2be04501d290eb9cf6ed26bdc3f310a",
+          "pcbnew.json": "86e6a78eed5b9e9ebddecf9851f39203b0f1716c0b85c4f554d92523c5d04744",
+          "symbol_editor.json": "96002a56c0827f71c82e74cfc24091095ba9fdfc1ffa1995eb6479f4bad576d7"
+        }
+      },
+      "recorded_design_verdict": "inconclusive",
+      "exact_part_status": "unresolved",
+      "electrical_acceptance": "not_established",
+      "additional_retained_claims": {
+        "base_control_unchanged": true,
+        "first_evidence_unchanged": true,
+        "correction_manifest_sha256": "a780a8457d68489d0ad3ca084d128ac71b4295c6bddce48028963afd63840920"
+      }
+    }
+  ],
+  "historical_checker_identities": {
+    "src/veriforge/kicad/__init__.py": {
+      "historical_sha256": "d1e7557db382a2a1b55b4dc80acd33b726c047c20d5f39b6b934589dc84cea44",
+      "current_snapshot_sha256": "d1e7557db382a2a1b55b4dc80acd33b726c047c20d5f39b6b934589dc84cea44",
+      "current_matches_historical": true,
+      "current_snapshot_is_not_execution_identity": true
+    },
+    "src/veriforge/kicad/facts.py": {
+      "historical_sha256": "367ce7ff725681fda77627a486d55a0d7a569a060d17e49cfd21f10e2fd08d03",
+      "current_snapshot_sha256": "26cb5ab481bf73ff3fe05855109c6d5ede9b084c37acdf327b61580156b39e73",
+      "current_matches_historical": false,
+      "current_snapshot_is_not_execution_identity": true
+    },
+    "src/veriforge/kicad/readiness.py": {
+      "historical_sha256": "c56dab082f2e2d878adaa5c8aa8093f6ef8a82d4c83549fcbce5a44c368daf05",
+      "current_snapshot_sha256": "c56dab082f2e2d878adaa5c8aa8093f6ef8a82d4c83549fcbce5a44c368daf05",
+      "current_matches_historical": true,
+      "current_snapshot_is_not_execution_identity": true
+    },
+    "src/veriforge/kicad/reports.py": {
+      "historical_sha256": "6fe36543831fa54ea1f28118944de28d5c0de8f2d9711014ab28c096029efe89",
+      "current_snapshot_sha256": "822e05f91fc069598557497dece145d015e023b69908d7fcd5c1d2a28fb04ac5",
+      "current_matches_historical": false,
+      "current_snapshot_is_not_execution_identity": true
+    }
+  },
+  "operator_source_identities": {
+    "original_private_helper_sha256": "0ed2d3cde02a2525616ee007052168310ae4c3841b9bb166db64abb7a980ea5e",
+    "corrected_private_helper_sha256": "573d999460255e90c554feec05add6b0ef9b81b44397a097e1b3e4e6f43afe17",
+    "preparation_generator_sha256": "84dd82f4e8877e50295fbf50ca73ddf1cc3b667b9c0703e6f523155a3e829047",
+    "availability": "Private resource/state-dependent operator helpers and preparation generator omitted; hashes identify historical producers, not runnable distributed helpers."
+  },
+  "config_comparison": {
+    "project_file_sha256": "a8c91a20ed59b86ac4eb5105d747cc024586fae4ede91b5aa06a8bd45f9b0774",
+    "source_project_bytes_identical": true,
+    "source_project_content": "meta filename carrier.kicad_pro, version1 only; no explicit complete effective rule configuration",
+    "generated_json_files_per_run": 8,
+    "exact_equal_generated_files": 7,
+    "differing_json_pointers": [
+      "/kicad_common.json/system/working_dir"
+    ],
+    "working_directory_values_withheld": true,
+    "effective_rule_defaults_fully_frozen": false,
+    "default_rule_limit": "Tool-version-dependent KiCad defaults and unrecorded runtime context prevent a machine-independent full effective-config claim."
+  },
+  "correction_lineage": {
+    "manifest_repository_path": "targets/kicad/corrections/U7-CONTROL-CORRECTION/manifest.json",
+    "manifest_sha256": "a780a8457d68489d0ad3ca084d128ac71b4295c6bddce48028963afd63840920",
+    "manifest_historical_status": "prepared_not_executed",
+    "status_meaning": "Prepared-not-executed status predates actual corrected receipt; unchanged historical preparation is not an execution record.",
+    "patch_repository_path": "targets/kicad/corrections/U7-CONTROL-CORRECTION/candidate.patch",
+    "patch_sha256": "91bb9d15c1c30dc673b997b484cda0467b7a350f1f266a67053bd1e234298998",
+    "changed_paths": [
+      "carrier.kicad_pcb",
+      "carrier.kicad_sch",
+      "VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod"
+    ],
+    "comparison_repository_path": "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/comparison.json",
+    "comparison_sha256": "4e1312403f4a7b0c6fba083741b056a5997ef30d4ac7e827ddaa9c40468ff6eb",
+    "reviewed_claims": {
+      "endpoint_semantics_unchanged": 24,
+      "copper_pads_outline_unchanged": true,
+      "rules_changed": false,
+      "exact_part_mapping": "unresolved",
+      "electrical_acceptance": "not_established"
+    },
+    "variant_warning": "Only control and control_corrected_v1 have accepted actual runs. candidate is earlier source reconstruction; other seeded variants have no actual acceptance."
+  },
+  "omissions": {
+    "inspected_scope_files": 166,
+    "omitted_files": 101,
+    "repository_paths": [
+      "targets/kicad/check_control.py",
+      "targets/kicad/check_correction.py",
+      "targets/kicad/corrections/U7-CONTROL-CORRECTION/bridge-facts.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/.cache/fontconfig/CACHEDIR.TAG",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/.cache/fontconfig/ef9c9ad8cc5857eb63cb3660bc8bd202-le64.cache-9",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/3d_viewer.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/cvpcb.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/eeschema.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/fpedit.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/kicad.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/kicad_common.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/pcbnew.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/config/10.0/symbol_editor.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/carrier.kicad_pcb",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/carrier.kicad_prl",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/carrier.kicad_pro",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/carrier.kicad_sch",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/fp-lib-table",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/sym-lib-table",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/VerifForge.kicad_sym",
+      "targets/kicad/evidence/control-20261029T143637914406Z/project-copy/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "targets/kicad/evidence/control-20261029T143637914406Z/receipt.json",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/drc.stderr.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/drc.stdout.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/erc.stderr.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/erc.stdout.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/netlist.stderr.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/netlist.stdout.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/netlist.xml",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/pcb",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/pcb-detail.png",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/pcb-svg.stderr.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/pcb-svg.stdout.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/pcb.png",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/schematic/carrier.svg",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/schematic-detail.png",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/schematic-svg.stderr.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/schematic-svg.stdout.txt",
+      "targets/kicad/evidence/control-20261029T143637914406Z/reports/schematic.png",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/.cache/fontconfig/CACHEDIR.TAG",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/.cache/fontconfig/ef9c9ad8cc5857eb63cb3660bc8bd202-le64.cache-9",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/3d_viewer.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/cvpcb.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/eeschema.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/fpedit.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/kicad.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/kicad_common.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/pcbnew.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/config/10.0/symbol_editor.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/carrier.kicad_pcb",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/carrier.kicad_prl",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/carrier.kicad_pro",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/carrier.kicad_sch",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/fp-lib-table",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/sym-lib-table",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/VerifForge.kicad_sym",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/project-copy/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/receipt.json",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/drc.stderr.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/drc.stdout.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/erc.stderr.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/erc.stdout.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/netlist.stderr.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/netlist.stdout.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/netlist.xml",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/pcb",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/pcb-detail.png",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/pcb-svg.stderr.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/pcb-svg.stdout.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/pcb.png",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/schematic/carrier.svg",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/schematic-detail.png",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/schematic-svg.stderr.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/schematic-svg.stdout.txt",
+      "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/schematic.png",
+      "targets/kicad/part-review/.gitignore",
+      "targets/kicad/part-review/exact-review-v2.json",
+      "targets/kicad/part-review/EXACT_PART_REVIEW.md",
+      "targets/kicad/part-review/facts.json",
+      "targets/kicad/part-review/Nexys-Video-Master.xdc",
+      "targets/kicad/part-review/README.md",
+      "targets/kicad/part-review/review-verification.json",
+      "targets/kicad/part-review/samtec-tsw-catalog-1.png",
+      "targets/kicad/part-review/samtec-tsw-catalog-2.png",
+      "targets/kicad/part-review/samtec-tsw-catalog.pdf",
+      "targets/kicad/part-review/samtec-tsw-footprint.pdf",
+      "targets/kicad/part-review/samtec-tsw-footprint.png",
+      "targets/kicad/part-review/samtec-tsw-product-spec.pdf",
+      "targets/kicad/part-review/samtec-tsw-series-1.png",
+      "targets/kicad/part-review/samtec-tsw-series-2.png",
+      "targets/kicad/part-review/samtec-tsw-series-3.png",
+      "targets/kicad/part-review/samtec-tsw-series-4.png",
+      "targets/kicad/part-review/samtec-tsw-series-5.png",
+      "targets/kicad/part-review/samtec-tsw-series-page6.png",
+      "targets/kicad/part-review/samtec-tsw-series.pdf",
+      "targets/kicad/part-review/samtec-tsw-spec-2.png",
+      "targets/kicad/part-review/samtec-tsw-spec-3.png",
+      "targets/kicad/part-review/samtec-tsw-spec-4.png",
+      "targets/kicad/part-review/samtec-tsw-ssw-power.pdf",
+      "targets/kicad/part-review/U7-EXACT-PART-FACTS.md",
+      "targets/kicad/prepare_correction.py"
+    ],
+    "groups": [
+      {
+        "count": 3,
+        "kind": "private operator helpers"
+      },
+      {
+        "count": 2,
+        "kind": "raw path-bearing original receipts"
+      },
+      {
+        "count": 16,
+        "kind": "execution project copies and local state"
+      },
+      {
+        "count": 20,
+        "kind": "generated config and font caches"
+      },
+      {
+        "count": 34,
+        "kind": "nonselected logs, native XML, SVG/PNG outputs"
+      },
+      {
+        "count": 25,
+        "kind": "separate part-review research/facts/vendor tree"
+      },
+      {
+        "count": 1,
+        "kind": "cross-domain bridge facts"
+      }
+    ],
+    "completeness_limit": "This names the reviewed publication selection and omissions; it is not a self-contained full execution environment, raw original receipt closure, historical parser source distribution or electrical/physical approval."
+  },
+  "publication_revision": 2,
+  "initial_audit_selection": {
+    "files": 65,
+    "bytes": 337814,
+    "source_files": 50,
+    "evidence_files": 15,
+    "initial_flat_allowlist_sha256": "cd026c7abe8c8f5389840e3f4f4cea9f373502e5c5ca01f8a71263cc7e6a293d",
+    "interpretation": "Historical audit matched these earlier bytes; later three-document revisions are explicitly separate, not reattributed to that audit."
+  },
+  "publication_documentation_revision": {
+    "reason": "Prominent public-availability notes and safe relative links distinguish selected public reports/projections/fixtures from withheld historical operator helpers, raw receipts/XML/renders/config/vendor research. No historical result/source/checker/config/evidence changes.",
+    "changed_initial_selection_documents": [
+      {
+        "repository_path": "docs/project/KICAD.md",
+        "initial_audit_sha256": "79c8c1986eb4839df30932bb9e28ef063c627369600b2d8ccee62a6375ca4229",
+        "initial_audit_bytes": 16077,
+        "revised_sha256": "fe249ab0265dba49ac096c5aa1dfdf154ef499964f6aeccf42d33a32ef3d72be",
+        "revised_bytes": 16949
+      },
+      {
+        "repository_path": "targets/kicad/README.md",
+        "initial_audit_sha256": "eaffeced13b3f472ba74251be5b4c326a8ae5613d8fd121ce82dee3c7f8bc536",
+        "initial_audit_bytes": 1219,
+        "revised_sha256": "01e7bc8ddb6c883b0b13613df696f0b8447f8627ab1a5fa0bef92dd918cda655",
+        "revised_bytes": 2162
+      },
+      {
+        "repository_path": "targets/kicad/carrier/README.md",
+        "initial_audit_sha256": "c7c679da966d7ed921a9da6fb31e7e4c908dcb9d79bf5132ebdf7eaba119dcba",
+        "initial_audit_bytes": 2050,
+        "revised_sha256": "7aa0cc204a23461c617e54e01bb8d21cc80b0da83b915a2aeb98d4cf72103c39",
+        "revised_bytes": 3059
+      }
+    ],
+    "other_initial_selection_files_unchanged": 62,
+    "prior_projection_manifest_sha256": "4966e79d89e7a40ea582e46ce9a638221b56b0ce774b8fae9f319b63a2f7f930",
+    "prior_projection_README_sha256": "c6fa31a83ac2e6d7883cd3099f3108b6a5cbf66094f5484c14a0e5bfbf2308e4",
+    "review_status": "prior projection accepted; current documentation revision awaiting narrow independent review"
+  },
+  "public_projection_files": [
+    {
+      "repository_path": "docs/evidence/kicad/2026-10-30/README.md",
+      "bytes": 10964,
+      "sha256": "299d4e86437d58d9c8cd7abf98f9304f77f57d935c23d50fc15c99fbf7780619",
+      "role": "authored derived explanation, documentation revision2"
+    },
+    {
+      "repository_path": "docs/evidence/kicad/2026-10-30/identity-manifest.json",
+      "bytes": null,
+      "sha256": null,
+      "role": "this authored derived identity manifest",
+      "self_identity_policy": "Recursive self-hash/size intentionally omitted. Exact final bytes and SHA256 are supplied in the external private delivery/publication receipt; no original tool identity is inferred."
+    }
+  ],
+  "final_publication_paths": [
+    "docs/evidence/kicad/2026-10-30/README.md",
+    "docs/evidence/kicad/2026-10-30/identity-manifest.json",
+    "docs/project/KICAD.md",
+    "targets/kicad/README.md",
+    "targets/kicad/build_fixture.py",
+    "targets/kicad/carrier/README.md",
+    "targets/kicad/carrier/candidate/VerifForge.kicad_sym",
+    "targets/kicad/carrier/candidate/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+    "targets/kicad/carrier/candidate/carrier.kicad_pcb",
+    "targets/kicad/carrier/candidate/carrier.kicad_pro",
+    "targets/kicad/carrier/candidate/carrier.kicad_sch",
+    "targets/kicad/carrier/candidate/fp-lib-table",
+    "targets/kicad/carrier/candidate/sym-lib-table",
+    "targets/kicad/carrier/control/VerifForge.kicad_sym",
+    "targets/kicad/carrier/control/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+    "targets/kicad/carrier/control/carrier.kicad_pcb",
+    "targets/kicad/carrier/control/carrier.kicad_pro",
+    "targets/kicad/carrier/control/carrier.kicad_sch",
+    "targets/kicad/carrier/control/fp-lib-table",
+    "targets/kicad/carrier/control/sym-lib-table",
+    "targets/kicad/carrier/control_corrected_v1/VerifForge.kicad_sym",
+    "targets/kicad/carrier/control_corrected_v1/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+    "targets/kicad/carrier/control_corrected_v1/carrier.kicad_pcb",
+    "targets/kicad/carrier/control_corrected_v1/carrier.kicad_pro",
+    "targets/kicad/carrier/control_corrected_v1/carrier.kicad_sch",
+    "targets/kicad/carrier/control_corrected_v1/fp-lib-table",
+    "targets/kicad/carrier/control_corrected_v1/sym-lib-table",
+    "targets/kicad/carrier/drc_open/VerifForge.kicad_sym",
+    "targets/kicad/carrier/drc_open/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+    "targets/kicad/carrier/drc_open/carrier.kicad_pcb",
+    "targets/kicad/carrier/drc_open/carrier.kicad_pro",
+    "targets/kicad/carrier/drc_open/carrier.kicad_sch",
+    "targets/kicad/carrier/drc_open/fp-lib-table",
+    "targets/kicad/carrier/drc_open/sym-lib-table",
+    "targets/kicad/carrier/erc_open/VerifForge.kicad_sym",
+    "targets/kicad/carrier/erc_open/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+    "targets/kicad/carrier/erc_open/carrier.kicad_pcb",
+    "targets/kicad/carrier/erc_open/carrier.kicad_pro",
+    "targets/kicad/carrier/erc_open/carrier.kicad_sch",
+    "targets/kicad/carrier/erc_open/fp-lib-table",
+    "targets/kicad/carrier/erc_open/sym-lib-table",
+    "targets/kicad/carrier/mapping_wrong/VerifForge.kicad_sym",
+    "targets/kicad/carrier/mapping_wrong/VerifForge.pretty/Header2x6_2.54_Unreviewed.kicad_mod",
+    "targets/kicad/carrier/mapping_wrong/carrier.kicad_pcb",
+    "targets/kicad/carrier/mapping_wrong/carrier.kicad_pro",
+    "targets/kicad/carrier/mapping_wrong/carrier.kicad_sch",
+    "targets/kicad/carrier/mapping_wrong/fp-lib-table",
+    "targets/kicad/carrier/mapping_wrong/sym-lib-table",
+    "targets/kicad/corrections/U7-CONTROL-CORRECTION/candidate.patch",
+    "targets/kicad/corrections/U7-CONTROL-CORRECTION/manifest.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/reports/drc.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/reports/erc.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/review/board-facts.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/review/code-identity.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/review/drc.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/review/erc.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/review/netlist-facts.json",
+    "targets/kicad/evidence/control-20261029T143637914406Z/review/review.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/drc.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/reports/erc.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/board-facts.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/comparison.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/drc.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/erc.json",
+    "targets/kicad/evidence/control-corrected-v1-20261029T145057431340Z/review/netlist-facts.json",
+    "targets/kicad/synthetic/connector.pcb-fragment",
+    "targets/kicad/synthetic/connector.xml"
+  ],
+  "final_publication_totals": {
+    "files": 67,
+    "bytes_excluding_this_manifest": 351602,
+    "manifest_exact_size_and_hash": "Supplied externally in final delivery/publication receipt to avoid recursive self-identity."
+  }
+}

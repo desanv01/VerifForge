@@ -1,0 +1,10 @@
+{
+  "audit_and_parser_sources": {
+    "targets/kicad/check_control.py": "0ed2d3cde02a2525616ee007052168310ae4c3841b9bb166db64abb7a980ea5e",
+    "src/veriforge/kicad/__init__.py": "d1e7557db382a2a1b55b4dc80acd33b726c047c20d5f39b6b934589dc84cea44",
+    "src/veriforge/kicad/facts.py": "367ce7ff725681fda77627a486d55a0d7a569a060d17e49cfd21f10e2fd08d03",
+    "src/veriforge/kicad/readiness.py": "c56dab082f2e2d878adaa5c8aa8093f6ef8a82d4c83549fcbce5a44c368daf05",
+    "src/veriforge/kicad/reports.py": "6fe36543831fa54ea1f28118944de28d5c0de8f2d9711014ab28c096029efe89"
+  },
+  "note": "Hashes recorded after control run; these files were unchanged between invocation and this record. Imported report result remains inconclusive; execution identity is in receipt.json."
+}

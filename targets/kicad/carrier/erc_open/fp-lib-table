@@ -1,0 +1,1 @@
+(fp_lib_table (version 7) (lib (name "VerifForge") (type "KiCad") (uri "${KIPRJMOD}/VerifForge.pretty") (options "") (descr "Owned nominal carrier footprint, no exact MPN claim")))

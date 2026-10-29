@@ -1,0 +1,312 @@
+{
+  "kind": "drc",
+  "raw_sha256": "093b4adf9f31cfa4b30a6a97f97158344675349b637aea13cefd48f53275a6ce",
+  "claimed_tool_version": "10.0.6",
+  "claimed_source": "carrier.kicad_pcb",
+  "coordinate_units": "mm",
+  "included_severities": [
+    "error",
+    "warning",
+    "exclusion"
+  ],
+  "ignored_checks": [
+    "missing_courtyard",
+    "track_not_centered_on_via",
+    "tuning_profile_track_geometries",
+    "footprint_filters_mismatch",
+    "footprint_type_mismatch"
+  ],
+  "findings": [
+    {
+      "rule_id": "footprint_symbol_field_mismatch",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Missing symbol field 'Manufacturer' in footprint",
+      "location": "/schematic_parity/0",
+      "item_uuids": [
+        "0a6b89f2-ca51-497b-a369-1be6cc815b02"
+      ],
+      "signature": "a03dbcd684346a1b9f7d65b20bd195e81d86006334aa531e23f8bdf711faa8e2"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA1) doesn't match net given by schematic (/JA1)",
+      "location": "/schematic_parity/1",
+      "item_uuids": [
+        "df9285d7-83af-404b-96ac-12d00d105a2c"
+      ],
+      "signature": "6fc0c6b157cd0dfc4ba3d0f13cc084090cbd10d04a6fe1ff06f99e3c764ae338"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA7) doesn't match net given by schematic (/JA7)",
+      "location": "/schematic_parity/2",
+      "item_uuids": [
+        "e1620656-4fb4-4f06-a435-310f6309f94d"
+      ],
+      "signature": "76017a30616bad3da02f15177816da1562a96d637c30feae32cea46e21fac79f"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA2) doesn't match net given by schematic (/JA2)",
+      "location": "/schematic_parity/3",
+      "item_uuids": [
+        "1a760411-f0bb-4d55-81fe-9d2c6f7e2a34"
+      ],
+      "signature": "888431d65103f4bc44e35c8b07973377b6f2bc491e56f159323e2a1836c85a8e"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA8) doesn't match net given by schematic (/JA8)",
+      "location": "/schematic_parity/4",
+      "item_uuids": [
+        "1b251fe5-5476-490d-9ab1-05359c478861"
+      ],
+      "signature": "61013b9e7223faa8a8cb9f3f7aecd374c348e967295ef2e19ae542274f3f5057"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA3) doesn't match net given by schematic (/JA3)",
+      "location": "/schematic_parity/5",
+      "item_uuids": [
+        "a8fb9f35-cfe4-4dd7-a66a-1811f7484d6c"
+      ],
+      "signature": "b6e5d658e05c73fb2b322b8b58d5ab8b26c30f3e86184a83ab129f812b01615c"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA9) doesn't match net given by schematic (/JA9)",
+      "location": "/schematic_parity/6",
+      "item_uuids": [
+        "6226e44a-c111-4a20-8e83-d524b641a62b"
+      ],
+      "signature": "e5f55a09e5721612ad621617a0035c7b143308061a69352842a2b8e4e05fff1e"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA4) doesn't match net given by schematic (/JA4)",
+      "location": "/schematic_parity/7",
+      "item_uuids": [
+        "c489e27e-bfb3-477f-b27c-45527df0c0c1"
+      ],
+      "signature": "b1baee9fb5de74437f15949edab0b14f0eadfc465b84f803c465184f5b7c9f03"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA10) doesn't match net given by schematic (/JA10)",
+      "location": "/schematic_parity/8",
+      "item_uuids": [
+        "8a00bdf4-a46b-47aa-82d5-50871ea9a188"
+      ],
+      "signature": "3f5dbceb27957538f5434309a71038a7f20e57848fa1f5c30973c74e8bd1505b"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+      "location": "/schematic_parity/9",
+      "item_uuids": [
+        "81429c05-4576-4b84-afb3-b4748b8afc7d"
+      ],
+      "signature": "ff5df63daf9b22b63355725aa7b16bd519d3f18e06cdfdcc19cb502085d57511"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+      "location": "/schematic_parity/10",
+      "item_uuids": [
+        "fd92d04f-7872-4b43-bcb2-a1d1595e55ce"
+      ],
+      "signature": "65ef4cc0fd867e57d15903d468ff34b0d54385a5e63a25f4d42c91c340ed259d"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+      "location": "/schematic_parity/11",
+      "item_uuids": [
+        "ef3f1624-79a4-4e64-b9a6-939ed58bffe7"
+      ],
+      "signature": "264ad1dfeae6672948f7f2d0969778d70536bdcd96319dd02d47973a602c48f8"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+      "location": "/schematic_parity/12",
+      "item_uuids": [
+        "b0f6d178-0811-40bd-84a3-1144483d5871"
+      ],
+      "signature": "6fa885f5991e4405e216b505ca7c19c8a9d4915374c0789bea6ad815d1a58f9e"
+    },
+    {
+      "rule_id": "footprint_symbol_field_mismatch",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Missing symbol field 'Manufacturer' in footprint",
+      "location": "/schematic_parity/13",
+      "item_uuids": [
+        "780738d1-3e05-4680-8b8e-9705b9c81c77"
+      ],
+      "signature": "d0b540ed2d0ac94512bb0561e3549a21b4717c6a6bdd8109648642f435302ef3"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA1) doesn't match net given by schematic (/JA1)",
+      "location": "/schematic_parity/14",
+      "item_uuids": [
+        "d745e6ac-1d2a-47c6-a17f-1559057c098c"
+      ],
+      "signature": "d66313a6a3c24149a8567573e4f3d3c6f43fd1603601cd8ea81e38932cf47efd"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA7) doesn't match net given by schematic (/JA7)",
+      "location": "/schematic_parity/15",
+      "item_uuids": [
+        "09eb81f9-64fe-4f94-a922-79816af567f5"
+      ],
+      "signature": "01f76176a5afa799a22af716b032ee8284d164c451041d3aea74d654c23560ac"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA2) doesn't match net given by schematic (/JA2)",
+      "location": "/schematic_parity/16",
+      "item_uuids": [
+        "ab2dfba0-621a-4c6f-84d6-1cbfd1dabd53"
+      ],
+      "signature": "c817222842885fd5dd95d422f04362982aa25d92a586e05b22c5271f5f8b4ba6"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA8) doesn't match net given by schematic (/JA8)",
+      "location": "/schematic_parity/17",
+      "item_uuids": [
+        "216568d4-0e42-4a43-a994-eb89682b459a"
+      ],
+      "signature": "c41a9007f793b949e4e3b0b8e840e6d9e69608cdf178e80052a93d1e2886f858"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA3) doesn't match net given by schematic (/JA3)",
+      "location": "/schematic_parity/18",
+      "item_uuids": [
+        "1400fc31-76a3-4d4a-98cb-732a2b2b5e2a"
+      ],
+      "signature": "2fa600c9fac554337de7b0183b702dd2c1424c3e89e7bc32e6956dd7e7ccf6cd"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA9) doesn't match net given by schematic (/JA9)",
+      "location": "/schematic_parity/19",
+      "item_uuids": [
+        "96cc765a-8302-4f6f-af8e-1fc127715e49"
+      ],
+      "signature": "69e2ec32c630231c96c7502d5e04c338af3a5fc539320ca6d7111151fa208ac0"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA4) doesn't match net given by schematic (/JA4)",
+      "location": "/schematic_parity/20",
+      "item_uuids": [
+        "5beba8bb-d4c7-463d-a8ae-ddb05a9ae1c3"
+      ],
+      "signature": "7cd9a519b235fa304cea80415ed911e1452eec1e0ff8351d7f6dfe29a365798b"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (JA10) doesn't match net given by schematic (/JA10)",
+      "location": "/schematic_parity/21",
+      "item_uuids": [
+        "73ade03a-d156-4949-a186-b4021ae25272"
+      ],
+      "signature": "b9685f0430419e0b8457c45648ca60fa3b0cf2c2aa667e19b54e51f403247ff2"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+      "location": "/schematic_parity/22",
+      "item_uuids": [
+        "f9323aa6-fcde-4bb1-9b36-8ca52826c660"
+      ],
+      "signature": "05e0bf78f4cd3a19c07e58f91481dafb28929d4837c9c8b157cef939577ccdd8"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+      "location": "/schematic_parity/23",
+      "item_uuids": [
+        "dc28ce43-4207-4834-9910-7a81e9dfaedd"
+      ],
+      "signature": "92900036b6f0b37fa458ad51990a6661a4d15211063b5c4cbdf73de00eae4f31"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+      "location": "/schematic_parity/24",
+      "item_uuids": [
+        "f0654d02-3d47-4cbb-bea0-10ad93bfca36"
+      ],
+      "signature": "c1fe157db12b6e125cf8b3c0bca0eee61a31845d996d16a82dec7df35fbf56c5"
+    },
+    {
+      "rule_id": "net_conflict",
+      "severity": "warning",
+      "excluded": false,
+      "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+      "location": "/schematic_parity/25",
+      "item_uuids": [
+        "073c5f9a-63c2-492a-b9c5-1b889e0ac865"
+      ],
+      "signature": "5a5efb74dc85a70e856ec95a756ed1fd235f93a36a4954f6a90c002148d1a852"
+    }
+  ],
+  "rule_status": "reported_violations",
+  "parser_version": "kicad-report-v1",
+  "execution_status": "not_observed",
+  "design_verdict": "inconclusive",
+  "evidence_origin": "imported_unverified"
+}

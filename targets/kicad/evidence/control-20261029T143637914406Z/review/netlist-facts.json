@@ -1,0 +1,301 @@
+{
+  "kind": "schematic_netlist",
+  "raw_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+  "components": [
+    {
+      "reference": "J1",
+      "value": "MPN_UNRESOLVED",
+      "symbol": "VerifForge:CarrierHeader2x6",
+      "footprint": "VerifForge:Header2x6_2.54_Unreviewed",
+      "manufacturer": null,
+      "mpn": null,
+      "datasheet": null,
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/components/comp[1]"
+      },
+      "review_status": "unreviewed_source_claim"
+    },
+    {
+      "reference": "J2",
+      "value": "MPN_UNRESOLVED",
+      "symbol": "VerifForge:CarrierHeader2x6",
+      "footprint": "VerifForge:Header2x6_2.54_Unreviewed",
+      "manufacturer": null,
+      "mpn": null,
+      "datasheet": null,
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/components/comp[2]"
+      },
+      "review_status": "unreviewed_source_claim"
+    }
+  ],
+  "endpoints": [
+    {
+      "reference": "J1",
+      "number": "10",
+      "net": "/GND",
+      "function": "Pin_10_10",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[1]/node[1]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "9",
+      "net": "/GND",
+      "function": "Pin_9_9",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[1]/node[2]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "10",
+      "net": "/GND",
+      "function": "Pin_10_10",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[1]/node[3]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "9",
+      "net": "/GND",
+      "function": "Pin_9_9",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[1]/node[4]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "1",
+      "net": "/JA1",
+      "function": "Pin_1_1",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[2]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "1",
+      "net": "/JA1",
+      "function": "Pin_1_1",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[2]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "3",
+      "net": "/JA2",
+      "function": "Pin_3_3",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[3]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "3",
+      "net": "/JA2",
+      "function": "Pin_3_3",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[3]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "5",
+      "net": "/JA3",
+      "function": "Pin_5_5",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[4]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "5",
+      "net": "/JA3",
+      "function": "Pin_5_5",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[4]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "7",
+      "net": "/JA4",
+      "function": "Pin_7_7",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[5]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "7",
+      "net": "/JA4",
+      "function": "Pin_7_7",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[5]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "2",
+      "net": "/JA7",
+      "function": "Pin_2_2",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[6]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "2",
+      "net": "/JA7",
+      "function": "Pin_2_2",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[6]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "4",
+      "net": "/JA8",
+      "function": "Pin_4_4",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[7]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "4",
+      "net": "/JA8",
+      "function": "Pin_4_4",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[7]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "6",
+      "net": "/JA9",
+      "function": "Pin_6_6",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[8]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "6",
+      "net": "/JA9",
+      "function": "Pin_6_6",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[8]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "8",
+      "net": "/JA10",
+      "function": "Pin_8_8",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[9]/node[1]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "8",
+      "net": "/JA10",
+      "function": "Pin_8_8",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[9]/node[2]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "11",
+      "net": "/VCC3V3",
+      "function": "Pin_11_11",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[10]/node[1]"
+      }
+    },
+    {
+      "reference": "J1",
+      "number": "12",
+      "net": "/VCC3V3",
+      "function": "Pin_12_12",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[10]/node[2]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "11",
+      "net": "/VCC3V3",
+      "function": "Pin_11_11",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[10]/node[3]"
+      }
+    },
+    {
+      "reference": "J2",
+      "number": "12",
+      "net": "/VCC3V3",
+      "function": "Pin_12_12",
+      "electrical_type": "passive",
+      "source": {
+        "source_sha256": "0ae9dc3dcc90048f0c3ef1c35289976f7e3a5bb8b54908bbd10bd08d5ff9ad44",
+        "location": "/export/nets/net[10]/node[4]"
+      }
+    }
+  ],
+  "parser_version": "kicad-connectivity-v1"
+}

@@ -1,0 +1,428 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-29T22:36:42",
+    "ignored_checks": [
+        {
+            "description": "Footprint has no courtyard defined",
+            "key": "missing_courtyard"
+        },
+        {
+            "description": "Track endpoint not centered on via",
+            "key": "track_not_centered_on_via"
+        },
+        {
+            "description": "Tuning profile track geometries",
+            "key": "tuning_profile_track_geometries"
+        },
+        {
+            "description": "Footprint doesn't match symbol's footprint filters",
+            "key": "footprint_filters_mismatch"
+        },
+        {
+            "description": "Footprint component type doesn't match footprint pads",
+            "key": "footprint_type_mismatch"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.6",
+    "schematic_parity": [
+        {
+            "description": "Missing symbol field 'Manufacturer' in footprint",
+            "items": [
+                {
+                    "description": "Footprint J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 40.0
+                    },
+                    "uuid": "0a6b89f2-ca51-497b-a369-1be6cc815b02"
+                }
+            ],
+            "severity": "warning",
+            "type": "footprint_symbol_field_mismatch"
+        },
+        {
+            "description": "Pad net (JA1) doesn't match net given by schematic (/JA1)",
+            "items": [
+                {
+                    "description": "PTH pad 1 [JA1] of J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 40.0
+                    },
+                    "uuid": "df9285d7-83af-404b-96ac-12d00d105a2c"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA7) doesn't match net given by schematic (/JA7)",
+            "items": [
+                {
+                    "description": "PTH pad 2 [JA7] of J1",
+                    "pos": {
+                        "x": 42.54,
+                        "y": 40.0
+                    },
+                    "uuid": "e1620656-4fb4-4f06-a435-310f6309f94d"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA2) doesn't match net given by schematic (/JA2)",
+            "items": [
+                {
+                    "description": "PTH pad 3 [JA2] of J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 42.54
+                    },
+                    "uuid": "1a760411-f0bb-4d55-81fe-9d2c6f7e2a34"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA8) doesn't match net given by schematic (/JA8)",
+            "items": [
+                {
+                    "description": "PTH pad 4 [JA8] of J1",
+                    "pos": {
+                        "x": 42.54,
+                        "y": 42.54
+                    },
+                    "uuid": "1b251fe5-5476-490d-9ab1-05359c478861"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA3) doesn't match net given by schematic (/JA3)",
+            "items": [
+                {
+                    "description": "PTH pad 5 [JA3] of J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 45.08
+                    },
+                    "uuid": "a8fb9f35-cfe4-4dd7-a66a-1811f7484d6c"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA9) doesn't match net given by schematic (/JA9)",
+            "items": [
+                {
+                    "description": "PTH pad 6 [JA9] of J1",
+                    "pos": {
+                        "x": 42.54,
+                        "y": 45.08
+                    },
+                    "uuid": "6226e44a-c111-4a20-8e83-d524b641a62b"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA4) doesn't match net given by schematic (/JA4)",
+            "items": [
+                {
+                    "description": "PTH pad 7 [JA4] of J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 47.62
+                    },
+                    "uuid": "c489e27e-bfb3-477f-b27c-45527df0c0c1"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA10) doesn't match net given by schematic (/JA10)",
+            "items": [
+                {
+                    "description": "PTH pad 8 [JA10] of J1",
+                    "pos": {
+                        "x": 42.54,
+                        "y": 47.62
+                    },
+                    "uuid": "8a00bdf4-a46b-47aa-82d5-50871ea9a188"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+            "items": [
+                {
+                    "description": "PTH pad 9 [GND] of J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 50.16
+                    },
+                    "uuid": "81429c05-4576-4b84-afb3-b4748b8afc7d"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+            "items": [
+                {
+                    "description": "PTH pad 10 [GND] of J1",
+                    "pos": {
+                        "x": 42.54,
+                        "y": 50.16
+                    },
+                    "uuid": "fd92d04f-7872-4b43-bcb2-a1d1595e55ce"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+            "items": [
+                {
+                    "description": "PTH pad 11 [VCC3V3] of J1",
+                    "pos": {
+                        "x": 40.0,
+                        "y": 52.7
+                    },
+                    "uuid": "ef3f1624-79a4-4e64-b9a6-939ed58bffe7"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+            "items": [
+                {
+                    "description": "PTH pad 12 [VCC3V3] of J1",
+                    "pos": {
+                        "x": 42.54,
+                        "y": 52.7
+                    },
+                    "uuid": "b0f6d178-0811-40bd-84a3-1144483d5871"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Missing symbol field 'Manufacturer' in footprint",
+            "items": [
+                {
+                    "description": "Footprint J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 40.0
+                    },
+                    "uuid": "780738d1-3e05-4680-8b8e-9705b9c81c77"
+                }
+            ],
+            "severity": "warning",
+            "type": "footprint_symbol_field_mismatch"
+        },
+        {
+            "description": "Pad net (JA1) doesn't match net given by schematic (/JA1)",
+            "items": [
+                {
+                    "description": "PTH pad 1 [JA1] of J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 40.0
+                    },
+                    "uuid": "d745e6ac-1d2a-47c6-a17f-1559057c098c"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA7) doesn't match net given by schematic (/JA7)",
+            "items": [
+                {
+                    "description": "PTH pad 2 [JA7] of J2",
+                    "pos": {
+                        "x": 67.54,
+                        "y": 40.0
+                    },
+                    "uuid": "09eb81f9-64fe-4f94-a922-79816af567f5"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA2) doesn't match net given by schematic (/JA2)",
+            "items": [
+                {
+                    "description": "PTH pad 3 [JA2] of J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 42.54
+                    },
+                    "uuid": "ab2dfba0-621a-4c6f-84d6-1cbfd1dabd53"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA8) doesn't match net given by schematic (/JA8)",
+            "items": [
+                {
+                    "description": "PTH pad 4 [JA8] of J2",
+                    "pos": {
+                        "x": 67.54,
+                        "y": 42.54
+                    },
+                    "uuid": "216568d4-0e42-4a43-a994-eb89682b459a"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA3) doesn't match net given by schematic (/JA3)",
+            "items": [
+                {
+                    "description": "PTH pad 5 [JA3] of J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 45.08
+                    },
+                    "uuid": "1400fc31-76a3-4d4a-98cb-732a2b2b5e2a"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA9) doesn't match net given by schematic (/JA9)",
+            "items": [
+                {
+                    "description": "PTH pad 6 [JA9] of J2",
+                    "pos": {
+                        "x": 67.54,
+                        "y": 45.08
+                    },
+                    "uuid": "96cc765a-8302-4f6f-af8e-1fc127715e49"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA4) doesn't match net given by schematic (/JA4)",
+            "items": [
+                {
+                    "description": "PTH pad 7 [JA4] of J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 47.62
+                    },
+                    "uuid": "5beba8bb-d4c7-463d-a8ae-ddb05a9ae1c3"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (JA10) doesn't match net given by schematic (/JA10)",
+            "items": [
+                {
+                    "description": "PTH pad 8 [JA10] of J2",
+                    "pos": {
+                        "x": 67.54,
+                        "y": 47.62
+                    },
+                    "uuid": "73ade03a-d156-4949-a186-b4021ae25272"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+            "items": [
+                {
+                    "description": "PTH pad 9 [GND] of J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 50.16
+                    },
+                    "uuid": "f9323aa6-fcde-4bb1-9b36-8ca52826c660"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (GND) doesn't match net given by schematic (/GND)",
+            "items": [
+                {
+                    "description": "PTH pad 10 [GND] of J2",
+                    "pos": {
+                        "x": 67.54,
+                        "y": 50.16
+                    },
+                    "uuid": "dc28ce43-4207-4834-9910-7a81e9dfaedd"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+            "items": [
+                {
+                    "description": "PTH pad 11 [VCC3V3] of J2",
+                    "pos": {
+                        "x": 65.0,
+                        "y": 52.7
+                    },
+                    "uuid": "f0654d02-3d47-4cbb-bea0-10ad93bfca36"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Pad net (VCC3V3) doesn't match net given by schematic (/VCC3V3)",
+            "items": [
+                {
+                    "description": "PTH pad 12 [VCC3V3] of J2",
+                    "pos": {
+                        "x": 67.54,
+                        "y": 52.7
+                    },
+                    "uuid": "073c5f9a-63c2-492a-b9c5-1b889e0ac865"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        }
+    ],
+    "source": "carrier.kicad_pcb",
+    "unconnected_items": [],
+    "violations": []
+}

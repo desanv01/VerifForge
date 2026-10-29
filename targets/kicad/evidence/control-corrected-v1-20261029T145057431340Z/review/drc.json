@@ -1,0 +1,25 @@
+{
+  "kind": "drc",
+  "raw_sha256": "abe441adde2ca11fb620d051af9dc2e87c9659b2328afb57e5619201d51f14b6",
+  "claimed_tool_version": "10.0.6",
+  "claimed_source": "carrier.kicad_pcb",
+  "coordinate_units": "mm",
+  "included_severities": [
+    "error",
+    "warning",
+    "exclusion"
+  ],
+  "ignored_checks": [
+    "missing_courtyard",
+    "track_not_centered_on_via",
+    "tuning_profile_track_geometries",
+    "footprint_filters_mismatch",
+    "footprint_type_mismatch"
+  ],
+  "findings": [],
+  "rule_status": "no_active_violations_reported",
+  "parser_version": "kicad-report-v1",
+  "execution_status": "not_observed",
+  "design_verdict": "inconclusive",
+  "evidence_origin": "imported_unverified"
+}
