@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import asyncio
 import json
+import sys
 import threading
 import time
 from types import SimpleNamespace
@@ -97,6 +98,75 @@ def wait_for(predicate, timeout=2):
 
 def view(sessions, round_id):
     with sessions() as session: return cleanup.read_cleanup(session, round_id)
+
+
+def observe_startup(owner):
+    """Test-only inner-result telemetry; driver dispatch success hides this."""
+    telemetry = {"stage": "submitted", "handler_reason": "not_returned"}
+    original = owner.handle_model_intent
+    def observed(intent_id):
+        telemetry["stage"] = "handler_entered"
+        try:
+            outcome = original(intent_id)
+        except Exception:
+            telemetry["stage"] = "handler_exception"
+            raise
+        allowed = {"not_eligible", "runtime_unavailable", "runtime_error", "runtime_timeout",
+                   "configured_model_mismatch", "runtime_thread_invalid"}
+        reason = outcome.get("reason") if type(outcome) is dict else None
+        telemetry.update(stage="handler_returned", handler_reason=reason if type(reason) is str and reason in allowed else "other")
+        return outcome
+    owner.handle_model_intent = observed
+    return telemetry
+
+
+def await_provider_entry(entered, result, owner, telemetry):
+    """Separate 2s startup budget; never changes measured shutdown limits."""
+    deadline = time.monotonic() + 2
+    while not entered.is_set():
+        if result.done():
+            if result.cancelled():
+                state = "delivery_cancelled"
+            else:
+                try:
+                    result.result()
+                except Exception:
+                    state = "delivery_exception"
+                else:
+                    state = "delivery_returned_before_provider"
+            raise AssertionError("provider startup: " + state + "; " + json.dumps(telemetry, sort_keys=True))
+        if owner._loop_failed.is_set() or owner._thread is None or not owner._thread.is_alive():
+            raise AssertionError("provider startup: owner_loop_unavailable")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise AssertionError("provider startup: readiness_deadline; " + json.dumps(telemetry, sort_keys=True))
+        entered.wait(min(0.01, remaining))
+    # Conservative observation policy: a newly set event seen after a delayed
+    # wake does not prove provider entry was observed inside the startup budget.
+    if time.monotonic() > deadline:
+        raise AssertionError("provider startup: readiness_deadline; " + json.dumps(telemetry, sort_keys=True))
+
+
+def cleanup_noncooperative_test(owner, sessions, round_id, release):
+    """No-grant startup failure must not be hidden by a None cleanup view."""
+    first = sys.exception()
+    release.set()
+    failures = []
+    try:
+        def settled_or_absent():
+            state = view(sessions, round_id)
+            return state is None or state.local_state == "settled"
+        wait_for(settled_or_absent)
+    except Exception as error:
+        failures.append(error)
+    try:
+        assert not owner.shutdown(grace_seconds=1).running
+    except Exception as error:
+        failures.append(error)
+    if failures:
+        if first is None:
+            raise failures[0]
+        first.add_note("Test final cleanup also failed; original failure preserved")
 
 
 def test_disabled_and_paused_entrypoint_never_load_env_config_or_worker(monkeypatch):
@@ -203,6 +273,7 @@ def test_noncooperative_shutdown_is_bounded_and_late_owner_can_settle(db, monkey
             except asyncio.CancelledError: continue
     provider = FakeProvider(ignore_cancel)
     owner = runtime(db, provider)
+    telemetry = observe_startup(owner)
     failed = threading.Event()
     if quarantine_failure:
         def unavailable(*args, **kwargs):
@@ -213,7 +284,12 @@ def test_noncooperative_shutdown_is_bounded_and_late_owner_can_settle(db, monkey
         assert owner.start().accepting
         with ThreadPoolExecutor(max_workers=1) as pool:
             result = pool.submit(owner.execute, intent_id)
-            assert entered.wait(1)
+            try:
+                await_provider_entry(entered, result, owner, telemetry)
+            except BaseException:
+                release.set()
+                owner.request_stop()
+                raise
             before = time.monotonic()
             status = owner.shutdown(grace_seconds=0.1)
             assert status.cleanup_pending and status.running and time.monotonic() - before < 0.4
@@ -235,9 +311,7 @@ def test_noncooperative_shutdown_is_bounded_and_late_owner_can_settle(db, monkey
             assert session.get(PlannerModelCall, round_id).outcome == saved_outcome
         assert provider.calls == 1
     finally:
-        release.set()
-        wait_for(lambda: view(db, round_id).local_state == "settled")
-        assert not owner.shutdown(grace_seconds=1).running
+        cleanup_noncooperative_test(owner, db, round_id, release)
 
 
 def test_outer_timeout_requests_cancel_without_resend(db):
