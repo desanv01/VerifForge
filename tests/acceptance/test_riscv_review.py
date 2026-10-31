@@ -19,6 +19,19 @@ REFERENCE = (
 )
 
 
+class PhaseClock:
+    """Time changes with fake work, never with a production clock read."""
+
+    def __init__(self):
+        self.now = 0.0
+
+    def monotonic(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
 def raw(order=0, **changes):
     row = dict(cycle=10 + 10 * order, rvfi_order=order, rvfi_insn=0x00100093,
         rvfi_pc_rdata=PLATFORM.entry + 4 * order, rvfi_rd_addr=1, rvfi_rd_wdata=1,
@@ -106,13 +119,28 @@ def fake_tools(monkeypatch, tmp_path):
     monkeypatch.setattr(Path, "read_text", read)
     monkeypatch.setattr(Path, "read_bytes", lambda path: b"synthetic packages" if path.as_posix() == "/opt/veriforge/PACKAGE_VERSIONS" else original_bytes(path))
 
-    def run(envelope, *, fail_phase=None):
+    def run(envelope, *, fail_phase=None, clock=None, preflight_seconds=0.0, phase_seconds=()):
         output = tmp_path / "attempt"
         calls = []
+
+        if clock is not None:
+            monkeypatch.setattr(runner.time, "monotonic", clock.monotonic)
+            probed = False
+
+            def version_probe(*args, **kwargs):
+                nonlocal probed
+                if not probed:
+                    clock.advance(preflight_seconds)
+                    probed = True
+                return SimpleNamespace(stdout="synthetic tool version\n")
+
+            monkeypatch.setattr(runner.subprocess, "run", version_probe)
 
         def execute(command, directory, env, seconds, cancel, byte_limit):
             phase = directory.name
             calls.append((phase, seconds, byte_limit, command))
+            if clock is not None and phase_seconds:
+                clock.advance(phase_seconds[len(calls)-1])
             (directory / "execution.log").write_text("SYNTHETIC: no tool process ran")
             if phase == fail_phase:
                 return 1, None
@@ -167,21 +195,21 @@ def test_source_manifest_covers_ram_semantics(fake_tools):
     assert environment["memory_hash"] == hashlib.sha256(Path(runner.__file__).with_name("memory.py").read_bytes()).hexdigest()
 
 
-def test_expired_total_deadline_never_dispatches_another_phase(fake_tools, monkeypatch):
-    ticks = iter([0.0, 121.0])
-    monkeypatch.setattr(runner.time, "monotonic", lambda: next(ticks, 121.0))
-    result, _, calls = fake_tools({"termination": "completion_store_retired", "cycles": 21, "events": rows()})
+def test_expired_total_deadline_never_dispatches_another_phase(fake_tools):
+    result, _, calls = fake_tools({"termination": "completion_store_retired", "cycles": 21, "events": rows()},
+        clock=PhaseClock(), preflight_seconds=121.0)
     assert not calls
     assert result.verdict == "timeout" and result.failure_signature is None
 
 
-def test_all_five_phases_share_one_120_second_budget(fake_tools,monkeypatch):
-    ticks=iter([0.0,10.0,30.0,60.0,90.0,110.0,115.0])
-    monkeypatch.setattr(runner.time,'monotonic',lambda:next(ticks,115.0))
-    result,output,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()))
+def test_all_five_phases_share_one_120_second_budget(fake_tools):
+    clock=PhaseClock()
+    result,output,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()),
+        clock=clock, preflight_seconds=10.0, phase_seconds=(20.0,30.0,30.0,20.0,5.0))
     assert result.verdict=='pass_within_scope'
     assert [c[0] for c in calls]==['assembler','compiler','objcopy','reference','dut']
     assert [c[1] for c in calls]==[110.0,90.0,60.0,30.0,10.0]
+    assert result.usage.wall_time_seconds==clock.now==115.0
     assembly=calls[0][3];link=calls[1][3]
     assert assembly==['riscv64-unknown-elf-gcc','-march=rv32i','-mabi=ilp32','-mno-relax',
         '-ffreestanding','-c',str(runner.ROOT/'targets/riscv/smoke.S'),'-o',str(output/'smoke.o')]
@@ -195,11 +223,12 @@ def test_all_five_phases_share_one_120_second_budget(fake_tools,monkeypatch):
 
 
 @pytest.mark.parametrize('completed_phases',[1,2,3,4])
-def test_expired_shared_budget_stops_before_each_remaining_phase(fake_tools,monkeypatch,completed_phases):
-    ticks=iter([0.0]+[10.0]*completed_phases+[121.0])
-    monkeypatch.setattr(runner.time,'monotonic',lambda:next(ticks,121.0))
-    result,_,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()))
+@pytest.mark.parametrize('elapsed',[120.0,121.0])
+def test_expired_shared_budget_stops_before_each_remaining_phase(fake_tools,completed_phases,elapsed):
+    result,_,calls=fake_tools(dict(termination='completion_store_retired',cycles=21,events=rows()),
+        clock=PhaseClock(), phase_seconds=([0.0]*(completed_phases-1)+[elapsed]))
     assert [c[0] for c in calls]==['assembler','compiler','objcopy','reference','dut'][:completed_phases]
+    assert [c[1] for c in calls]==[120.0]*completed_phases
     assert result.verdict=='timeout' and result.failure_signature is None
 
 
