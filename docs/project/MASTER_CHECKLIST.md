@@ -6,11 +6,15 @@ The gameplan defines intended release scope. Source and mocked tests do not esta
 
 ## October31 resumed integration
 
-PRs #50–56 are merged. Independent review accepted the retained fifth planner qualification run40958744363: six bounded PostgreSQL/RQ/process lifecycle cases with explicitly mocked HTTP, including duplicate delivery, resource fencing, cancellation and safe quarantine after worker death. [Audit scope and evidence identity](../evidence/planner/2026-10-31/README.md). No expensive execution was repeated for this audit. Local runtime adoption, successful recovery from quarantined owner loss, populated-database restore, browser acceptance and live Meta remain separate.
+PRs #50–58 are merged. Independent review accepted the retained fifth planner qualification run40958744363: six bounded PostgreSQL/RQ/process lifecycle cases with explicitly mocked HTTP, including duplicate delivery, resource fencing, cancellation and safe quarantine after worker death. [Audit scope and evidence identity](../evidence/planner/2026-10-31/README.md). No expensive execution was repeated for this audit. Local runtime adoption, successful recovery from quarantined owner loss, populated-database restore, browser acceptance and live Meta remain separate.
 
-The saved-executable RISC-V source and narrow historical-import compatibility fix merged in PR56 after independent review and fresh CI. Actual saved-executable replay remains open. Native containment source passed review, but its first inert Windows probe failed closed on an unexpected console-host Job member; API execution remains held. The old export download was interrupted without a confirmed output; no current approval or completed browser acceptance is inferred. Vivado completed its one bounded retry in 190.187 seconds. Independent audit accepted synthesis and six post-synthesis report captures; missing I/O delays, asynchronous-input safety, routed/functional correctness, repair and workbench gates remain open.
+The saved-executable RISC-V source and narrow historical-import compatibility fix merged in PR56 after independent review and fresh CI. [Actual four-case RISC-V run41202693632](../evidence/riscv/2026-10-31/README.md) is now independently accepted, including saved object/ELF/binary replay without RISC-V program recompilation; HDL/C++ rebuild remains part of execution. New-format recorded import and workbench acceptance remain open. Native containment source passed review, but its first inert Windows probe failed closed on an unexpected console-host Job member; the corrected detached-launch revision subsequently passed three actual inert process-isolation cases and independent audit. The separately qualified API gate is recorded below; browser acceptance remains open. The old export download was interrupted without a confirmed output; no current approval or completed browser acceptance is inferred. Vivado completed its one bounded retry in 190.187 seconds. Independent audit accepted synthesis and six post-synthesis report captures; missing I/O delays, asynchronous-input safety, routed/functional correctness, repair and workbench gates remain open.
 
-## October30 integration checkpoint
+UI direction added October31: public Trendshift reference review and generated mockups are complete. The human explicitly approved the refined RTL workbench direction and requested a matching dark theme; both previews are prepared. Local prototype conversion is currently blocked by a Windows CLI spawn error, with the existing run and images preserved for recovery. No prototype or browser completion is claimed. Evaluation-record infrastructure and independently reviewed runtime-test startup diagnostics merged in PR58 after CI41206668270 passed on02ae23e. Shutdown requirements remain unchanged; no comparative benchmark results are claimed.
+
+The second bounded local native API qualification on frozen c14525e source passed independent audit: two committed recorded admissions,301 exact artifact blobs, zero execution rows,23 HTTP responses and four exact artifact downloads. The matrix covers both family lists/details, conditional304, a cross-version artifact404 and a rejected POST405. Owned cleanup completed without errors; the exact controller and child processes were absent afterward. The first run and its case-sensitive header-client failure remain preserved. This is isolated recorded-evidence import/readback, not browser acceptance, new engineering execution or live Meta use.
+
+## Historical October30 integration checkpoint
 
 Updated 5:18 AM MYT. PR8, PR9, PR15 and PR17–52 are merged after their respective required CI. Recent integrations include native admission/persistence (PR44), planner controls (PR45), typed recorded views (PR47), trusted importer (PR48), byte-preserved KiCad fixtures/evidence (PR50), and the planner mount-proof parser (PR51). PR52 merged the reviewed AXI application subset after required CI. Source and mocked UI checks do not establish operational adoption.
 
@@ -30,23 +34,23 @@ Vivado version/part readiness is actual, but synthesis is resource-limited and i
 
 The historical weekly allowance guard was superseded by direct human instruction on October31. The same five-minute coordinator schedule continues without a percentage reserve. No six-sequence release, live Meta response or final submission is claimed.
 
-## October29 work packages (updated October30)
+## October29 work packages (updated October31)
 
 Current [support matrix](SUPPORT_MATRIX.md) separates Import / Execute / Repair and supersedes historical status shorthand below.
 
 | Package | Current finite outcome / next gate |
 |---|---|
-| U0 | Preservation reconciled; original backup restore accepted; family image adopted and five real attempts/export independently reviewed; newer restore pending |
+| U0 | Preservation reconciled; original backup restore accepted; current-schema comparator independently source-reviewed; actual current-schema extraction, coherent backup and isolated restore remain open |
 | U1 | Engineering provenance/support schema accepted after transitive review-state correction; native adoption pending |
-| U2 | Durable foundations/resource authority merged PR20/26; bounded driver and owner-loss quarantine source accepted; dedicated runtime/control merged PR38; two-stage API and opt-in configuration independently accepted with166 combined frozen checks; operational adoption and live Meta open |
+| U2 | Six bounded actual PostgreSQL/RQ/process cases independently accepted with mock HTTP; operational adoption, recovery beyond safe quarantine and live Meta open; runtime test startup diagnostics under review |
 | U3 | Actual family API and AXI seven-case native gates accepted; three-family image adopted/preserved; AXI controls merged PR30 and hosted gate merged PR31; local API execution blocked before POST; fourth hosted run independently accepted all seven attempts, exact replay/export and preservation; browser/candidate gates remain open |
-| U4 | Actual PicoRV32/Spike control/seeded divergence/exact recompiled replay independently accepted; saved executable replay and workbench open |
+| U4 | Actual PicoRV32/Spike control, seeded divergence, exact recompiled replay and saved-executable replay independently accepted; separately versioned four-case importer candidate and workbench acceptance open |
 | U5 | Facts, executable harness and bounded controller merged PR15/25/29; actual hosted run40929665294 control/seeded mismatch/curated candidate/saved-program replay independently accepted; workbench open |
-| U6 | Actual Vivado2026.1 selected-part query passed; synthesis resource-limited; retry memory-blocked; recorded importer/readiness/storage source merged PR21 |
+| U6 | Actual Vivado2026.1 synthesis and six post-synthesis report captures independently accepted; missing I/O timing requirements, asynchronous-input safety, routed/functional checks, repair and workbench acceptance open |
 | U7 | Actual candidate configured ERC/DRC checks independently accepted with4ERC/5DRC ignored checks unchanged; exact-part/physical acceptance unresolved |
 | U8 | Manifest/native bridge source accepted; recorded graphs remain inconclusive; independent system evidence pending |
-| U9 | Typed native admission/persistence/importer/views merged through PR48; isolated actual import independently verified; API startup ownership correction and actual browser/adoption gates remain |
-| U10 | RISC-V, firmware and KiCad curated public evidence merged; AXI subset in PR52; evaluation/demo/provenance preparation continues; complete comparative evaluation/video pending |
+| U9 | Three actual inert Windows containment cases and bounded isolated native API import/readback independently accepted; human approved light/dark UI direction; local prototype conversion requires CLI recovery; actual browser and application candidate flows remain open |
+| U10 | Curated evidence published; append-only evaluation records and runtime-test correction merged in PR58 after CI; strategy harness, comparative results, release reproduction and video remain open |
 | U11 | Analog/ASIC stretch after primary scope and submission-critical gates |
 
 ## Earlier foundation milestones
