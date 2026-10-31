@@ -280,7 +280,7 @@ def test_fixed_public_workflow_and_child_isolation(monkeypatch,tmp_path):
     assert all('dst=/workspace,' not in m for m in mounts)
 
 
-@pytest.mark.parametrize('label',['control','mutant','control-replay'])
+@pytest.mark.parametrize('label',['control','mutant','control-replay','control-saved-replay'])
 def test_validator_uses_same_image_readonly_inputs_and_shared_budget(tmp_path,label):
     tree=ast.parse(SCRIPT.read_text())
     main=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='main')
@@ -290,13 +290,14 @@ def test_validator_uses_same_image_readonly_inputs_and_shared_budget(tmp_path,la
     isolated=['docker','run','--rm','--pull','never','--user','1001:1001','--network','none',
         '--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
         '--cpus','2','--memory','2g','--pids-limit','128','--tmpfs','/tmp:rw,exec,nosuid,size=128m']
-    namespace=dict(isolated=isolated,image=image,label=label,source=tmp_path/'public',
+    saved=tmp_path/'work'/'control' if label=='control-saved-replay' else None
+    namespace=dict(isolated=isolated,image=image,label=label,saved=saved,source=tmp_path/'public',
                    work=tmp_path/'work',directory=tmp_path/'work'/label)
     exec(compile(ast.fix_missing_locations(ast.Module(body=[assignment],type_ignores=[])),str(SCRIPT),'exec'),namespace)
     command=namespace['validation']
     assert command[:len(isolated)]==isolated
     assert command[-3:]==[image,'/workspace/scripts/ci_riscv_acceptance.py',
-                         '--validate-mutant' if label=='mutant' else '--validate-control']
+                         '--validate-saved-control' if saved else '--validate-mutant' if label=='mutant' else '--validate-control']
     assert command[command.index('--entrypoint')+1]=='python'
     mounts=[command[i+1] for i,arg in enumerate(command) if arg=='--mount']
     assert len(mounts)==4 and all(m.endswith(',readonly') for m in mounts)
@@ -313,13 +314,19 @@ def test_validator_uses_same_image_readonly_inputs_and_shared_budget(tmp_path,la
 
 @pytest.mark.parametrize('args,expected',[
     (['--validate-control'],'control'),(['--validate-mutant'],'mutant'),
-    (['--validate-control','extra'],'reject'),(['--arbitrary'],'reject'),([], 'main')])
-def test_controller_entrypoint_has_only_two_fixed_validation_modes(args,expected):
+    (['--validate-saved-control'],'saved-control'),
+    (['--validate-control','extra'],'reject'),(['--validate-saved-control','extra'],'reject'),
+    (['--validate-saved-mutant'],'reject'),(['--arbitrary'],'reject'),([], 'main')])
+def test_controller_entrypoint_has_only_three_fixed_validation_modes(args,expected):
     tree=ast.parse(SCRIPT.read_text())
     entry=tree.body[-1]
     calls=[]
+    def validation_mode(mutant, *, saved=False):
+        assert not (mutant and saved)
+        calls.append('saved-control' if saved else 'mutant' if mutant else 'control')
+        return 0
     namespace=dict(__name__='__main__',sys=SimpleNamespace(argv=['controller',*args]),
-        require=ci.require,validation_mode=lambda mutant:calls.append('mutant' if mutant else 'control') or 0,
+        require=ci.require,validation_mode=validation_mode,
         main=lambda:calls.append('main') or 0)
     with pytest.raises(ci.GateError if expected=='reject' else SystemExit):
         exec(compile(ast.fix_missing_locations(ast.Module(body=[entry],type_ignores=[])),str(SCRIPT),'exec'),namespace)
