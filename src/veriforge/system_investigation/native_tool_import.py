@@ -67,6 +67,24 @@ _CASES = MappingProxyType({
         "324291029545e9783a040452e7698067e09c29717d21c5c52a4ec842dda3ee13", "fc727ccb8d52b1fb1b76e1dddf95b647954a7f0779b95f31254addc36b131bb3"),
 })
 
+# Compatibility affects the installed *producer*, never the historical source
+# or native checker identities. v1 admits only this reviewed saved-replay
+# producer revision when reading the already accepted three-case RISC-V bundle.
+# Neither file is imported by native_tool_records to check recorded results.
+# Other producer revisions, manifests and the new four-case format require
+# separate review. Firmware's accepted manifest contains neither producer file.
+_INSTALLED_SOURCE_POLICY = "native-import.installed-source.v1"
+_PRODUCER_COMPATIBILITY = MappingProxyType({
+    "474e91456137cc12aecae1b28bd64fae43c8a701381041460bb52282685e3f23": MappingProxyType({
+        "src/veriforge/riscv/runner.py": (
+            "c392ae910b354b55319036266a45621a930a69eb045ae57774a0c798026499cf",
+            "80524f263ebf569f0d5f2fc989f82dbc3993e8e7b2e24490c96563435e0045e5"),
+        "src/veriforge/riscv/__main__.py": (
+            "90f8727405f2c565fb704d88e483a29f0df1095f247e31f0889ae557816ecb57",
+            "439e8c8bfdb54fca6ba271d6c57e685b94b3bf530277b0f69c372af6747c851d"),
+    }),
+})
+
 
 class NativeImportError(ValueError):
     """Fixed diagnostic codes only; never emit paths, bytes or driver text."""
@@ -156,7 +174,7 @@ def _snapshot(root):
     return MappingProxyType(dict(sorted(raw.items())))
 
 
-def _installed(source=None):
+def _installed(source=None, *, source_manifest_hash=None):
     """Freshly inspect fixed installed files; never import a bundle's code."""
     validator = Path(native.__file__).absolute()
     _require(_sha(_read_regular(validator)) == _VALIDATOR_HASH, "implementation", "unsupported_validator_version")
@@ -164,11 +182,14 @@ def _installed(source=None):
     _require(_sha(_read_regular(leaf)) == _LEAF_HASH, "implementation", "unsupported_leaf_version")
     if source is not None:
         repository = validator.parents[3]
+        compatible = _PRODUCER_COMPATIBILITY.get(source_manifest_hash, {})
         for name, digest in source.items():
             if (name.startswith("src/veriforge/riscv/") or name.startswith("src/veriforge/firmware/") or
                     name == "scripts/ci_firmware_acceptance.py"):
                 _safe_path(name)
-                _require(_sha(_read_regular(repository / name)) == digest, "implementation", "installed_domain_version_differs")
+                installed_digest = _sha(_read_regular(repository / name))
+                _require(installed_digest == digest or compatible.get(name) == (digest, installed_digest),
+                    "implementation", "installed_domain_version_differs")
     return _VALIDATOR_HASH
 
 
@@ -182,7 +203,7 @@ def _inventory(spec, raw):
         _safe_path(name)
         _require(type(digest) is str and _sha(raw[name]) == digest, "inventory", "original_file_digest_differs")
     source = native._json(raw["source-manifest.json"])
-    _installed(source)
+    _installed(source, source_manifest_hash=_sha(raw["source-manifest.json"]))
     return source
 
 
@@ -358,6 +379,7 @@ def preparation_summary(prepared):
     _require(type(prepared) is PreparedNativeBundle and getattr(prepared, "_seal", None) is _SEAL, "admission", "sealed_preparation_required")
     admitted = prepared.admitted
     return dict(operation="admission_only", new_execution="not_run", family=prepared.family, project_id=admitted.envelope.record.project_id,
+        installed_source_policy=_INSTALLED_SOURCE_POLICY,
         revision_id=admitted.envelope.record.revision_id, content_sha256=_sha(records.serialize_investigation(admitted)),
         report_kind=admitted.envelope.record.report_kind, artifacts=len(admitted.artifacts), total_bytes=admitted.envelope.total_artifact_bytes,
         omitted_paths=len(admitted.native_report.selection.omitted_paths))
@@ -378,7 +400,9 @@ def apply_prepared(session, prepared, *, idempotency_key, at, investigation_id=N
         admitted = prepared.admitted
         _require(admitted.envelope.validation.implementation_hash == current_hash, "implementation", "prepared_validator_differs")
         source_ref = next(binding.ref for binding in admitted.native_report.selection.selected if binding.original_relative_path == "source-manifest.json")
-        _installed(native._json(next(item.data for item in admitted.artifacts if item.reference == source_ref)))
+        source_bytes = next(item.data for item in admitted.artifacts if item.reference == source_ref)
+        _require(_sha(source_bytes) == source_ref.sha256, "implementation", "prepared_source_manifest_differs")
+        _installed(native._json(source_bytes), source_manifest_hash=_sha(source_bytes))
         record = admitted.envelope.record
         authority = native.create_external_admission_authority(**{**prepared.authority.pins.model_dump(mode="python"), "validator_implementation_hash": current_hash})
         admitted = records.read_investigation(records.serialize_investigation(admitted), admitted.artifacts, authority=authority)

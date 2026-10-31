@@ -37,11 +37,12 @@ SOURCE_FILES = (
     'targets/riscv/upstream.json','targets/riscv/upstream/picorv32.v',
     'targets/riscv/upstream/SPIKE-LICENSE','tests/riscv/test_baseline.py',
     'tests/riscv/test_ci_acceptance_plan.py',
+    'tests/riscv/test_saved_program_replay.py',
 )
 ATTEMPT_FILES = (
     'experiment.json','profile.json','smoke.o','smoke.elf','smoke.bin','job.json','result.json',
     'comparison.json','retirement.json','source-manifest.json','checker-manifest.json',
-    'environment.json','assembler/execution.log','compiler/execution.log','objcopy/execution.log',
+    'environment.json','saved-program.json','saved-origin.json','assembler/execution.log','compiler/execution.log','objcopy/execution.log',
     'reference/execution.log','reference/commit.log','dut/built.marker',
     'dut/rvfi.json','dut/execution.log','dut/results.xml','dut/test.result.xml',
 )
@@ -52,6 +53,8 @@ META_FILES = ('summary.json','source-manifest.json','commands.json','host.json',
     'control.log','mutant.log','control-replay.log','stop-pure.log','stop-metadata.log','stop-control.log',
     'stop-mutant.log','stop-control-replay.log','validate-control.log','validate-mutant.log',
     'validate-control-replay.log','stop-validate-control.log','stop-validate-mutant.log','stop-validate-control-replay.log')
+META_FILES += ('control-saved-replay.log','stop-control-saved-replay.log','validate-control-saved-replay.log','stop-validate-control-saved-replay.log')
+CASE_PLANS = (('control','control.json'),('mutant','mutant.json'),('control-replay','control.json'),('control-saved-replay','control.json'))
 REQUIRED = ('result.json','comparison.json','retirement.json','dut/rvfi.json',
     'source-manifest.json','checker-manifest.json','environment.json','profile.json',
     'experiment.json','smoke.o','assembler/execution.log','smoke.elf','smoke.bin','reference/commit.log','dut/built.marker')
@@ -103,7 +106,7 @@ def completed(events):
     return last['memory'] == dict(kind='write',address=0x8000ff00,width=4,byte_mask=15,value=1) and not last['trap'] and not last['interrupt']
 
 
-def validate_attempt(directory, source_hashes, mutant=False):
+def validate_attempt(directory, source_hashes, mutant=False, saved=False):
     # Production calls this in the built image, whose Pydantic pin was checked.
     # Importing the controller on a bare Actions host does not install anything.
     sys.path.insert(0,str(ROOT/'src'))
@@ -120,7 +123,8 @@ def validate_attempt(directory, source_hashes, mutant=False):
         reference: Annotated[list[Retirement],Field(strict=True,min_length=1,max_length=256)]
         observed: Annotated[list[Retirement],Field(strict=True,min_length=1,max_length=256)]
 
-    for name in REQUIRED:
+    required = tuple(n for n in REQUIRED if not saved or n != 'assembler/execution.log') + (('saved-program.json',) if saved else ())
+    for name in required:
         require((directory/name).is_file(), 'missing attempt evidence '+name)
     result = AttemptResult.model_validate(read_json(directory/'result.json')).model_dump(mode='json')
     expected = 'design_mismatch' if mutant else 'pass_within_scope'
@@ -151,9 +155,15 @@ def validate_attempt(directory, source_hashes, mutant=False):
     require(env['reference_revision'] == REFERENCE, 'reference revision differs')
     require(env['elf_hash'] == digest((directory/'smoke.elf').read_bytes()) and env['binary_hash'] == digest((directory/'smoke.bin').read_bytes()), 'program hash differs')
     require(env['object_hash'] == digest((directory/'smoke.o').read_bytes()),'assembled object hash differs')
-    require(env['assembly_command'] == list(assemble_command(Path('/output'))) and env['compiler_command'] == list(compile_command(Path('/output'))),'assembly/link commands differ from fixed recipe')
+    if saved:
+        require(not mutant and env['assembly_command'] == env['compiler_command'] == [] and env['program_mode'] == 'saved_program_no_compilation','saved replay invoked compilation')
+        require(not any((directory/n).exists() for n in ('assembler','compiler','objcopy')), 'saved replay contains compilation stages')
+        require(all(t['name'] != 'riscv-gcc' for t in result['tool_versions']), 'saved replay queried compiler')
+        require(env['saved_program_sha256'] == digest((directory/'saved-program.json').read_bytes()), 'saved program provenance unbound')
+    else:
+        require(env['assembly_command'] == list(assemble_command(Path('/output'))) and env['compiler_command'] == list(compile_command(Path('/output'))),'assembly/link commands differ from fixed recipe')
     artifact_paths = [a['path'] for a in result['artifacts']]
-    require(len(set(artifact_paths)) == len(artifact_paths) and set(REQUIRED)-{'result.json'} <= set(artifact_paths),'missing/duplicate required artifact identity')
+    require(len(set(artifact_paths)) == len(artifact_paths) and set(required)-{'result.json'} <= set(artifact_paths),'missing/duplicate required artifact identity')
     for artifact in result['artifacts']:
         name = artifact['path']
         require(name in ATTEMPT_FILES and name != 'result.json', 'unexpected artifact path')
@@ -192,38 +202,62 @@ def validate_attempt(directory, source_hashes, mutant=False):
         require(signature['signature_hash'] == jhash(dict(checker=identity['checker_hash'],contract=identity['contract_hash'],field=first[1])),'signature hash differs from native first divergence')
     else:
         require(first is None and completed(got) and comparison['first_divergence'] is None and result['failure_signature'] is None, 'control architecture did not agree through completion')
+    runtime_fields = ('reference_revision','spike_binary_hash','image_package_hash','driver_hash','memory_hash','job_hash')
     return {'identity':identity,'pair_hash':jhash(pair),'elf_hash':env['elf_hash'],
         'binary_hash':env['binary_hash'],'object_hash':env['object_hash'],'first_divergence':comparison['first_divergence'],
-        'reference_hash':jhash(ref),'cycles':raw['cycles'],'compared':comparison['compared'],'verdict':expected}
+        'reference_hash':jhash(ref),'cycles':raw['cycles'],'compared':comparison['compared'],'verdict':expected,
+        'result_sha256':digest((directory/'result.json').read_bytes()),
+        'runtime_identity':{**{k:env[k] for k in runtime_fields if k in env},
+            'tools':[t for t in result['tool_versions'] if t['name'] != 'riscv-gcc']},
+        'saved_program':read_json(directory/'saved-program.json') if saved else None,
+        'run_origin':read_json(directory/'saved-origin.json') if (directory/'saved-origin.json').exists() else None}
 
 
 def validate_replay(control, replay):
     require(all(control[k] == replay[k] for k in ('identity','pair_hash','object_hash','elf_hash','binary_hash','cycles','compared')), 'exact control replay differs')
 
 
-def validation_mode(mutant):
+def validate_saved_replay(control, replay):
+    require(set(control['runtime_identity']) == set(replay['runtime_identity']) == {'reference_revision','spike_binary_hash','image_package_hash','driver_hash','memory_hash','job_hash','tools'}, 'saved replay runtime identity incomplete')
+    require({t['name'] for t in replay['runtime_identity']['tools']} == {'verilator','spike-revision','cocotb','python'}, 'saved replay runtime versions incomplete')
+    require(all(control[k] == replay[k] for k in ('pair_hash','reference_hash','object_hash','elf_hash','binary_hash','cycles','compared','runtime_identity')), 'saved executable replay differs')
+    require(all(control['identity'][k] == replay['identity'][k] for k in IDENTITIES if k != 'environment_hash'), 'saved replay source/checker/contract/experiment differs')
+    proof = replay['saved_program']
+    require(proof['schema_version'] == 'riscv.saved-program.v1' and proof['original_result_sha256'] == control['result_sha256'] and proof['original_identity'] == control['identity'], 'saved replay original identity differs')
+    require(control['run_origin'] is not None and proof['original_run_identity'] == control['run_origin'], 'saved replay original run attribution differs')
+    require(proof['program_hashes'] == {'smoke.o':control['object_hash'],'smoke.elf':control['elf_hash'],'smoke.bin':control['binary_hash']}, 'saved replay original program bytes differ')
+
+
+def admit_case(deadline, now):
+    require(not CANCELLED and deadline-now >= 150, 'budget-blocked/cancelled: incomplete gate; no case dispatch')
+
+
+def validation_mode(mutant, saved=False):
     require(os.name == 'posix' and os.getuid() != 0,'nonroot Linux evidence-validation container required')
-    result = validate_attempt(Path('/attempt'),read_json(Path('/validation/source-manifest.json')),mutant=mutant)
+    result = validate_attempt(Path('/attempt'),read_json(Path('/validation/source-manifest.json')),mutant=mutant,saved=saved)
     print(json.dumps(result,sort_keys=True))
     return 0
 
 
-def run_command(image, source, output, label, experiment):
-    return ['docker','run','--rm','--pull','never','--name','veriforge-riscv-ci-'+label,
+def run_command(image, source, output, label, experiment, saved=None):
+    command = ['docker','run','--rm','--pull','never','--name','veriforge-riscv-ci-'+label,
         '--user',f'{os.getuid()}:{os.getgid()}','--network','none','--read-only',
         '--cap-drop','ALL','--security-opt','no-new-privileges','--cpus','2','--memory','2g',
         '--pids-limit','128','--tmpfs','/tmp:rw,exec,nosuid,size=128m',
         '--mount',f'type=bind,src={source}/src,dst=/workspace/src,readonly',
         '--mount',f'type=bind,src={source}/targets/riscv,dst=/workspace/targets/riscv,readonly',
-        '--mount',f'type=bind,src={output},dst=/output',image,
-        '/workspace/targets/riscv/'+experiment,'/output']
+        '--mount',f'type=bind,src={output},dst=/output']
+    if saved is not None:
+        require(label == 'control-saved-replay' and experiment == 'control.json', 'saved replay fixed control only')
+        command += ['--mount',f'type=bind,src={saved},dst=/saved,readonly']
+    return command + [image,'/workspace/targets/riscv/'+experiment,'/output'] + (['--saved-program','/saved'] if saved is not None else [])
 
 
 def export_evidence(work, source, destination):
     destination.mkdir(parents=True,exist_ok=False)
     selected = [(work/name,Path(name)) for name in META_FILES]
     selected += [(source/name,Path('source/workflow/riscv-acceptance.yml') if name.startswith('.github/') else Path('source')/name) for name in SOURCE_FILES]
-    selected += [(work/label/name,Path(label)/name) for label in ('control','mutant','control-replay') for name in ATTEMPT_FILES]
+    selected += [(work/label/name,Path(label)/name) for label,_ in CASE_PLANS for name in ATTEMPT_FILES]
     size, hashes = 0, {}
     for p,relative in selected:
         if not p.is_file() or p.is_symlink():
@@ -312,6 +346,8 @@ def main():
                         except ProcessLookupError: pass
                         p.wait(timeout=5)
             require(p.returncode == 0, log+': command failed '+str(p.returncode))
+            require(not CANCELLED and time.monotonic() < end, log+': terminal cancellation/deadline')
+            require((work/log).stat().st_size <= 8*1024**2 and sum(f.stat().st_size for f in work.rglob('*') if f.is_file()) <= 28*1024**2, log+': terminal evidence limit')
 
     try:
         hashes = stage_sources(ROOT,source)
@@ -363,23 +399,32 @@ def main():
             '--mount',f'type=bind,src={source}/tests/riscv,dst=/workspace/tests/riscv,readonly',
             '--entrypoint','python',image,'-m','pytest','/workspace/tests/riscv/test_baseline.py','-q','-p','no:cacheprovider','--basetemp=/tmp/pytest-riscv']
         supervised(pure,'pure.log',30,execution_end,container='pure')
-        for label,plan in (('control','control.json'),('mutant','mutant.json'),('control-replay','control.json')):
-            require(execution_end-time.monotonic() >= 150,'insufficient remaining execution budget; no skipped green')
+        for label,plan in CASE_PLANS:
+            admit_case(execution_end,time.monotonic())
             directory = work/label
             directory.mkdir()
             print('Actual bounded '+label+' core/reference attempt.',flush=True)
-            supervised(run_command(image,source,directory,label,plan),label+'.log',180,execution_end,container=label)
+            saved = work/'control' if label == 'control-saved-replay' else None
+            supervised(run_command(image,source,directory,label,plan,saved=saved),label+'.log',180,execution_end,container=label)
+            if label == 'control':
+                original = read_json(directory/'result.json')
+                (directory/'saved-origin.json').write_text(json.dumps({'schema_version':'riscv.ci-origin.v1',
+                    'source_commit':summary['commit'],'run_id':summary['run_id'],'run_attempt':summary['run_attempt'],
+                    'case':'control','attempt_id':original['attempt_id'],'result_sha256':digest((directory/'result.json').read_bytes())},sort_keys=True))
             validation = isolated+['--name','veriforge-riscv-ci-validate-'+label,
                 '--mount',f'type=bind,src={source}/src,dst=/workspace/src,readonly',
                 '--mount',f'type=bind,src={source}/scripts/ci_riscv_acceptance.py,dst=/workspace/scripts/ci_riscv_acceptance.py,readonly',
                 '--mount',f'type=bind,src={work}/source-manifest.json,dst=/validation/source-manifest.json,readonly',
                 '--mount',f'type=bind,src={directory},dst=/attempt,readonly',
                 '--entrypoint','python',image,'/workspace/scripts/ci_riscv_acceptance.py',
-                '--validate-mutant' if label == 'mutant' else '--validate-control']
+                '--validate-saved-control' if saved else '--validate-mutant' if label == 'mutant' else '--validate-control']
             supervised(validation,'validate-'+label+'.log',10,execution_end,container='validate-'+label)
             summary['attempts'][label] = read_json(work/('validate-'+label+'.log'))
             require(read_json(directory/'environment.json')['spike_binary_hash'] == metadata['spike_binary_hash'],'attempt reference binary differs from image metadata')
         validate_replay(summary['attempts']['control'],summary['attempts']['control-replay'])
+        validate_saved_replay(summary['attempts']['control'],summary['attempts']['control-saved-replay'])
+        require(all(summary['attempts']['control']['run_origin'][k] == summary[v] for k,v in
+            (('source_commit','commit'),('run_id','run_id'),('run_attempt','run_attempt'))), 'saved replay source run differs from this hosted gate')
         control,mutant = (summary['attempts'][k] for k in ('control','mutant'))
         require(all(control[k] == mutant[k] for k in ('object_hash','elf_hash','binary_hash','reference_hash')),'mutant stimulus/reference differs from control')
         require(all(control['identity'][k] == mutant['identity'][k] for k in ('checker_hash','contract_hash','environment_hash')),'mutant changes checker/contract/environment')
@@ -408,12 +453,16 @@ def main():
             summary['accepted'] = False
             summary['evidence_error'] = str(exc)
             output.mkdir(parents=True,exist_ok=True)
-            for p in output.rglob('*'):
-                if p.is_file(): p.unlink()
             (output/'summary.json').write_text(json.dumps(summary,indent=2))
+            # Preserve the already bounded exported prefix and all raw work.
+            # The normal exporter reserved1MiB for these failure diagnostics.
+            retained = {p.relative_to(output).as_posix():digest(p.read_bytes()) for p in output.rglob('*')
+                if p.is_file() and p.name != 'receipt-sha256.json'}
+            (output/'receipt-sha256.json').write_text(json.dumps(retained,indent=2,sort_keys=True))
+            require(sum(p.stat().st_size for p in output.rglob('*') if p.is_file()) <= CAP, 'failure diagnostics exceed unchanged cap')
         # Bounded logs-only fallback when artifact storage/upload is unavailable.
         fallback = json.dumps(summary,sort_keys=True,indent=2)
-        for label in ('control','mutant','control-replay'):
+        for label,_ in CASE_PLANS:
             for name in ('comparison.json','reference/commit.log','dut/rvfi.json'):
                 p = work/label/name
                 if p.is_file() and p.stat().st_size <= 16384:
@@ -423,7 +472,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if sys.argv[1:] in (['--validate-control'],['--validate-mutant']):
-        raise SystemExit(validation_mode(sys.argv[1] == '--validate-mutant'))
+    if sys.argv[1:] in (['--validate-control'],['--validate-mutant'],['--validate-saved-control']):
+        raise SystemExit(validation_mode(sys.argv[1] == '--validate-mutant',saved=sys.argv[1] == '--validate-saved-control'))
     require(len(sys.argv) == 1,'no arbitrary CI controller inputs')
     raise SystemExit(main())
