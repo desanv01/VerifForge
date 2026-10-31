@@ -122,20 +122,20 @@ describe('native AXI evidence', () => {
     history.replaceState(null, '', '/?campaign=saved-axi')
     const calls = mockApi(url => url.endsWith('/artifacts') ? { items: fault === 'missing' ? [] : fault === 'duplicate' ? [artifact, { ...artifact, artifact_id: 'duplicate' }] : [{ ...artifact, sha256: 'e'.repeat(64) }] } : undefined)
     mount(); await screen.findByText(/No uniquely authorized observed.json/)
-    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.queryByRole('table', { name: /AXI observations/ })).not.toBeInTheDocument()
     expect(calls.mock.calls.some(([url]) => String(url).endsWith('/download'))).toBe(false)
   })
   it('rejects a malformed native sidecar without a passing empty trace', async () => {
     history.replaceState(null, '', '/?campaign=saved-axi'); mockApi(url => url.endsWith('/download') ? { ...native, schema_version: 'fifo.v1' } : undefined); mount()
     await screen.findByText(/AXI trace is missing, malformed/)
-    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.queryByRole('table', { name: /AXI observations/ })).not.toBeInTheDocument()
   })
   it('hides cached rows and disables evidence actions when health capability is revoked', async () => {
     history.replaceState(null, '', '/?campaign=saved-axi'); let supported = true
     mockApi(url => url === '/api/health' ? { ...health, evidence_adapters: supported ? health.evidence_adapters : [FIFO, ARITHMETIC] } : undefined)
     const client = mount(); await screen.findByRole('table', { name: /AXI observations/ }); supported = false
     await client.invalidateQueries({ queryKey: ['health', 'axi-workbench'] })
-    await waitFor(() => expect(screen.queryByRole('table')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('table', { name: /AXI observations/ })).not.toBeInTheDocument())
     expect(screen.getByRole('button', { name: 'Replay exact stimulus' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Prepare evidence bundle' })).toBeDisabled()
   })
@@ -181,7 +181,7 @@ describe('native AXI evidence', () => {
     mockApi(url => url === '/api/health' && broken ? new Response('unavailable', { status: 503 }) : undefined)
     const client = mount(); await screen.findByRole('table', { name: /AXI observations/ }); broken = true
     await client.invalidateQueries({ queryKey: ['health', 'axi-workbench'] })
-    await waitFor(() => expect(screen.queryByRole('table')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('table', { name: /AXI observations/ })).not.toBeInTheDocument())
     expect(screen.getByRole('button', { name: 'Replay exact stimulus' })).toBeDisabled()
   })
   it('validates cycle count, ordering, field types, bounds, and exact saved experiment identity', () => {

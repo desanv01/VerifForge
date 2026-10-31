@@ -1,8 +1,9 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from './App'
+import { THEME_STORAGE_KEY } from './WorkbenchShell'
 import { createPlan, hasCompleteIdentity, isActive, MAX_SEED, request } from './api'
 
 // App composition only. The real component has separate HTTP/projection tests.
@@ -21,8 +22,29 @@ function mockApi(override?: (url: string, init?: RequestInit) => unknown) {
     return new Response(JSON.stringify(value), { status: 200, headers: { 'Content-Type': 'application/json' } })
   })
 }
-afterEach(() => { cleanup(); vi.restoreAllMocks(); history.replaceState(null, '', '/') })
+afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.removeItem(THEME_STORAGE_KEY); history.replaceState(null, '', '/') })
 describe('investigation workflow', () => {
+  it('changes theme without losing draft inputs, contract review or the mounted evidence view', async () => {
+    const calls = mockApi(url => url === '/api/health' ? { investigation_api: '1' } : undefined)
+    const user = userEvent.setup(); mount()
+    const evidence = await screen.findByTestId('engineering-project')
+    await screen.findByText('Reset discards all pending values.')
+    const seed = screen.getByLabelText('Seed')
+    const wall = screen.getByLabelText('Wall-time budget (seconds)')
+    await user.clear(seed); await user.type(seed, '712')
+    await user.clear(wall); await user.type(wall, '240')
+    await user.click(screen.getByRole('checkbox'))
+    const requests = calls.mock.calls.length
+    await user.click(screen.getByRole('button', { name: 'Dark theme' }))
+    expect(screen.getByLabelText('Seed')).toBe(seed)
+    expect(seed).toHaveValue(712)
+    expect(wall).toHaveValue(240)
+    expect(screen.getByRole('checkbox')).toBeChecked()
+    expect(screen.getByRole('button', { name: /Create campaign/ })).toBeEnabled()
+    expect(screen.getByTestId('engineering-project')).toBe(evidence)
+    expect(calls.mock.calls).toHaveLength(requests)
+    expect(calls.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+  })
   it('requires contract review, creates typed draft, then explicitly starts it with idempotency', async () => {
     const calls = mockApi((url) => url.endsWith('/start') ? { ...campaign, execution_status: 'queued', version: 2 } : undefined)
     const user = userEvent.setup(); mount()
@@ -48,6 +70,9 @@ describe('investigation workflow', () => {
     mockApi(url => url === '/api/campaigns/campaign-test' ? {...campaign,execution_status:'completed',verdict:'timeout'} : undefined)
     mount()
     await screen.findByText(/timeout does not establish a design defect/i)
+    const url = location.href
+    await userEvent.click(screen.getByRole('button', { name: 'Dark theme' }))
+    expect(location.href).toBe(url)
     expect(screen.getByText('completed')).toBeInTheDocument()
     expect(screen.getByText('timeout', { exact: true })).toBeInTheDocument()
     expect(screen.getByRole('button', {name:'Start campaign'})).toBeDisabled()
@@ -66,6 +91,8 @@ describe('investigation workflow', () => {
     await user.click(screen.getByRole('checkbox'))
     await user.click(screen.getByRole('button', { name: /Create campaign/ }))
     await screen.findByText(/local API is unreachable/)
+    await user.click(screen.getByRole('button', { name: 'Dark theme' }))
+    expect(screen.getByRole('checkbox')).toBeChecked()
     await user.click(screen.getByRole('button', { name: /Create campaign/ }))
     await screen.findByText('campaign-test')
     const creates = calls.mock.calls.filter(([url, init]) => url === '/api/campaigns' && init?.method === 'POST')
@@ -88,8 +115,10 @@ describe('investigation workflow', () => {
     mockApi(url => url === '/api/campaigns/campaign-test' ? {...campaign, execution_status:'completed', verdict:'design_mismatch', findings:[finding], attempts:[{id:'attempt-1',result}]} : undefined)
     mount()
     await screen.findByText('Independent checker recorded design mismatch.')
-    expect(screen.getByText('EXPECTED')).toBeInTheDocument()
-    expect(screen.getByText('OBSERVED')).toBeInTheDocument()
+    const divergence = within(screen.getByRole('table', { name: 'First checked divergence' }))
+    expect(divergence.getByRole('columnheader', { name: 'Expected' })).toBeInTheDocument()
+    expect(divergence.getByRole('columnheader', { name: 'Observed' })).toBeInTheDocument()
+    expect(divergence.getByRole('rowheader', { name: signature.requirement_id })).toBeInTheDocument()
     expect(screen.getByText('42')).toBeInTheDocument()
     expect(screen.getByText('17')).toBeInTheDocument()
     expect(screen.getByRole('button', {name:'Replay exact stimulus'})).toBeDisabled()
