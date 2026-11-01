@@ -76,13 +76,24 @@ def test_cli_additive_saved_argument_is_forwarded_without_a_new_execution_api():
     assert [(keyword.arg, ast.unparse(keyword.value)) for keyword in runner.keywords] == [("saved_program", "args.saved_program")]
 
 
-def test_native_recorded_import_scope_stays_three_cases_and_old_runner_pin_is_not_silently_accepted():
+def test_native_recorded_import_keeps_versioned_case_sets_and_old_runner_requires_explicit_policy():
     from veriforge.system_investigation import native_tool_import as importer
     assert len(importer._RV_CASES) == 3
-    assert set(importer._CASES) == {"riscv-40920450439", "firmware-40929665294"}
+    assert set(importer._CASES) == {"riscv-40920450439", "firmware-40929665294", "riscv-41202693632"}
+    # The later, independently reviewed four-case importer adds a separate run;
+    # it does not extend the historical three-case inventory or its origin.
+    assert [case[0] for case in importer._RV_CASES] == ["control", "mutant", "control-replay"]
+    assert [case[0] for case in importer._RV_CASES_V2] == [
+        "control", "mutant", "control-replay", "control-saved-replay"]
+    old, current = (importer._CASES[key] for key in ("riscv-40920450439", "riscv-41202693632"))
+    assert (old.run_id, old.source_commit) == (40920450439, "44b8b5e40ce7841f076e4178df13f38ecdbd05fd")
+    assert (current.run_id, current.source_commit) == (41202693632, "c14525e3791569215ba385a1c5582d52d0b8858f")
+    assert old.receipt_hash != current.receipt_hash and old.source_manifest_hash != current.source_manifest_hash
+    assert set(importer._PRODUCER_COMPATIBILITY) == {old.source_manifest_hash}
     # This is a compatibility witness: changing the producer runner invalidates
     # the preparer's exact installed-source check for the old accepted bundle.
-    # It is not proof that a new four-case hosted run is importable.
+    # Even with the new run registered, a bare old producer pin cannot waive
+    # installed-source matching without the exact historical manifest policy.
     with pytest.raises(importer.NativeImportError, match="installed_domain_version_differs"):
         importer._installed({"src/veriforge/riscv/runner.py": "c392ae910b354b55319036266a45621a930a69eb045ae57774a0c798026499cf"})
 
