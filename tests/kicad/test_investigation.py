@@ -1,12 +1,14 @@
 """Focused production integration; synthetic facts/reports, no native execution."""
 from dataclasses import replace
 import json
+import runpy
 from pathlib import Path
 import pytest
 from veriforge.kicad import (bind_report, compare_configured_checks, ViewEvidence,
     index_views, investigate_candidate, investigate_mapping, parse_board, parse_netlist,
     reference_requirements, reference_support)
-from tests.kicad.test_baseline import report, violation
+_helpers = runpy.run_path(str(Path(__file__).with_name('test_baseline.py')))
+report, violation = _helpers['report'], _helpers['violation']
 
 ROOT=Path(__file__).resolve().parents[2]
 
