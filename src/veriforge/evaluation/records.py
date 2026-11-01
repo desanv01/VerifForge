@@ -9,6 +9,7 @@ tail which must be preserved and reviewed, never automatically truncated/retried
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime
 import hashlib
 import json
@@ -339,6 +340,18 @@ def _validate(entries, channel):
         seen[record.record_id] = entry
 
 
+@dataclass(frozen=True, slots=True)
+class EvaluationSnapshot:
+    """Immutable validated value at one locked read, not a write lease.
+
+    Only EvaluationLog.snapshot() promises a freshly validated file snapshot.
+    Writers must still compare the returned current_head when appending.
+    """
+
+    entries: tuple[Entry, ...]
+    current_head: str | None
+
+
 class EvaluationLog:
     """One private JSONL channel with explicit create/read/append boundaries.
 
@@ -426,6 +439,18 @@ class EvaluationLog:
             if (entries[-1].sha256 if entries else None) != expected_head:
                 raise EvaluationLogError("head_changed")
             return entries
+
+    def snapshot(self) -> EvaluationSnapshot:
+        """Validate the complete bounded chain under the writer lock.
+
+        This observes the current head without knowing it in advance. It does
+        not authenticate history or replace an externally retained checkpoint.
+        The lock is released before returning; concurrent appends can make the
+        snapshot stale and remain subject to compare-and-append rejection.
+        """
+        with self._locked():
+            entries, _ = self._read()
+            return EvaluationSnapshot(entries=entries, current_head=entries[-1].sha256 if entries else None)
 
     def append(self, record: Record, *, expected_head: str | None):
         # Revalidate frozen models too: model_construct/model_copy can bypass
