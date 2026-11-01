@@ -1,0 +1,10 @@
+{
+  "schema_version": "firmware.registers.v1",
+  "review_state": "reviewed_fixture",
+  "registers": [
+    {"logical_name":"control","header_macro":"CONTROL_ADDR","rtl_signal":"register_0","address":1073741824},
+    {"logical_name":"status","header_macro":"STATUS_ADDR","rtl_signal":"register_1","address":1073741828},
+    {"logical_name":"data","header_macro":"DATA_ADDR","rtl_signal":"register_2","address":1073741832},
+    {"logical_name":"scratch","header_macro":"SCRATCH_ADDR","rtl_signal":"register_3","address":1073741836}
+  ]
+}
