@@ -27,6 +27,14 @@ def source(label, data, *, reviewed=True, origin="synthetic_fixture", parents=()
         reviewed_by="test-reviewer" if reviewed else None, parents=parents)
 
 
+def test_register_manifest_checker_integrates_existing_native_records():
+    from veriforge.system_investigation.bridge import check_register_manifest
+    report = compare_registers(source("header", HEADER), source("rtl", RTL), registers())
+    checked = check_register_manifest(report)
+    assert checked["comparisons"][0]["verdict"] == "consistent"
+    assert checked["scope"] == "source_comparison_only"
+
+
 def registers(reviewed=True):
     return RegisterIntent(bindings=(AddressBinding(binding_id="control", header_macro="CONTROL_ADDR",
         rtl_signal="control", expected_address=0x40000000),), byte_base=0x40000000,
