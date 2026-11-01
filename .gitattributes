@@ -5,3 +5,7 @@ docs/project/KICAD.md -text
 # Native registration recipes and fixtures pin exact retained source bytes.
 src/veriforge/native_validator_registration/** -text
 tests/native_validator_registration/asset-hashes.json -text
+# Current native admission uses these reviewed exact source-byte identities.
+src/veriforge/contracts/native_tools.py text eol=lf
+src/veriforge/system_investigation/native_tool_records.py text eol=lf
+src/veriforge/system_investigation/native_tool_import.py text eol=lf

@@ -16,7 +16,8 @@ type Obj = Record<string, any> // Test wire builder deliberately permits corrupt
 const nativeIds: Record<string,[string,string]> = {control:['attempt-ba01be2c331649828d66ffcca63365ba','rv32i-control-v1'],mutant:['attempt-3507c622a1f143d894f819a0958c0f6a','rv32i-functional-register-mutant-v1'],'control-replay':['attempt-e845135395204d61b526d707bae1ef2f','rv32i-control-v1']}
 const fwFixtures:Record<string,string>={control:'fw-regmap-control-v1',bad:'fw-regmap-offset-bug-v1',candidate:'fw-regmap-offset-candidate-v1','bad-replay':'fw-regmap-offset-bug-v1','candidate-replay':'fw-regmap-offset-candidate-v1'}
 const inputRoles:Record<string,string>={plan:'configuration',profile:'configuration',source_manifest:'source_snapshot',checker_manifest:'configuration',environment:'configuration',raw_rvfi:'native_trace',raw_spike:'reference_trace',normalized_pair:'native_trace',comparison:'native_check',object:'program',elf:'program',binary:'program',preparation:'configuration',observation:'native_trace',check:'native_check',register_contract:'configuration',selected_header:'source_snapshot',bad_base_header:'source_snapshot',tool_metadata:'configuration'}
-function fixture(family:'riscv'|'firmware'='riscv', project='native-project', diffText='-#define STATUS 8\n+#define STATUS 4\n') {
+function fixture(family:'riscv'|'firmware'='riscv', project='native-project', diffText='-#define STATUS 8\n+#define STATUS 4\n', modern=false) {
+  const ids: Record<string,[string,string]> = modern ? { control:['attempt-dbafbe5ba8334d1f89afce0b131d1226','rv32i-control-v1'], mutant:['attempt-74f3f66cde2645afab8300c5d587b27f','rv32i-functional-register-mutant-v1'], 'control-replay':['attempt-50931cab3f4e4a118a01f43c8a332aec','rv32i-control-v1'], 'control-saved-replay':['attempt-49fa3f22304943aeacb099107dad6bd9','rv32i-control-v1'] } : nativeIds
   const artifacts:Obj[]=[], bindings:Obj[]=[], inventory:Obj[]=[], sources:Ref[]=[], facts:Obj[]=[], attachments:Obj[]=[]
   function add(name:string,role:string,attempt:string|null=null,sha256=h,size=1,canonical=false):Ref {
     const reference={artifact_id:name,revision_id:'revision-1',attempt_id:attempt,sha256}
@@ -24,6 +25,7 @@ function fixture(family:'riscv'|'firmware'='riscv', project='native-project', di
   }
   const revision=add('project-revision','project_revision',null,h,1,true), manifest=add('manifest','manifest',null,h,1,true), reportRef=add('report','native_report',null,h,1,true), receipt=add('receipt','receipt')
   const origin:Obj={kind:'github_actions',repository:'desanv01/VerifForge',source_commit:family==='riscv'?'44b8b5e40ce7841f076e4178df13f38ecdbd05fd':'5565985bbe2bb2a0be869d366baa48c715057657',run_id:family==='riscv'?40920450439:40929665294,run_attempt:1,artifact_id:family==='riscv'?12919420477:12922737365,extracted_receipt_ref:receipt,transport_digest:null}
+  if(modern)Object.assign(origin,{source_commit:'c14525e3791569215ba385a1c5582d52d0b8858f',run_id:41202693632,artifact_id:13042803636})
   function bind(reference:Ref,scope:Obj,role:string,path:string|null,size=1,media='application/json') {
     bindings.push({ref:reference,scope,provenance:path===null?'adapter_generated':'producer',original_relative_path:path,original_artifact_id:null,role,media_type:media,size_bytes:size})
     if(path!==null)inventory.push({original_relative_path:path,sha256:reference.sha256,size_bytes:size})
@@ -32,13 +34,13 @@ function fixture(family:'riscv'|'firmware'='riscv', project='native-project', di
   function input(name:string,loc:Obj,role:string,sha256=h):Ref {
     const hosted=loc.kind==='github_actions', label=hosted?'shared':loc.case_label, id=`${label}-${name}`, old=bindings.find(b=>b.ref.artifact_id===id)
     if(old)return old.ref
-    const reference=add(id,role,loc.kind==='producer_attempt'?loc.native_attempt_id:null,sha256)
+    const reference=add(id,role,loc.kind==='producer_attempt'||loc.kind==='producer_attempt_v2'?loc.native_attempt_id:null,sha256)
     bind(reference,loc,role,hosted?`${name}.json`:`${label}/${name}.json`);return reference
   }
-  const labels=family==='riscv'?['control','mutant','control-replay']:['control','bad','candidate','bad-replay','candidate-replay']
+  const labels=family==='riscv'?['control','mutant','control-replay',...(modern?['control-saved-replay']:[])]:['control','bad','candidate','bad-replay','candidate-replay']
   const cases:Obj[]=labels.map(label=>{
-    const raw=add(`${label}-result`,family==='riscv'?'native_result':'native_execution',family==='riscv'?nativeIds[label][0]:null)
-    const loc:Obj=family==='riscv'?{kind:'producer_attempt',origin,case_label:label,native_attempt_id:nativeIds[label][0],wire_experiment_id:nativeIds[label][1],raw_result_ref:raw}:{kind:'producer_case',origin,case_label:label,fixture_id:fwFixtures[label],execution_ref:raw}
+    const raw=add(`${label}-result`,family==='riscv'?'native_result':'native_execution',family==='riscv'?ids[label][0]:null)
+    const loc:Obj=family==='riscv'?{kind:modern?'producer_attempt_v2':'producer_attempt',origin,case_label:label,native_attempt_id:ids[label][0],wire_experiment_id:ids[label][1],raw_result_ref:raw}:{kind:'producer_case',origin,case_label:label,fixture_id:fwFixtures[label],execution_ref:raw}
     bind(raw,loc,family==='riscv'?'native_result':'native_execution',`${label}/result.json`)
     const bad=label==='mutant'||label==='bad'||label==='bad-replay', replay=label.endsWith('-replay')
     const identity={source_hash:h,checker_hash:h,contract_hash:h,experiment_hash:h,environment_hash:h}, checker={checker_id:'synthetic-checker',version:'1',sha256:h}
@@ -46,6 +48,7 @@ function fixture(family:'riscv'|'firmware'='riscv', project='native-project', di
     if(family==='riscv') {
       const names=['plan','profile','source_manifest','checker_manifest','environment','raw_rvfi','raw_spike','normalized_pair','comparison','object','elf','binary']
       item={schema_version:'riscv.recorded-attempt.v1',locator:loc,inputs:Object.fromEntries(names.map(name=>[name,input(name,loc,inputRoles[name])])),identity,checker,configuration_hash:h,producer_execution_status:'completed',termination:'completion_store_retired',checker_evidence_status:'valid',verdict:bad?'design_mismatch':'pass_within_scope',cycles:20,cycle_limit:100,retirement_limit:32,retired_count:10,reference_count:10,compared_count:bad?3:10,first_divergence:bad?{order:2,cycle:8,requirement:'RISCV_ARCH_RETIREMENT',field:'rd_value',expected:17,observed:18}:null,producer_phases:['assembler','compiler','objcopy','dut','reference']}
+      if(modern){Object.assign(item,{schema_version:'riscv.recorded-attempt.v2',program_mode:label==='control-saved-replay'?'saved_executable_no_program_compilation':'fresh_compilation',replay_of:null,runtime_scope:'fresh_spike_and_recorded_hdl_cpp_rebuild_not_isa_certification',producer_phases:label==='control-saved-replay'?['reference','dut']:['assembler','compiler','objcopy','reference','dut']});item.inputs.saved_program=label==='control-saved-replay'?input('saved_program',loc,'configuration'):null;item.inputs.original_run=label==='control'?input('original_run',loc,'configuration'):null}
     } else {
       const names=['preparation','observation','check','register_contract','selected_header','bad_base_header','source_manifest','tool_metadata']
       const inputs:Obj=Object.fromEntries(names.map(name=>[name,input(name,['source_manifest','tool_metadata'].includes(name)?origin:loc,inputRoles[name],name==='selected_header'?(bad?badHash:goodHash):name==='bad_base_header'?badHash:h)]))
@@ -55,7 +58,7 @@ function fixture(family:'riscv'|'firmware'='riscv', project='native-project', di
     }
     const primary:Ref=family==='riscv'?raw:item.inputs.check, row=artifacts.find(a=>a.reference.artifact_id===primary.artifact_id)!
     row.roles.push('project_source','provenance_source');sources.push(primary)
-    const reference=add(`${label}-case`,'native_case',family==='riscv'?nativeIds[label][0]:null,h,1,true), factId=`fact-${label}`, schema=family==='riscv'?'riscv.recorded-attempt.v1':'firmware.recorded-case.v1'
+    const reference=add(`${label}-case`,'native_case',family==='riscv'?ids[label][0]:null,h,1,true), factId=`fact-${label}`, schema=family==='riscv'?modern?'riscv.recorded-attempt.v2':'riscv.recorded-attempt.v1':'firmware.recorded-case.v1'
     attachments.push({fact_id:factId,domain:family,native_schema_id:schema,reference})
     facts.push({fact_id:factId,domain:family,native_schema_id:schema,native_record_hash:h,native_record:reference,provenance:{state:'complete',sources:[{artifact:primary,location:{kind:'json_pointer',pointer:''}}],extraction:{method:'native_parser',extractor_id:'veriforge.native-tool-admission',extractor_version:'1',implementation_hash:h,tool:null},derived_from:[],uncertainties:[]},category:'observation',review_state:'reviewed',conditions:[]})
     return item
@@ -71,6 +74,7 @@ function fixture(family:'riscv'|'firmware'='riscv', project='native-project', di
       return {kind:'saved_program_replay',original:original.locator,repeated:repeated.locator,record_ref:input(`replay-${name}`,origin,'replay_record'),outcome:'semantic_saved_program_replay'}
     })
   }
+  if(modern){report.schema_version='riscv.recorded-report.v2';cases[3].replay_of=cases[0].locator;report.saved_executable={kind:'saved_executable',original:cases[0].locator,repeated:cases[3].locator,record_ref:report.recompiled_control.record_ref,outcome:'byte_identical_saved_executable_with_fresh_reference_and_hdl_rebuild'}}
   const summary={id:`version-${family}`,investigation_id:`investigation-${family}`,project_id:project,ordinal:1,content_hash:h,revision_id:'revision-1',revision_hash:h,manifest_hash:h,schema_version:'engineering.admission.v2',scope:'recorded_import',execution_status:'not_run',created_at:'2026-10-30T00:00:00Z',domains:[family],native_investigation_id:`native-${family}`,report_kind:report.schema_version}
   const detail:Obj={...summary,envelope:{schema_version:'engineering.admission.v2',operation:'admission_only',new_execution:'not_run',claim_scope:'resolved_bytes_and_registered_native_checks_only',external_context_scope:'host_pinned_external_locator_not_local_execution_origin',validation:{validator_id:'veriforge.native-tool-admission',version:'1',implementation_hash:h,implementation_hash_provenance:'host_pinned_installed_source_hash',scope:'exact_bytes_and_registered_pure_checkers_not_remote_attestation'},record:{schema_version:'engineering.investigation.v2',investigation_id:summary.native_investigation_id,project_id:project,revision_id:'revision-1',project_revision_ref:revision,manifest_ref:manifest,report_kind:report.schema_version,report_ref:reportRef,native_records:attachments},record_hash:h,artifacts,total_artifact_bytes:artifacts.reduce((sum,a)=>sum+a.size_bytes,0)},project_revision:{schema_version:'engineering.project-revision.v1',project_id:project,revision_id:'revision-1',source_refs:sources,configuration_hash:h},manifest:{schema_version:'engineering.manifest.v1',manifest_id:'manifest-1',revision_id:'revision-1',review_state:'reviewed',reviewed_by:'synthetic-reviewer',adapters:[],facts,relations:[]},native_report:report}
   const item={id:summary.investigation_id,project_id:project,created_at:summary.created_at,latest_version:summary}, downloads={items:artifacts.map((a,i)=>({id:`blob-${i}`,...a.reference,size_bytes:a.size_bytes,roles:a.roles,media_type:'application/octet-stream'}))}
@@ -244,6 +248,25 @@ it('does not fetch a diff larger than 64 KiB',async()=>{
   const f=fixture('firmware','native-project','x'.repeat(65537)),calls=mock(f);mount();await screen.findByText('Curated header correction')
   expect(screen.getByRole('button',{name:'Preview recorded header diff'})).toBeDisabled()
   expect(calls.mock.calls.some(([url])=>String(url).endsWith('/download'))).toBe(false)
+})
+
+it('accepts the explicit four-case RISC-V schema and distinguishes saved executable replay',()=>{
+  const f=fixture('riscv','modern-project','',true),detail=parseNativeDetail(f.detail,f.selected)
+  expect(detail.family).toBe('riscv')
+  if(detail.family!=='riscv')throw new Error('Expected RISC-V')
+  expect(detail.cases).toHaveLength(4)
+  expect(detail.saved?.outcome).toBe('byte_identical_saved_executable_with_fresh_reference_and_hdl_rebuild')
+  expect(detail.cases[3].phases).toEqual(['reference','dut'])
+  expect(parseInvestigationCapabilities({...health,investigation_report_kinds:[...health.investigation_report_kinds,'riscv.recorded-report.v2']})).toEqual({mode:'all'})
+})
+
+it.each(['saved-phase','saved-origin','saved-program','summary-schema'])('rejects corrupted four-case replay closure %s',kind=>{
+  const f=fixture('riscv','modern-project','',true),report=f.detail.native_report
+  if(kind==='saved-phase')report.cases[3].producer_phases=['assembler','compiler','objcopy','reference','dut']
+  if(kind==='saved-origin')report.saved_executable.original=report.cases[1].locator
+  if(kind==='saved-program')report.cases[3].inputs.saved_program=null
+  if(kind==='summary-schema')f.detail.report_kind='riscv.recorded-report.v1'
+  expect(()=>parseNativeDetail(f.detail,f.selected)).toThrow()
 })
 it('rejects matching-hash bytes that are not valid UTF-8',async()=>{
   vi.stubGlobal('crypto',webcrypto)

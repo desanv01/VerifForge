@@ -98,9 +98,23 @@ def test_hardlink_files_are_rejected(portable, tmp_path):
     target = tmp_path / "external-hardlink"
     target.write_bytes(b"private external bytes")
     link = portable[0] / "linked"
-    link.hardlink_to(target)
+    try:
+        link.hardlink_to(target)
+    except OSError:
+        pytest.skip("Platform does not permit test-host hardlink creation")
     with pytest.raises(importer.NativeImportError, match="single_regular"):
         prepare(portable)
+
+
+def test_hardlink_guard_rejects_before_open_even_when_host_links_are_unavailable(tmp_path, monkeypatch):
+    import stat
+    path = tmp_path / "synthetic-hardlink"
+    with monkeypatch.context() as scoped:
+        scoped.setattr(importer, "_no_links", lambda value: None)
+        scoped.setattr(Path, "lstat", lambda value: SimpleNamespace(st_mode=stat.S_IFREG, st_nlink=2, st_size=1))
+        scoped.setattr(importer.os, "open", lambda *args, **kwargs: pytest.fail("Hardlinked file opened"))
+        with pytest.raises(importer.NativeImportError, match="single_regular"):
+            importer._read_regular(path)
 
 
 def test_casefold_collision_is_rejected_even_on_case_insensitive_hosts(portable, monkeypatch):

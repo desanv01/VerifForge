@@ -111,7 +111,7 @@ it.each([
   {...health,investigation_admission_schemas:null}, {...health,investigation_report_kinds:undefined},
   {...health,investigation_admission_schemas:['engineering.admission.v1','engineering.admission.v1']},
   {...health,investigation_report_kinds:['firmware.recorded-report.v1']},
-  {...health,investigation_admission_schemas:[...health.investigation_admission_schemas,'engineering.admission.v3']},
+  {...health,investigation_admission_schemas:[...health.investigation_admission_schemas,'engineering.admission.v9']},
   {...health,investigation_api:1}, {...health,status:'ready'},
 ])('fails closed for an incomplete, unknown, or non-string capability set %#',body=>{
   expect(()=>parseInvestigationCapabilities(body)).toThrow()

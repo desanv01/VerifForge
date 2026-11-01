@@ -1,6 +1,6 @@
 """Trusted fixed native bundle preparation; default CLI never opens a database.
 
-Only the two reviewed extracted directory inventories are supported. No archive
+Only three exactly pinned historical extracted inventories are supported in this candidate. No archive
 extraction, copied-code loading, process dispatch or native tool execution.
 """
 from __future__ import annotations
@@ -23,12 +23,12 @@ from veriforge.contracts.engineering import EvidenceReference, SystemManifest
 from veriforge.contracts.native_tools import (
     ArtifactSelection, FirmwareInputs, FirmwareProgram, FirmwareRecordedReport, FirmwareSources,
     HostedOrigin, Identifier, ProducerAttemptLocator, ProducerCaseLocator, RecordedArtifactBinding,
-    RiscvInputs, RiscvRecordedReport,
+    RiscvInputs, RiscvRecordedReport, RiscvInputsV2, RiscvRecordedReportV2, ProducerAttemptLocatorV2,
 )
 from . import native_tool_records as native, records
 
-_VALIDATOR_HASH = "083e9202c0f601ff1b80de7b6010e2aca250c1e5d33bf4de6f92c15a4996dea8"
-_LEAF_HASH = "7060474806480b7a3cd92a63ce0bc4d99b46c4731c258a42190605d8832e9471"
+_VALIDATOR_HASH = "1152215fe8c0b1cf6051821f8294737923ef7cc995bbf2777f7010ba15868760"
+_LEAF_HASH = "d9b9b2b3c94cdce3c58e7536bd01d86448aac6e30348f5f9929ffbb39879fa81"
 _IDENTIFIER = TypeAdapter(Identifier)
 _SEAL = object()
 _RV_CASES = (
@@ -60,7 +60,15 @@ class _Case:
     source_manifest_hash: str
 
 
+_RV_CASES_V2 = (
+    ("control", "attempt-dbafbe5ba8334d1f89afce0b131d1226", "rv32i-control-v1"),
+    ("mutant", "attempt-74f3f66cde2645afab8300c5d587b27f", "rv32i-functional-register-mutant-v1"),
+    ("control-replay", "attempt-50931cab3f4e4a118a01f43c8a332aec", "rv32i-control-v1"),
+    ("control-saved-replay", "attempt-49fa3f22304943aeacb099107dad6bd9", "rv32i-control-v1"),
+)
 _CASES = MappingProxyType({
+    "riscv-41202693632": _Case("riscv-41202693632", "riscv", "c14525e3791569215ba385a1c5582d52d0b8858f", 41202693632, 13042803636,
+        "edac05f66769937bb9a9a5e188d6b3ef5fae70c940b30d70b2261bf42e42f727", "2d8bfe6e1cb101fe9b5cb155783c9754b06b605a349253d54b8f37d784a7ed52"),
     "riscv-40920450439": _Case("riscv-40920450439", "riscv", "44b8b5e40ce7841f076e4178df13f38ecdbd05fd", 40920450439, 12919420477,
         "616d07c02df1d437c09c2d6b578fcc0b6e1fd8ef7eb9b2ea60c33c9107247429", "474e91456137cc12aecae1b28bd64fae43c8a701381041460bb52282685e3f23"),
     "firmware-40929665294": _Case("firmware-40929665294", "firmware", "5565985bbe2bb2a0be869d366baa48c715057657", 40929665294, 12922737365,
@@ -226,7 +234,9 @@ class _Assembler:
         self.project_id, self.revision_id = project_id, revision_id
         self.needed, self.derived, self.original_ids = set(), {}, {}
         self.references = {}
-        case_ids = {row[0]: row[1] for row in _RV_CASES}
+        self.modern = spec.run_id == 41202693632
+        case_rows = _RV_CASES_V2 if self.modern else _RV_CASES
+        case_ids = {row[0]: row[1] for row in case_rows}
         for name, data in raw.items():
             label = name.split("/", 1)[0]
             self.references[name] = EvidenceReference(artifact_id="native-" + spec.domain + "-" + _sha(name.encode())[:24],
@@ -235,8 +245,9 @@ class _Assembler:
         self.origin = HostedOrigin(source_commit=spec.source_commit, run_id=spec.run_id, artifact_id=spec.artifact_id,
             extracted_receipt_ref=self.ref("receipt-sha256.json"))
         if spec.domain == "riscv":
-            self.locators = {label: ProducerAttemptLocator(origin=self.origin, case_label=label, native_attempt_id=attempt,
-                wire_experiment_id=experiment, raw_result_ref=self.ref(label + "/result.json")) for label, attempt, experiment in _RV_CASES}
+            locator_type = ProducerAttemptLocatorV2 if self.modern else ProducerAttemptLocator
+            self.locators = {label: locator_type(origin=self.origin, case_label=label, native_attempt_id=attempt,
+                wire_experiment_id=experiment, raw_result_ref=self.ref(label + "/result.json")) for label, attempt, experiment in case_rows}
             for label in self.locators:
                 result = native._json(self.path(label + "/result.json"))
                 for artifact in result["artifacts"]:
@@ -273,8 +284,14 @@ class _Assembler:
         cases = []
         for label, locator in self.locators.items():
             if self.spec.domain == "riscv":
-                inputs = RiscvInputs(**{field: self.ref(label + "/" + name) for field, name in _RV_INPUTS.items()})
-                cases.append(native._riscv_case(locator, inputs, self.resolve, self.path, source))
+                input_type = RiscvInputsV2 if self.modern else RiscvInputs
+                extra = {}
+                if self.modern:
+                    extra = dict(saved_program=self.ref(label+"/saved-program.json") if label == "control-saved-replay" else None,
+                        original_run=self.ref("control/saved-origin.json") if label == "control" else None)
+                inputs = input_type(**{field: self.ref(label + "/" + name) for field, name in _RV_INPUTS.items()}, **extra)
+                cases.append(native._riscv_case(locator, inputs, self.resolve, self.path, source,
+                    original_locator=self.locators["control"] if label == "control-saved-replay" else None))
             else:
                 inputs = FirmwareInputs(preparation=self.ref(label + "/preparation.json"), observation=self.ref(label + "/observation.json"),
                     check=self.ref(label + ".check.json"), register_contract=self.ref(label + "/register-contract.json"), selected_header=self.ref(label + "/registers.h"),
@@ -315,7 +332,7 @@ class _Assembler:
             attachments.append(native.NativeToolAttachment(fact_id=fact_id, domain=self.spec.domain, native_schema_id=case.schema_version, reference=ref))
             facts.append(dict(fact_id=fact_id, domain=self.spec.domain, native_schema_id=case.schema_version, native_record_hash=ref.sha256,
                 native_record=ref, category="observation", provenance=dict(state="complete", sources=[dict(artifact=primary, location=dict(kind="json_pointer", pointer=""))],
-                    extraction=dict(method="native_parser", extractor_id=native.VALIDATOR_ID, extractor_version=native.VALIDATOR_VERSION, implementation_hash=validator_hash))))
+                    extraction=dict(method="native_parser", extractor_id=native.VALIDATOR_ID, extractor_version="2" if self.modern else native.VALIDATOR_VERSION, implementation_hash=validator_hash))))
         manifest = SystemManifest(manifest_id="native-" + self.spec.domain + "-observations", revision_id=self.revision_id, facts=tuple(facts))
         manifest_ref = self.metadata("manifest", manifest)
         revision = records.EngineeringProjectRevision(project_id=self.project_id, revision_id=self.revision_id,
@@ -334,7 +351,10 @@ class _Assembler:
         selection = ArtifactSelection(origin=self.origin, inventory=tuple(dict(original_relative_path=name, sha256=_sha(data), size_bytes=len(data)) for name, data in self.raw.items()),
             selected=tuple(selected), omitted_paths=tuple(sorted(set(self.raw) - self.needed)))
         if self.spec.domain == "riscv":
-            report = RiscvRecordedReport(manifest_ref=manifest_ref, selection=selection, cases=cases, recompiled_control=dict(
+            report_type = RiscvRecordedReportV2 if self.modern else RiscvRecordedReport
+            extra = dict(saved_executable=dict(original=self.locators["control"], repeated=self.locators["control-saved-replay"],
+                record_ref=self.ref("summary.json"), outcome="byte_identical_saved_executable_with_fresh_reference_and_hdl_rebuild")) if self.modern else {}
+            report = report_type(**extra, manifest_ref=manifest_ref, selection=selection, cases=cases, recompiled_control=dict(
                 original=self.locators["control"], repeated=self.locators["control-replay"], record_ref=self.ref("summary.json"), outcome="byte_identical_recompiled_control"))
         else:
             bad, candidate = {case.locator.case_label: case for case in cases}["bad"], {case.locator.case_label: case for case in cases}["candidate"]

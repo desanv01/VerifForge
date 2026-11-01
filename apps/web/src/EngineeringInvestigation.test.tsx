@@ -50,7 +50,7 @@ describe('engineering investigation read-only workbench (mock HTTP)', () => {
     expect(link).toHaveAttribute('download', `${digest('d')}.bin`)
     expect(screen.getByText('Admission only')).toBeVisible(); expect(screen.getByText('Not run')).toBeVisible()
     expect(screen.getByText('Recorded context only')).toBeVisible()
-    expect(screen.getByText('inconclusive', { exact: true })).toBeVisible(); expect(screen.getAllByText('conflict', { exact: true })[0]).toBeVisible()
+    expect(within(screen.getByRole('article', { name: 'Relationship relation-0' })).getByText('inconclusive', { exact: true })).toBeVisible(); expect(within(screen.getByRole('article', { name: 'Relationship relation-1' })).getByText('conflict', { exact: true })).toBeVisible()
     expect(screen.getByText('103 bytes', { exact: false })).toBeVisible()
     expect(document.body.textContent).not.toMatch(/C:\\private|\/home\/private|secret-native-value|Private bytes/)
     expect(screen.queryByRole('button', { name: /create|start|execute|repair/i })).not.toBeInTheDocument()

@@ -6,6 +6,7 @@ route. Every detail/download re-admits the exact stored envelope and blob graph.
 from datetime import datetime, timezone
 import hashlib
 import json
+from functools import wraps
 from pathlib import Path
 
 from pydantic import TypeAdapter
@@ -18,19 +19,78 @@ from veriforge.contracts.native_tools import RecordedToolReport
 from veriforge.system_investigation import records
 from veriforge.system_investigation import native_tool_records as native
 from . import service
+from . import native_validator_policy as validator_policy
+from . import eda_investigations as eda_store
+from veriforge.contracts.eda_tools import EdaAdmission, EdaInvestigation
 from .database import (Attempt, Investigation, InvestigationArtifact, InvestigationExecutionLink,
     InvestigationVersion, Project)
 from .planner_experiments import resolve_attempt_experiment
 
-ADMISSION_SCHEMAS = ('engineering.admission.v1', 'engineering.admission.v2')
-NATIVE_REPORT_KINDS = ('riscv.recorded-report.v1', 'firmware.recorded-report.v1')
+ADMISSION_SCHEMAS = ('engineering.admission.v1', 'engineering.admission.v2', 'engineering.admission.v3')
+NATIVE_REPORT_KINDS = validator_policy.REPORT_KINDS
 _REPORT = TypeAdapter(RecordedToolReport)
 
 
+def _validation_operation(function):
+    @wraps(function)
+    def guarded(*args, **kwargs):
+        try:
+            with validator_policy.validation_operation():
+                return function(*args, **kwargs)
+        except validator_policy.PolicyUnavailable:
+            raise service.Conflict('Native validation unavailable within supported operation bounds') from None
+    return guarded
+
+
+def _stored_inputs(session, row):
+    envelope = _envelope(row)
+    blobs = list(session.scalars(select(InvestigationArtifact).where(InvestigationArtifact.version_id == row.id).order_by(InvestigationArtifact.id)))
+    if len(blobs) > records.MAX_ARTIFACTS or sum(blob.size_bytes for blob in blobs) > records.MAX_TOTAL_BYTES:
+        raise ValueError('Stored artifact quota differs')
+    artifacts = []
+    for blob in blobs:
+        reference = EvidenceReference(artifact_id=blob.artifact_id, revision_id=blob.native_revision_id,
+            attempt_id=blob.native_attempt_id, sha256=blob.sha256)
+        if len(blob.data) != blob.size_bytes or blob.identity_key != _identity(reference):
+            raise ValueError('Stored artifact metadata differs')
+        artifacts.append(records.ArtifactBytes(reference=reference, data=blob.data))
+    return envelope, blobs, tuple(artifacts)
+
+
+def _prime_native_page(session, rows):
+    """Batch fixed legacy checks; every later _load still rereads ownership/blobs."""
+    count = 0
+    try:
+        for row in rows:
+            owned(session, row.investigation_id)
+            envelope, _, artifacts = _stored_inputs(session, row)
+            if type(envelope) is native.AdmissionEnvelopeV2:
+                _native_project(session, row.project_id)
+                if session.scalar(select(InvestigationExecutionLink.id).where(
+                        InvestigationExecutionLink.version_id == row.id).limit(1)) is not None:
+                    raise ValueError('Native recorded evidence cannot have local execution links')
+                if validator_policy.select_route(envelope) == 'legacy':
+                    if validator_policy.queue_legacy(row.content, artifacts, page=True) is None:
+                        break
+            count += 1
+        validator_policy.flush_legacy()
+    except (ValueError, TypeError, KeyError, StopIteration):
+        raise service.Conflict('Investigation evidence is unavailable or changed') from None
+    return count
+
+
+def _page_limit(limit, selector):
+    if type(limit) is not int or not 1 <= limit <= 50:
+        raise ValueError('Unsupported investigation page limit')
+    return limit if selector == 'v1' else min(limit, validator_policy.MAX_NATIVE_PAGE)
+
+
+
 def _schemas(selector):
-    if type(selector) is not str or selector not in {'v1', 'v2', 'all'}:
+    if type(selector) is not str or selector not in {'v1', 'v2', 'v3', 'all'}:
         raise ValueError('Unsupported admission schema selector')
-    return {'v1': (ADMISSION_SCHEMAS[0],), 'v2': (ADMISSION_SCHEMAS[1],), 'all': ADMISSION_SCHEMAS}[selector]
+    return {'v1': (ADMISSION_SCHEMAS[0],), 'v2': (ADMISSION_SCHEMAS[1],),
+        'v3': (ADMISSION_SCHEMAS[2],), 'all': ADMISSION_SCHEMAS}[selector]
 
 
 def _installed_native_validator_hash():
@@ -55,6 +115,7 @@ def _native_project(session, project_id):
 
 def _external_authority(envelope, artifacts):
     record = envelope.record
+    validator_policy.select_route(envelope)
     installed_hash = _installed_native_validator_hash()
     if envelope.validation.implementation_hash != installed_hash:
         raise ValueError('Stored native validator implementation differs')
@@ -158,8 +219,13 @@ def _version(session, investigation_id, version_id):
 def _envelope(row):
     if _digest(row.content) != row.content_hash or len(row.content) > records.MAX_ENVELOPE_BYTES:
         raise ValueError('Stored envelope hash differs')
-    envelope = records.decode_admission_envelope(row.content)
+    envelope = eda_store.decode(row.content) if row.schema_version == ADMISSION_SCHEMAS[2] else records.decode_admission_envelope(row.content)
     record = envelope.record
+    if type(envelope) is EdaAdmission:
+        if ((row.project_id, row.revision_id, row.revision_hash, row.manifest_hash) != eda_store.associations(envelope)
+                or row.scope != 'recorded_import' or row.execution_status != 'not_run'):
+            raise ValueError('Stored EDA association differs')
+        return envelope
     if (row.schema_version != envelope.schema_version or row.project_id != record.project_id or
         row.revision_id != record.revision_id or row.revision_hash != record.project_revision_ref.sha256 or
         row.manifest_hash != record.manifest_ref.sha256 or row.scope != 'recorded_import' or row.execution_status != 'not_run'):
@@ -176,7 +242,7 @@ def _summary(row):
         ordinal=row.ordinal, content_hash=row.content_hash, revision_id=row.revision_id,
         revision_hash=row.revision_hash, manifest_hash=row.manifest_hash, schema_version=row.schema_version,
         scope=row.scope, execution_status=row.execution_status, created_at=_utc(row.created_at),
-        domains=sorted({item.domain for item in envelope.record.native_records}),
+        domains=([envelope.record.domain] if type(envelope) is EdaAdmission else sorted({item.domain for item in envelope.record.native_records})),
         native_investigation_id=envelope.record.investigation_id)
     if type(envelope) is native.AdmissionEnvelopeV2:
         result['report_kind'] = envelope.record.report_kind
@@ -184,34 +250,31 @@ def _summary(row):
 
 
 def _validated_summary(session, row):
-    if row.schema_version == ADMISSION_SCHEMAS[1]:
+    if row.schema_version in ADMISSION_SCHEMAS[1:]:
         _load(session, row)
     return _summary(row)
 
 
 def _load(session, row):
     try:
-        envelope = _envelope(row)
-        blobs = list(session.scalars(select(InvestigationArtifact).where(InvestigationArtifact.version_id == row.id).order_by(InvestigationArtifact.id)))
-        if len(blobs) > records.MAX_ARTIFACTS or sum(blob.size_bytes for blob in blobs) > records.MAX_TOTAL_BYTES:
-            raise ValueError('Stored artifact quota differs')
-        artifacts = []
-        for blob in blobs:
-            reference = EvidenceReference(artifact_id=blob.artifact_id, revision_id=blob.native_revision_id,
-                attempt_id=blob.native_attempt_id, sha256=blob.sha256)
-            if len(blob.data) != blob.size_bytes or blob.identity_key != _identity(reference):
-                raise ValueError('Stored artifact metadata differs')
-            artifacts.append(records.ArtifactBytes(reference=reference, data=blob.data))
+        owned(session, row.investigation_id)
+        envelope, blobs, artifacts = _stored_inputs(session, row)
+        if type(envelope) is EdaAdmission:
+            return eda_store.load(session, row, envelope, blobs, artifacts)
         record = envelope.record
         is_native = type(envelope) is native.AdmissionEnvelopeV2
         if is_native:
             _native_project(session, row.project_id)
-            authority = _external_authority(envelope, artifacts)
+            route = validator_policy.select_route(envelope)
+            authority = None if route == 'legacy' else _external_authority(envelope, artifacts)
         else:
             authority = records.create_admission_authority(project_id=record.project_id, revision_id=record.revision_id,
                 project_revision_ref=record.project_revision_ref, manifest_ref=record.manifest_ref,
                 bridge_report_ref=record.bridge_report_ref, attempts=record.attempts)
-        admitted = records.read_investigation(row.content, tuple(artifacts), authority=authority)
+        if is_native and route == 'legacy':
+            admitted = validator_policy.read_legacy(row.content, tuple(artifacts))
+        else:
+            admitted = records.read_investigation(row.content, tuple(artifacts), authority=authority)
         verified = {_key(item.reference): item for item in admitted.envelope.artifacts}
         for blob in blobs:
             item = verified[(blob.artifact_id, blob.native_revision_id, blob.native_attempt_id)]
@@ -239,6 +302,7 @@ def _load(session, row):
         raise service.Conflict('Investigation evidence is unavailable or changed') from None
 
 
+@_validation_operation
 def persist_investigation(session, record, artifacts, *, authority, idempotency_key, at, investigation_id=None, artifact_root=None):
     """Re-admit raw inputs under host authority in one caller-owned transaction.
 
@@ -248,27 +312,36 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
     at = _at(at)
     if type(idempotency_key) is not str or not 1 <= len(idempotency_key) <= 128:
         raise ValueError('Bounded idempotency key required')
-    admitted = records.admit_investigation(record, artifacts, authority=authority)
+    is_eda = type(record) is EdaInvestigation
+    if is_eda:
+        admitted, content = eda_store.admit(record, artifacts, authority)
+    else:
+        admitted = records.admit_investigation(record, artifacts, authority=authority)
     is_native = type(admitted) is native.AdmittedNativeInvestigation
     if is_native:
         try:
+            if validator_policy.select_route(admitted.envelope) != 'current':
+                raise ValueError('Legacy validator route is read-only')
             if admitted.envelope.validation.implementation_hash != _installed_native_validator_hash():
                 raise ValueError('Installed native validator implementation differs')
         except ValueError:
             raise service.Conflict('Installed native validator implementation is unavailable or differs') from None
     record = admitted.envelope.record
-    content = records.serialize_investigation(admitted)
+    if not is_eda:
+        content = records.serialize_investigation(admitted)
     digest = _digest(content)
-    project_id = admitted.envelope.record.project_id
+    project_id = record.candidate.project.project_id if is_eda else record.project_id
     _project(session, project_id)
-    if is_native:
+    if is_native or is_eda:
         _native_project(session, project_id)
+    if is_eda and record.domain not in _native_project(session, project_id).data['domains']:
+        raise service.Conflict('EDA domain differs from owned project')
     # Serializes append/idempotency writers without mutating immutable history.
     session.execute(update(Project).where(Project.id == project_id, Project.owner == 'local').values(id=Project.id))
     session.expire_all()
-    if is_native:
+    if is_native or is_eda:
         _native_project(session, project_id)
-    attempt_pairs = () if is_native else tuple(zip(record.attempts, admitted.attempt_results))
+    attempt_pairs = () if is_native or is_eda else tuple(zip(record.attempts, admitted.attempt_results))
     contexts = []
     try:
         for binding, result in attempt_pairs:
@@ -292,11 +365,12 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
         first = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id, InvestigationVersion.ordinal == 1))
         original = _envelope(first)
         if (original.schema_version != admitted.envelope.schema_version or
-            type(original) is native.AdmissionEnvelopeV2 and original.record.report_kind != record.report_kind):
+            type(original) is native.AdmissionEnvelopeV2 and original.record.report_kind != record.report_kind or
+            is_eda and original.record.domain != record.domain):
             raise service.Conflict('Investigation report family changed')
         if original.record.investigation_id != admitted.envelope.record.investigation_id:
             raise service.Conflict('Native investigation identity changed')
-        if is_native:
+        if is_native or is_eda:
             _load(session, first)
         prior = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id, InvestigationVersion.admission_key == idempotency_key))
         if prior is not None:
@@ -309,10 +383,12 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
         session.add(parent)
         session.flush()
     ordinal = (session.scalar(select(func.max(InvestigationVersion.ordinal)).where(InvestigationVersion.investigation_id == parent.id)) or 0) + 1
+    revision_id, revision_hash, manifest_hash = (eda_store.associations(admitted.envelope)[1:] if is_eda else
+        (record.revision_id, record.project_revision_ref.sha256, record.manifest_ref.sha256))
     row = InvestigationVersion(investigation_id=parent.id, project_id=project_id, ordinal=ordinal,
         admission_key=idempotency_key, schema_version=admitted.envelope.schema_version,
-        revision_id=record.revision_id, revision_hash=record.project_revision_ref.sha256,
-        manifest_hash=record.manifest_ref.sha256, content_hash=digest, content=content, created_at=at)
+        revision_id=revision_id, revision_hash=revision_hash,
+        manifest_hash=manifest_hash, content_hash=digest, content=content, created_at=at)
     session.add(row)
     session.flush()
     for (binding, experiment_id, result_hash), (_, result) in zip(contexts, attempt_pairs):
@@ -327,21 +403,28 @@ def persist_investigation(session, record, artifacts, *, authority, idempotency_
         session.add(InvestigationArtifact(version_id=row.id, artifact_id=reference.artifact_id,
             native_revision_id=reference.revision_id, native_attempt_id=reference.attempt_id,
             identity_key=_identity(reference), sha256=reference.sha256, size_bytes=len(artifact.data),
-            media_type='application/octet-stream', role=','.join(metadata[_key(reference)].roles), data=artifact.data))
+            media_type='application/octet-stream', role='eda_evidence' if is_eda else ','.join(metadata[_key(reference)].roles), data=artifact.data))
     session.flush()
     return _summary(row)
 
 
+@_validation_operation
 def list_investigations(session, project_id, *, after='', limit=20, admission_schema='v1'):
     _project(session, project_id)
+    limit = _page_limit(limit, admission_schema)
     eligible = select(InvestigationVersion.id).where(InvestigationVersion.investigation_id == Investigation.id,
         InvestigationVersion.schema_version.in_(_schemas(admission_schema))).exists()
     rows = session.scalars(select(Investigation).where(Investigation.owner == 'local', Investigation.project_id == project_id,
         Investigation.id > after, eligible).order_by(Investigation.id).limit(limit + 1)).all()
-    items = [investigation_view(session, row.id, admission_schema=admission_schema) for row in rows[:limit]]
-    return dict(items=items, next_cursor=rows[limit - 1].id if len(rows) > limit else None)
+    chosen = rows[:limit]
+    if admission_schema != 'v1':
+        latest = [session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == row.id,
+            InvestigationVersion.schema_version.in_(_schemas(admission_schema))).order_by(InvestigationVersion.ordinal.desc()).limit(1)) for row in chosen]
+        chosen = chosen[:_prime_native_page(session, latest)]
+    items = [investigation_view(session, row.id, admission_schema=admission_schema) for row in chosen]
+    return dict(items=items, next_cursor=chosen[-1].id if chosen and len(rows) > len(chosen) else None)
 
-
+@_validation_operation
 def investigation_view(session, investigation_id, *, admission_schema='v1'):
     parent = owned(session, investigation_id)
     latest = session.scalar(select(InvestigationVersion).where(InvestigationVersion.investigation_id == parent.id,
@@ -353,18 +436,28 @@ def investigation_view(session, investigation_id, *, admission_schema='v1'):
     return dict(id=parent.id, project_id=parent.project_id, created_at=_utc(parent.created_at), latest_version=_validated_summary(session, latest))
 
 
+@_validation_operation
 def list_versions(session, investigation_id, *, after=0, limit=20, admission_schema='v1'):
     owned(session, investigation_id)
+    limit = _page_limit(limit, admission_schema)
     rows = session.scalars(select(InvestigationVersion).where(InvestigationVersion.investigation_id == investigation_id,
         InvestigationVersion.schema_version.in_(_schemas(admission_schema)),
         InvestigationVersion.ordinal > after).order_by(InvestigationVersion.ordinal).limit(limit + 1)).all()
-    return dict(items=[_validated_summary(session, row) for row in rows[:limit]], next_cursor=rows[limit - 1].ordinal if len(rows) > limit else None)
+    chosen = rows[:limit]
+    if admission_schema != 'v1':
+        chosen = chosen[:_prime_native_page(session, chosen)]
+    return dict(items=[_validated_summary(session, row) for row in chosen],
+        next_cursor=chosen[-1].ordinal if chosen and len(rows) > len(chosen) else None)
 
-
+@_validation_operation
 def version_view(session, investigation_id, version_id):
     row = _version(session, investigation_id, version_id)
     admitted, _ = _load(session, row)
-    if type(admitted) is native.AdmittedNativeInvestigation:
+    if type(admitted) is eda_store.AdmittedEda:
+        return {**_summary(row), 'envelope': admitted.envelope.model_dump(mode='json'),
+            'project_revision': admitted.envelope.record.candidate.project.model_dump(mode='json'),
+            'execution_contexts': []}
+    if validator_policy.is_native_view(admitted):
         return {**_summary(row), 'envelope': admitted.envelope.model_dump(mode='json'),
             'project_revision': admitted.project_revision.model_dump(mode='json'),
             'manifest': admitted.manifest.model_dump(mode='json'),
@@ -376,6 +469,15 @@ def version_view(session, investigation_id, version_id):
         'manifest': admitted.manifest.model_dump(mode='json'), 'bridge_report': admitted.bridge_report.model_dump(mode='json')}
 
 
+@_validation_operation
+def projection_inputs(session, investigation_id, version_id):
+    """One authoritative internal read for bounded pure domain projections."""
+    row = _version(session, investigation_id, version_id)
+    admitted, blobs = _load(session, row)
+    return _summary(row), admitted, tuple(blobs)
+
+
+@_validation_operation
 def artifact_list(session, investigation_id, version_id):
     _, blobs = _load(session, _version(session, investigation_id, version_id))
     return dict(items=[dict(id=blob.id, artifact_id=blob.artifact_id, revision_id=blob.native_revision_id,
@@ -383,9 +485,44 @@ def artifact_list(session, investigation_id, version_id):
         media_type=blob.media_type, roles=blob.role.split(',')) for blob in blobs])
 
 
+@_validation_operation
 def artifact_download(session, investigation_id, version_id, artifact_id):
     _, blobs = _load(session, _version(session, investigation_id, version_id))
     blob = next((item for item in blobs if item.id == artifact_id), None)
     if blob is None:
         raise service.NotFound(artifact_id)
     return blob.data, blob.sha256
+
+
+@_validation_operation
+def retry_legacy_admission(session, *, envelope_bytes, artifacts, idempotency_key, investigation_id=None):
+    """Read-only exact retry of an existing legacy key; never creates a version.
+
+    An older validator is retained for byte checks, not new admission authority.
+    A missing key or changed request remains a conflict, with no row rewrite.
+    """
+    if type(idempotency_key) is not str or not 1 <= len(idempotency_key) <= 128:
+        raise ValueError('Bounded idempotency key required')
+    try:
+        checked = validator_policy.read_legacy(envelope_bytes, artifacts)
+    except (ValueError, TypeError):
+        raise service.Conflict('Legacy retry evidence unavailable or differs') from None
+    record = checked.envelope.record
+    _native_project(session, record.project_id)
+    if investigation_id is None:
+        parent = session.scalar(select(Investigation).where(Investigation.owner == 'local', Investigation.create_key == idempotency_key))
+        row = None if parent is None else session.scalar(select(InvestigationVersion).where(
+            InvestigationVersion.investigation_id == parent.id, InvestigationVersion.ordinal == 1))
+        if parent is not None and parent.request_hash != _digest(envelope_bytes):
+            raise service.Conflict('Idempotency key already identifies different investigation content')
+    else:
+        parent = owned(session, investigation_id)
+        row = session.scalar(select(InvestigationVersion).where(
+            InvestigationVersion.investigation_id == parent.id, InvestigationVersion.admission_key == idempotency_key))
+    if parent is None or row is None or parent.project_id != record.project_id or row.content != envelope_bytes:
+        raise service.Conflict('Legacy retry key or exact content differs')
+    _, stored = _load(session, row)
+    supplied = {_key(x.reference): x.data for x in artifacts}
+    if any(supplied.get((x.artifact_id, x.native_revision_id, x.native_attempt_id)) != x.data for x in stored):
+        raise service.Conflict('Legacy retry blob bytes differ')
+    return _summary(row)

@@ -1,4 +1,9 @@
-"""Independent historical import review; inert bytes only, no database/native run."""
+"""Historical import regression against the accepted versioned importer.
+
+Original review pins remain provenance, not assertions that today's files are
+the old snapshot. Later four-case source acceptance is distinct from runtime or
+application acceptance. Inert bytes only; no database/native run.
+"""
 import hashlib
 import json
 import os
@@ -9,20 +14,31 @@ import subprocess
 
 import pytest
 
-from veriforge.contracts.native_tools import HostedOrigin, RiscvRecordedReport
+from veriforge.contracts.native_tools import HostedOrigin, RiscvRecordedReport, RiscvRecordedReportV2
 from veriforge.system_investigation import native_tool_import as importer, records
 
 ROOT = Path(__file__).resolve().parents[2]
 RV_MANIFEST = "474e91456137cc12aecae1b28bd64fae43c8a701381041460bb52282685e3f23"
 FW_MANIFEST = "fc727ccb8d52b1fb1b76e1dddf95b647954a7f0779b95f31254addc36b131bb3"
 PRODUCERS = ("src/veriforge/riscv/runner.py", "src/veriforge/riscv/__main__.py")
-FREEZE = {
+# U4-IMPORT-COMPATIBILITY-REVIEW: historical six-file boundary, retained verbatim.
+HISTORICAL_FREEZE = {
     "src/veriforge/system_investigation/native_tool_import.py": "6059a25c014ad164c7c128f877862f039fec7864b504ed06ae1dca7bc30a4166",
     "tests/system_investigation/test_native_import_compatibility.py": "b35b98dfbd0f67d7f47e35573e9fba2a7e664bc5496728924d931a8506c0b0ae",
     PRODUCERS[0]: "80524f263ebf569f0d5f2fc989f82dbc3993e8e7b2e24490c96563435e0045e5",
     PRODUCERS[1]: "439e8c8bfdb54fca6ba271d6c57e685b94b3bf530277b0f69c372af6747c851d",
     "src/veriforge/system_investigation/native_tool_records.py": "083e9202c0f601ff1b80de7b6010e2aca250c1e5d33bf4de6f92c15a4996dea8",
     "src/veriforge/contracts/native_tools.py": "7060474806480b7a3cd92a63ce0bc4d99b46c4731c258a42190605d8832e9471",
+}
+# U4-FOURCASE-RECORDED-CANDIDATE-REVIEW accepted these exact three source
+# replacements; IF-U1-COMPATIBLE-IMPORT records their subsequent integration.
+# The old owner test was replaced by production-composition tests and is not
+# relabeled as independently reviewed. Producer pins did not change.
+CURRENT_SOURCE_FREEZE = {
+    "src/veriforge/system_investigation/native_tool_import.py": "f8b995966b858e9d2592470b36495e0db59437139707f5428a59afca03451a45",
+    "src/veriforge/system_investigation/native_tool_records.py": "1152215fe8c0b1cf6051821f8294737923ef7cc995bbf2777f7010ba15868760",
+    "src/veriforge/contracts/native_tools.py": "d9b9b2b3c94cdce3c58e7536bd01d86448aac6e30348f5f9929ffbb39879fa81",
+    **{relative: HISTORICAL_FREEZE[relative] for relative in PRODUCERS},
 }
 
 
@@ -52,9 +68,19 @@ def retained():
 
 
 def test_exact_review_boundary_and_raw_lf_pins():
-    for relative, expected in FREEZE.items():
+    for relative, expected in CURRENT_SOURCE_FREEZE.items():
         raw = (ROOT / relative).read_bytes()
         assert sha(raw) == sha(raw.replace(b"\r\n", b"\n")) == expected
+    assert importer._VALIDATOR_HASH == CURRENT_SOURCE_FREEZE["src/veriforge/system_investigation/native_tool_records.py"]
+    assert importer._LEAF_HASH == CURRENT_SOURCE_FREEZE["src/veriforge/contracts/native_tools.py"]
+    for relative in CURRENT_SOURCE_FREEZE.keys() - set(PRODUCERS):
+        assert CURRENT_SOURCE_FREEZE[relative] != HISTORICAL_FREEZE[relative]
+    for report, version, size in ((RiscvRecordedReport, "riscv.recorded-report.v1", 3),
+                                 (RiscvRecordedReportV2, "riscv.recorded-report.v2", 4)):
+        assert report.model_fields["schema_version"].default == version
+        bounds = report.model_fields["cases"].metadata
+        assert any(getattr(item, "min_length", None) == size for item in bounds)
+        assert any(getattr(item, "max_length", None) == size for item in bounds)
 
 
 @pytest.mark.parametrize("domain,count", [("riscv", 102), ("firmware", 199)])
@@ -153,11 +179,16 @@ def test_reviewed_inventory_does_not_accept_rehashed_or_extra_historical_inputs(
         importer._inventory(importer._CASES["riscv-40920450439"], raw)
 
 
-def test_new_run_and_four_case_report_remain_explicitly_unsupported(retained):
-    assert set(importer._CASES) == {"riscv-40920450439", "firmware-40929665294"}
+def test_versioned_runs_keep_three_case_contract_and_unknown_origin_rejection(retained):
+    assert set(importer._CASES) == {"riscv-40920450439", "firmware-40929665294", "riscv-41202693632"}
     assert [item[0] for item in importer._RV_CASES] == ["control", "mutant", "control-replay"]
     metadata = RiscvRecordedReport.model_fields["cases"].metadata
     assert any(getattr(item, "max_length", None) == 3 for item in metadata)
+    new_metadata = RiscvRecordedReportV2.model_fields["cases"].metadata
+    assert any(getattr(item, "min_length", None) == 4 for item in new_metadata)
+    assert any(getattr(item, "max_length", None) == 4 for item in new_metadata)
+    assert [item[0] for item in importer._RV_CASES_V2] == [
+        "control", "mutant", "control-replay", "control-saved-replay"]
     receipt = importer._CASES["riscv-40920450439"]
     ref = next(iter(importer._Assembler(receipt, retained["riscv"][1], "project", "revision").references.values()))
     ref = ref.model_copy(update={"attempt_id": None})

@@ -49,6 +49,33 @@ def counts(session):
             (Campaign, Attempt, ExperimentRecord, Dispatch, Finding, InvestigationExecutionLink)]
 
 
+def test_projection_inputs_performs_one_authoritative_read_and_rejects_owner_or_corruption(db, monkeypatch):
+    row = persist(db)
+    original = store._load
+    calls = []
+    def measured(session, version):
+        calls.append(version.id)
+        return original(session, version)
+    monkeypatch.setattr(store, '_load', measured)
+    with db[1]() as session:
+        summary, admitted, blobs = store.projection_inputs(session, row['investigation_id'], row['id'])
+        assert calls == [row['id']]
+        assert summary['id'] == row['id'] and admitted.envelope.record.report_kind == 'riscv.recorded-report.v1'
+        assert len(blobs) == len(admitted.artifacts)
+    with db[1].begin() as session:
+        blob = session.scalar(sa.select(InvestigationArtifact).where(InvestigationArtifact.version_id == row['id']))
+        session.execute(sa.update(InvestigationArtifact).where(InvestigationArtifact.id == blob.id).values(
+            data=bytes([blob.data[0] ^ 1]) + blob.data[1:]))
+    with db[1]() as session, pytest.raises(service.Conflict):
+        store.projection_inputs(session, row['investigation_id'], row['id'])
+    with db[1].begin() as session:
+        session.execute(sa.update(Investigation).where(Investigation.id == row['investigation_id']).values(owner='foreign'))
+    calls.clear()
+    with db[1]() as session, pytest.raises(service.NotFound):
+        store.projection_inputs(session, row['investigation_id'], row['id'])
+    assert calls == []
+
+
 @pytest.mark.parametrize('kind', ['riscv', 'firmware'])
 def test_both_families_persist_restart_exact_bytes_and_no_execution(db, tmp_path, monkeypatch, kind):
     bundle = native_bundle(kind, tmp_path)

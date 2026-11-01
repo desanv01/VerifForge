@@ -28,6 +28,45 @@ PATHS = {key: Path("synthetic-storage") / key for key in (
     "bundle_root", "xdc", "netlist", "board", "generator", "logical_mapping", "native_receipt")}
 
 
+def test_native_composition_uses_product_preparer_and_caller_owned_apply(monkeypatch):
+    from veriforge.system_investigation import native_tool_import
+    calls = []
+    session = object()
+    prepared = object()
+    monkeypatch.setattr(importer, "require_supported_schema", lambda value: calls.append(("schema", value)))
+    monkeypatch.setattr(native_tool_import, "prepare_native_bundle", lambda **options: calls.append(("prepare", options)) or prepared)
+    def apply(value, bundle, **options):
+        assert value is session and bundle is prepared
+        calls.append(("apply", options))
+        return {"database": "pending_caller_commit", "new_execution": "not_run"}
+    monkeypatch.setattr(native_tool_import, "apply_prepared", apply)
+    result = importer.import_native_bundle(session, family="riscv-41202693632", bundle_root=Path("curated"),
+        project_id="owned-project", revision_id="four-case", idempotency_key="same-key", at=AT)
+    assert [item[0] for item in calls] == ["schema", "prepare", "apply"]
+    assert calls[1][1]["family"] == "riscv-41202693632"
+    assert result["database"] == "pending_caller_commit" and result["new_execution"] == "not_run"
+
+
+def test_legacy_retry_composition_is_read_only_and_keeps_exact_bytes(monkeypatch):
+    from types import SimpleNamespace
+    session = SimpleNamespace(new=(), dirty=(), deleted=())
+    monkeypatch.setattr(importer, "require_supported_schema", lambda value: None)
+    payload = b"exact-old-envelope"
+    artifacts = (object(),)
+    def retry(value, **options):
+        assert value is session and options["envelope_bytes"] is payload and options["artifacts"] is artifacts
+        return {"investigation_id": "old-parent", "id": "old-version", "content_hash": "a" * 64}
+    monkeypatch.setattr(importer.investigations, "retry_legacy_admission", retry)
+    monkeypatch.setattr(importer.investigations, "persist_investigation", lambda *a, **k: pytest.fail("No legacy write"))
+    result = importer.retry_legacy_native_admission(session, envelope_bytes=payload, artifacts=artifacts, idempotency_key="old-key")
+    assert result["database"] == "unchanged" and result["db_version_id"] == "old-version"
+    def unavailable(*args, **kwargs): raise importer.service.Conflict("PRIVATE_DRIVER_TEXT")
+    monkeypatch.setattr(importer.investigations, "retry_legacy_admission", unavailable)
+    with pytest.raises(importer.RecordedImportError) as error:
+        importer.retry_legacy_native_admission(session, envelope_bytes=payload, artifacts=artifacts, idempotency_key="old-key")
+    assert "PRIVATE_DRIVER_TEXT" not in str(error.value)
+
+
 def encode(model):
     return json.dumps(model.model_dump(mode="json"), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 

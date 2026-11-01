@@ -25,17 +25,18 @@ function reference(v: unknown): Reference { const o = obj(v); return { artifactI
 export const referenceKey = (r: Reference) => JSON.stringify([r.artifactId, r.revisionId, r.attemptId])
 function equalRef(a: Reference, b: Reference) { return referenceKey(a) === referenceKey(b) && a.sha256 === b.sha256 }
 export type DiscoveryMode = 'v1' | 'all'
-export type NativeReportKind = 'riscv.recorded-report.v1' | 'firmware.recorded-report.v1'
-export interface VersionSummary { id: string; investigationId: string; projectId: string; ordinal: number; contentHash: string; revisionId: string; revisionHash: string; manifestHash: string; createdAt: string; domains: string[]; nativeId: string; schemaVersion?: 'engineering.admission.v1' | 'engineering.admission.v2'; reportKind?: NativeReportKind }
+export type NativeReportKind = 'riscv.recorded-report.v1' | 'firmware.recorded-report.v1' | 'riscv.recorded-report.v2'
+export interface VersionSummary { id: string; investigationId: string; projectId: string; ordinal: number; contentHash: string; revisionId: string; revisionHash: string; manifestHash: string; createdAt: string; domains: string[]; nativeId: string; schemaVersion?: 'engineering.admission.v1' | 'engineering.admission.v2' | 'engineering.admission.v3'; reportKind?: NativeReportKind }
 export interface Investigation { id: string; projectId: string; createdAt: string; latest: VersionSummary }
 export interface Page<T, C> { items: T[]; next: C | null }
 function summary(v: unknown, projectId: string, investigationId?: string, mode: DiscoveryMode = 'v1'): VersionSummary {
   const o = obj(v); literal(o.project_id, projectId); if (investigationId) literal(o.investigation_id, investigationId)
   literal(o.scope, 'recorded_import'); literal(o.execution_status, 'not_run')
-  const schemaVersion = one(o.schema_version, mode === 'all' ? ['engineering.admission.v1', 'engineering.admission.v2'] as const : ['engineering.admission.v1'] as const)
+  const schemaVersion = one(o.schema_version, mode === 'all' ? ['engineering.admission.v1', 'engineering.admission.v2', 'engineering.admission.v3'] as const : ['engineering.admission.v1'] as const)
   const reportKind = schemaVersion === 'engineering.admission.v2' ? one(o.report_kind, nativeKinds) : undefined
   const parsedDomains = unique(list(o.domains, 6, v => one(v, domains)), v => v)
-  if (reportKind && (parsedDomains.length !== 1 || parsedDomains[0] !== (reportKind === nativeKinds[0] ? 'riscv' : 'firmware'))) invalid()
+  if (schemaVersion === 'engineering.admission.v3' && (Object.hasOwn(o,'report_kind') || parsedDomains.length !== 1 || !['vivado','kicad'].includes(parsedDomains[0]))) invalid()
+  if (reportKind && (parsedDomains.length !== 1 || parsedDomains[0] !== (reportKind === 'firmware.recorded-report.v1' ? 'firmware' : 'riscv'))) invalid()
   return { id: identifier(o.id), investigationId: identifier(o.investigation_id), projectId, ordinal: num(o.ordinal, Number.MAX_SAFE_INTEGER, 1), contentHash: hash(o.content_hash), revisionId: identifier(o.revision_id), revisionHash: hash(o.revision_hash), manifestHash: hash(o.manifest_hash), createdAt: date(o.created_at), domains: parsedDomains, nativeId: identifier(o.native_investigation_id), schemaVersion, ...(reportKind ? { reportKind } : {}) }
 }
 export function parseInvestigations(v: unknown, projectId: string, mode: DiscoveryMode = 'v1'): Page<Investigation, string> {
@@ -117,10 +118,10 @@ export function parseDetail(v: unknown, selected: VersionSummary): Investigation
   // Raw bridge/native payloads and free-form reasons never enter UI state.
   return { ...s, configurationHash, sources, artifacts, totalBytes, facts, relations, unresolvedComparisons, contexts, bridgeFamily, bridgeCheckerHash, manifestReview: one(m.review_state, ['draft', 'reviewed']) }
 }
-export function parseArtifacts(v: unknown, detail: InvestigationDetail | NativeInvestigationDetail): Artifact[] {
+export function parseArtifacts(v: unknown, detail: InvestigationDetail | NativeInvestigationDetail | EdaInvestigationDetail): Artifact[] {
   const items = unique(list(obj(v).items, 256, v => {
     const o = obj(v); literal(o.media_type, 'application/octet-stream')
-    return { ...reference(o), id: identifier(o.id), size: num(o.size_bytes, 1048576), roles: unique(list(o.roles, detail.reportKind ? 12 : 10, v => one(v, detail.reportKind ? nativeRoles : roles)), v => v) }
+    return { ...reference(o), id: identifier(o.id), size: num(o.size_bytes, 1048576), roles: unique(list(o.roles, detail.reportKind ? 12 : 10, v => one(v, detail.schemaVersion === 'engineering.admission.v3' ? ['eda_evidence'] : detail.reportKind ? nativeRoles : roles)), v => v) }
   }), a => a.id)
   unique(items, referenceKey)
   if (items.length !== detail.artifacts.length || items.some(a => !detail.artifacts.some(b => equalRef(a, b) && a.size === b.size && [...a.roles].sort().join() === [...b.roles].sort().join()))) invalid()
@@ -204,7 +205,7 @@ function parseInvestigationJson(source: string): unknown {
   return parseInspectionJson(source)
 }
 
-const nativeKinds = ['riscv.recorded-report.v1', 'firmware.recorded-report.v1'] as const
+const nativeKinds = ['riscv.recorded-report.v1', 'firmware.recorded-report.v1', 'riscv.recorded-report.v2'] as const
 const nativeRoles = ['project_revision','project_source','native_report','native_case','provenance_source','receipt','manifest','native_result','native_execution','native_check','native_trace','reference_trace','program','source_snapshot','configuration','replay_record','candidate_diff'] as const
 const selectedRoles = nativeRoles.filter(role => !['project_revision','project_source','native_report','native_case','provenance_source'].includes(role))
 function exact(v: unknown, keys: readonly string[]) { const o = obj(v); if (Object.keys(o).length !== keys.length || keys.some(k => !Object.hasOwn(o,k))) invalid(); return o }
@@ -229,12 +230,13 @@ function safePath(v: unknown): string {
 export function parseInvestigationCapabilities(raw: unknown): { mode: DiscoveryMode } {
   const o = obj(raw); literal(o.status,'ok'); literal(o.investigation_api,'1')
   if (o.investigation_admission_schemas === undefined && o.investigation_report_kinds === undefined) return { mode: 'v1' }
-  const schemas = unique(list(o.investigation_admission_schemas,2,v => one(v,['engineering.admission.v1','engineering.admission.v2'])),v => v)
-  const kinds = unique(list(o.investigation_report_kinds,2,v => one(v,nativeKinds)),v => v)
-  if (schemas.length !== 2 || kinds.length !== 2) invalid()
+  const schemas = unique(list(o.investigation_admission_schemas,3,v => one(v,['engineering.admission.v1','engineering.admission.v2','engineering.admission.v3'])),v => v)
+  const kinds = unique(list(o.investigation_report_kinds,3,v => one(v,nativeKinds)),v => v)
+  if (!schemas.includes('engineering.admission.v1') || !schemas.includes('engineering.admission.v2') || !kinds.includes(nativeKinds[0]) || !kinds.includes(nativeKinds[1])) invalid()
   return { mode: 'all' }
 }
 const origins = {
+  '41202693632': { commit: 'c14525e3791569215ba385a1c5582d52d0b8858f', artifact: '13042803636' },
   '40920450439': { commit: '44b8b5e40ce7841f076e4178df13f38ecdbd05fd', artifact: '12919420477' },
   '40929665294': { commit: '5565985bbe2bb2a0be869d366baa48c715057657', artifact: '12922737365' },
 } as const
@@ -253,14 +255,22 @@ const riscvCases = {
   mutant: ['attempt-3507c622a1f143d894f819a0958c0f6a','rv32i-functional-register-mutant-v1'],
   'control-replay': ['attempt-e845135395204d61b526d707bae1ef2f','rv32i-control-v1'],
 } as const
+const riscvCasesV2 = {
+  control: ['attempt-dbafbe5ba8334d1f89afce0b131d1226','rv32i-control-v1'],
+  mutant: ['attempt-74f3f66cde2645afab8300c5d587b27f','rv32i-functional-register-mutant-v1'],
+  'control-replay': ['attempt-50931cab3f4e4a118a01f43c8a332aec','rv32i-control-v1'],
+  'control-saved-replay': ['attempt-49fa3f22304943aeacb099107dad6bd9','rv32i-control-v1'],
+} as const
 const firmwareCases = { control: 'fw-regmap-control-v1', bad: 'fw-regmap-offset-bug-v1', candidate: 'fw-regmap-offset-candidate-v1', 'bad-replay': 'fw-regmap-offset-bug-v1', 'candidate-replay': 'fw-regmap-offset-candidate-v1' } as const
 function locator(raw: unknown) {
-  const kind = one(obj(raw).kind,['producer_attempt','producer_case'])
-  const o = exact(raw,kind === 'producer_attempt' ? ['kind','origin','case_label','native_attempt_id','wire_experiment_id','raw_result_ref'] : ['kind','origin','case_label','fixture_id','execution_ref'])
+  const kind = one(obj(raw).kind,['producer_attempt','producer_attempt_v2','producer_case'])
+  const o = exact(raw,kind !== 'producer_case' ? ['kind','origin','case_label','native_attempt_id','wire_experiment_id','raw_result_ref'] : ['kind','origin','case_label','fixture_id','execution_ref'])
   const hosted = origin(o.origin)
-  if (kind === 'producer_attempt') {
-    const label = one(o.case_label,['control','mutant','control-replay']), [nativeId,experimentId] = riscvCases[label]
-    literal(hosted.runId,'40920450439'); literal(o.native_attempt_id,nativeId); literal(o.wire_experiment_id,experimentId)
+  if (kind !== 'producer_case') {
+    const modern = kind === 'producer_attempt_v2'
+    const label = one(o.case_label,modern ? ['control','mutant','control-replay','control-saved-replay'] as const : ['control','mutant','control-replay'] as const)
+    const [nativeId,experimentId] = modern ? riscvCasesV2[label] : riscvCases[label as keyof typeof riscvCases]
+    literal(hosted.runId,modern ? '41202693632' : '40920450439'); literal(o.native_attempt_id,nativeId); literal(o.wire_experiment_id,experimentId)
     const result = ref(o.raw_result_ref); literal(result.attemptId,nativeId)
     return { kind, origin: hosted, label, nativeId, experimentId, result } as const
   }
@@ -300,16 +310,27 @@ function divergence(raw: unknown) {
   return { field, order, cycle, expected, observed }
 }
 function riscCase(raw: unknown) {
-  const o = exact(raw,['schema_version','locator','inputs','identity','checker','configuration_hash','producer_execution_status','termination','checker_evidence_status','verdict','cycles','cycle_limit','retirement_limit','retired_count','reference_count','compared_count','first_divergence','producer_phases'])
-  literal(o.schema_version,'riscv.recorded-attempt.v1')
-  const located = locator(o.locator); if (located.kind !== 'producer_attempt') invalid()
-  const input = refs(o.inputs,riscvInputs), identity = evidenceIdentity(o.identity), checker = checkerIdentity(o.checker)
+  const modern = obj(raw).schema_version === 'riscv.recorded-attempt.v2'
+  const o = exact(raw,['schema_version','locator','inputs','identity','checker','configuration_hash','producer_execution_status','termination','checker_evidence_status','verdict','cycles','cycle_limit','retirement_limit','retired_count','reference_count','compared_count','first_divergence','producer_phases',...(modern ? ['program_mode','replay_of','runtime_scope'] : [])])
+  literal(o.schema_version,modern ? 'riscv.recorded-attempt.v2' : 'riscv.recorded-attempt.v1')
+  const located = locator(o.locator); if (located.kind === 'producer_case' || (located.kind === 'producer_attempt_v2') !== modern) invalid()
+  const inputs = exact(o.inputs,[...riscvInputs,...(modern ? ['saved_program','original_run'] : [])]), extraInputs: Record<string,Reference> = {}
+  if (modern) for (const key of ['saved_program','original_run']) if (inputs[key] !== null) extraInputs[key] = ref(inputs[key])
+  const input = { ...refs(Object.fromEntries(riscvInputs.map(k => [k,inputs[k]])),riscvInputs), ...extraInputs }, identity = evidenceIdentity(o.identity), checker = checkerIdentity(o.checker)
   if (identity.checker !== checker.sha256 || input.checker_manifest.sha256 !== identity.checker || input.environment.sha256 !== identity.environment) invalid()
   const execution = one(o.producer_execution_status,['completed','bounded_incomplete','failed']), termination = one(o.termination,['completion_store_retired','trap','cycle_limit','retirement_limit']), evidence = one(o.checker_evidence_status,['valid','invalid','unsupported']), verdict = one(o.verdict,['pass_within_scope','design_mismatch','inconclusive'])
   const cycles = num(o.cycles,1000000,1), cycleLimit = num(o.cycle_limit,1000000,1), retirementLimit = num(o.retirement_limit,10000,1), retired = num(o.retired_count,10000), referenceCount = num(o.reference_count,10000), compared = num(o.compared_count,10000), first = divergence(o.first_divergence)
   const phases = unique(list(o.producer_phases,5,v => one(v,['assembler','compiler','objcopy','dut','reference'])),v => v)
   if (!phases.length || cycles > cycleLimit || retired > retirementLimit || compared > Math.min(retired,referenceCount) || (verdict === 'design_mismatch') !== !!first || (first && (BigInt(first.order)+1n !== BigInt(compared) || first.cycle > cycles)) || (evidence !== 'valid' && verdict !== 'inconclusive') || (verdict === 'pass_within_scope' && (!compared || execution !== 'completed' || termination !== 'completion_store_retired' || compared !== retired || compared !== referenceCount))) invalid()
-  return { family: 'riscv' as const, locator: located, input, identity, checker, configurationHash: hash(o.configuration_hash), execution, termination, evidence, verdict, cycles, cycleLimit, retirementLimit, retired, referenceCount, compared, first, phases }
+  const replayOf = modern && o.replay_of !== null ? locator(o.replay_of) : null
+  if (modern) {
+    literal(o.runtime_scope,'fresh_spike_and_recorded_hdl_cpp_rebuild_not_isa_certification')
+    const saved = located.label === 'control-saved-replay'
+    literal(o.program_mode,saved ? 'saved_executable_no_program_compilation' : 'fresh_compilation')
+    if (saved) { if (!replayOf || replayOf.kind !== 'producer_attempt_v2' || replayOf.label !== 'control' || !extraInputs.saved_program) invalid(); same(replayOf.origin,located.origin);same(phases,['reference','dut']) }
+    else { if (replayOf || extraInputs.saved_program) invalid(); same(phases,['assembler','compiler','objcopy','reference','dut']) }
+  }
+  return { family: 'riscv' as const, schema: modern ? 'riscv.recorded-attempt.v2' : 'riscv.recorded-attempt.v1', locator: located, input, replayOf, identity, checker, configurationHash: hash(o.configuration_hash), execution, termination, evidence, verdict, cycles, cycleLimit, retirementLimit, retired, referenceCount, compared, first, phases }
 }
 function mmioConflict(raw: unknown) {
   if (raw === null) return null
@@ -347,6 +368,7 @@ const inputRoles: Record<string,string> = { plan:'configuration',profile:'config
 export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
   const o = exact(raw,[...summaryFields,'envelope','project_revision','manifest','native_report']), s = summary(o,selected.projectId,selected.investigationId,'all')
   same(s,selected); if (s.schemaVersion !== 'engineering.admission.v2' || !s.reportKind) invalid()
+  const isRiscv = s.reportKind !== 'firmware.recorded-report.v1', modern = s.reportKind === 'riscv.recorded-report.v2'
   const e = exact(o.envelope,['schema_version','operation','new_execution','claim_scope','external_context_scope','validation','record','record_hash','artifacts','total_artifact_bytes'])
   literal(e.schema_version,'engineering.admission.v2'); literal(e.operation,'admission_only'); literal(e.new_execution,'not_run'); literal(e.claim_scope,'resolved_bytes_and_registered_native_checks_only'); literal(e.external_context_scope,'host_pinned_external_locator_not_local_execution_origin'); hash(e.record_hash)
   const proof = exact(e.validation,['validator_id','version','implementation_hash','implementation_hash_provenance','scope'])
@@ -378,8 +400,8 @@ export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
   literal(m.schema_version,'engineering.manifest.v1'); literal(m.revision_id,s.revisionId); identifier(m.manifest_id)
   const manifestReview = one(m.review_state,['draft','reviewed']); if (m.reviewed_by !== null) identifier(m.reviewed_by); if (manifestReview === 'reviewed' && m.reviewed_by === null) invalid()
   if (list(m.adapters,0,obj).length || list(m.relations,0,obj).length) invalid()
-  const report = exact(o.native_report,s.reportKind === nativeKinds[0] ? ['schema_version','family','operation','new_execution','manifest_ref','selection','cases','recompiled_control'] : ['schema_version','family','operation','new_execution','manifest_ref','selection','cases','candidate','replays'])
-  literal(report.schema_version,s.reportKind); literal(report.family,s.reportKind === nativeKinds[0] ? 'riscv_retirement' : 'firmware_mmio'); literal(report.operation,'admission_only'); literal(report.new_execution,'not_run'); same(ref(report.manifest_ref),manifest)
+  const report = exact(o.native_report,isRiscv ? ['schema_version','family','operation','new_execution','manifest_ref','selection','cases','recompiled_control',...(modern ? ['saved_executable'] : [])] : ['schema_version','family','operation','new_execution','manifest_ref','selection','cases','candidate','replays'])
+  literal(report.schema_version,s.reportKind); literal(report.family,isRiscv ? 'riscv_retirement' : 'firmware_mmio'); literal(report.operation,'admission_only'); literal(report.new_execution,'not_run'); same(ref(report.manifest_ref),manifest)
   const selection = exact(report.selection,['origin','inventory','selected','omitted_paths']), hosted = origin(selection.origin)
   const inventory = unique(list(selection.inventory,4096,v => { const row = exact(v,['original_relative_path','sha256','size_bytes']); return { path: safePath(row.original_relative_path), sha256: hash(row.sha256), size: bigintText(row.size_bytes,(1n<<63n)-1n) } }),v => v.path)
   const bindings = unique(list(selection.selected,256,v => {
@@ -389,7 +411,7 @@ export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
     if (retained(reference,role).size !== size) invalid()
     if (provenance === 'adapter_generated') { if (located.kind !== 'github_actions' || originalPath !== null || originalId !== null || reference.attemptId !== null) invalid() }
     else {
-      if (!originalPath || reference.attemptId !== (located.kind === 'producer_attempt' ? located.nativeId : null)) invalid()
+      if (!originalPath || reference.attemptId !== (located.kind === 'producer_attempt' || located.kind === 'producer_attempt_v2' ? located.nativeId : null)) invalid()
       if (located.kind !== 'github_actions' && !originalPath.startsWith(located.label+'/') && originalPath !== located.label+'.check.json') invalid()
       const entry = inventory.find(a => a.path === originalPath); if (!entry || entry.sha256 !== reference.sha256 || entry.size !== String(size)) invalid()
     }
@@ -401,19 +423,20 @@ export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
     const b = bindings.find(b => equalRef(b.reference,reference)); if (!b || (role && b.role !== role)) invalid(); same(b.scope,located)
   }
   required(manifest,hosted,'manifest'); required(hosted.receipt,hosted,'receipt')
-  const cases: NativeCaseView[] = s.reportKind === nativeKinds[0] ? list(report.cases,3,riscCase) : list(report.cases,5,firmwareCase)
-  const expectedLabels = s.reportKind === nativeKinds[0] ? Object.keys(riscvCases) : Object.keys(firmwareCases)
+  const cases: NativeCaseView[] = isRiscv ? list(report.cases,modern ? 4 : 3,riscCase) : list(report.cases,5,firmwareCase)
+  const expectedLabels = isRiscv ? Object.keys(modern ? riscvCasesV2 : riscvCases) : Object.keys(firmwareCases)
   same(cases.map(c => c.locator.label).sort(),expectedLabels.sort())
   for (const c of cases) {
+    if (c.family === 'riscv' && (c.schema === 'riscv.recorded-attempt.v2') !== modern) invalid()
     same(c.locator.origin,hosted); required(c.locator.result,c.locator,c.family === 'riscv' ? 'native_result' : 'native_execution')
-    for (const [name,reference] of Object.entries(c.input)) required(reference,c.family === 'firmware' && ['source_manifest','tool_metadata'].includes(name) ? hosted : c.locator,inputRoles[name])
+    for (const [name,reference] of Object.entries(c.input)) required(reference,c.family === 'firmware' && ['source_manifest','tool_metadata'].includes(name) ? hosted : c.locator,['saved_program','original_run'].includes(name) ? 'configuration' : inputRoles[name])
     if (c.family === 'firmware') { Object.values(c.program).forEach(a => required(a,c.locator,'program')); Object.values(c.sources).forEach(a => required(a,c.locator,'source_snapshot')) }
   }
   if (bindings.some(b => b.scope.kind !== 'github_actions' && !cases.some(c => fingerprint(c.locator) === fingerprint(b.scope)))) invalid()
   const attachments = unique(list(r.native_records,5,v => exact(v,['fact_id','domain','native_schema_id','reference'])),a => identifier(a.fact_id)), facts = unique(list(m.facts,5,v => exact(v,['fact_id','domain','native_schema_id','native_record_hash','native_record','provenance','category','review_state','conditions'])),f => identifier(f.fact_id))
   if (attachments.length !== cases.length || facts.length !== cases.length) invalid()
   const factViews = facts.map((f,i) => {
-    const a=attachments[i], c=cases[i], reference=ref(f.native_record), domain=c.family, schema=domain === 'riscv' ? 'riscv.recorded-attempt.v1' : 'firmware.recorded-case.v1'
+    const a=attachments[i], c=cases[i], reference=ref(f.native_record), domain=c.family, schema=c.family === 'riscv' ? c.schema : 'firmware.recorded-case.v1'
     literal(a.fact_id,identifier(f.fact_id)); literal(a.domain,domain); literal(f.domain,domain); literal(a.native_schema_id,schema); literal(f.native_schema_id,schema); literal(f.category,'observation'); same(ref(a.reference),reference)
     if (hash(f.native_record_hash)!==reference.sha256) invalid(); retained(reference,'native_case',true)
     const provenance=exact(f.provenance,['state','sources','extraction','derived_from','uncertainties']); literal(provenance.state,'complete')
@@ -431,10 +454,10 @@ export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
     const parents=unique(list(provenance.derived_from,32,identifier),v=>v);if(parents.some(id=>!facts.some(f=>f.fact_id===id)))invalid()
     return { id: identifier(f.fact_id), reference, review:one(f.review_state,['reviewed','unreviewed']), limitations:countText(f.conditions)+countText(provenance.uncertainties) }
   })
-  const nativeIds=cases.flatMap(c=>c.locator.kind==='producer_attempt'?[c.locator.nativeId]:[])
+  const nativeIds=cases.flatMap(c=>c.locator.kind!=='producer_case'?[c.locator.nativeId]:[])
   if(artifacts.some(a=>a.attemptId!==null&&!nativeIds.includes(a.attemptId as typeof nativeIds[number])))invalid()
   const base={...s,kind:'native' as const,validatorHash,configurationHash,sources,manifestReview,artifacts,totalBytes,origin:hosted,bindings,omittedCount:omitted.length,inventoryCount:inventory.length,facts:factViews}
-  if(s.reportKind===nativeKinds[0]) {
+  if(isRiscv) {
     const typed=cases as RiscvCaseView[], original=typed.find(c=>c.locator.label==='control')!, repeated=typed.find(c=>c.locator.label==='control-replay')!, pair=exact(report.recompiled_control,['kind','original','repeated','record_ref','outcome'])
     literal(pair.kind,'recompiled_control');same(locator(pair.original),original.locator);same(locator(pair.repeated),repeated.locator)
     const record=ref(pair.record_ref), outcome=one(pair.outcome,['byte_identical_recompiled_control','inconclusive']);required(record,hosted,'replay_record')
@@ -443,7 +466,19 @@ export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
       for(const name of ['object','elf','binary','raw_rvfi','raw_spike','normalized_pair','comparison','environment'] as const)literal(original.input[name].sha256,repeated.input[name].sha256)
       if([original,repeated].some(c=>c.verdict!=='pass_within_scope'||!c.phases.includes('assembler')||!c.phases.includes('compiler')))invalid()
     }
-    return {...base,family:'riscv' as const,cases:typed,recompiled:{record,outcome}}
+    let saved: { record: Reference; outcome: string; original: string; repeated: string } | null = null
+    if (modern) {
+      literal(outcome,'byte_identical_recompiled_control')
+      const replay=typed.find(c=>c.locator.label==='control-saved-replay')!, pair=exact(report.saved_executable,['kind','original','repeated','record_ref','outcome'])
+      literal(pair.kind,'saved_executable');literal(pair.outcome,'byte_identical_saved_executable_with_fresh_reference_and_hdl_rebuild')
+      same(locator(pair.original),original.locator);same(locator(pair.repeated),replay.locator);same(replay.replayOf,original.locator)
+      const savedRecord=ref(pair.record_ref);same(savedRecord,record);required(savedRecord,hosted,'replay_record')
+      for (const name of ['object','elf','binary','raw_rvfi','raw_spike','normalized_pair','comparison'] as const) literal(original.input[name].sha256,replay.input[name].sha256)
+      for (const name of ['source','checker','contract','experiment'] as const) literal(original.identity[name],replay.identity[name])
+      if (replay.verdict !== 'pass_within_scope' || replay.cycles !== original.cycles || replay.compared !== original.compared) invalid()
+      saved={record:savedRecord,outcome:'byte_identical_saved_executable_with_fresh_reference_and_hdl_rebuild',original:original.locator.label,repeated:replay.locator.label}
+    }
+    return {...base,family:'riscv' as const,cases:typed,recompiled:{record,outcome},saved}
   }
   const typed=cases as FirmwareCaseView[], bad=typed.find(c=>c.locator.label==='bad')!, fixed=typed.find(c=>c.locator.label==='candidate')!, candidate=exact(report.candidate,['kind','bad','candidate','diff_ref','original_bad_header_ref','candidate_header_ref','protected_checker_hash','protected_contract_hash','protected_profile_hash','covered_mmio_indices','outcome'])
   literal(candidate.kind,'curated_header_correction');same(locator(candidate.bad),bad.locator);same(locator(candidate.candidate),fixed.locator)
@@ -474,3 +509,69 @@ export function parseNativeDetail(raw: unknown, selected: VersionSummary) {
   return {...base,family:'firmware' as const,cases:typed,candidate:{diff,originalHeader,candidateHeader,checkerHash,contractHash,profileHash,outcome},replays}
 }
 export type NativeInvestigationDetail = ReturnType<typeof parseNativeDetail>
+
+export interface EdaRunView {
+  revisionId: string; configurationHash: string; project: Record<string, unknown>
+  sources: { name: string; reference: Reference }[]; configuration: Reference; receipt: Reference
+  reports: { name: string; reference: Reference; sources: Reference[] }[]
+}
+export interface EdaInvestigationDetail extends VersionSummary {
+  kind: 'eda'; domain: 'vivado' | 'kicad'; recordHash: string; checkerHash: string
+  requirements: Reference; candidate: EdaRunView; baseline: EdaRunView | null
+  artifacts: ArtifactIdentity[]; totalBytes: number
+}
+async function canonicalDigest(value: unknown): Promise<string> {
+  const raw = JSON.stringify(value, (_key, v) => v && typeof v === 'object' && !Array.isArray(v)
+    ? Object.fromEntries(Object.keys(v).sort().map(key => [key,v[key]])) : v)
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw))), b => b.toString(16).padStart(2,'0')).join('')
+}
+/** EDA admission has its own closed shape, never a native/bridge fallback. */
+export async function parseEdaDetail(raw: unknown, selected: VersionSummary): Promise<EdaInvestigationDetail> {
+  const o = exact(raw,[...summaryFields.filter(k=>k!=='report_kind'),'envelope','project_revision','execution_contexts'])
+  const s = summary(o,selected.projectId,selected.investigationId,'all');same(s,selected)
+  literal(s.schemaVersion!,'engineering.admission.v3');list(o.execution_contexts,0,obj)
+  const e = exact(o.envelope,['schema_version','record','record_hash','checker_sha256','artifacts','total_artifact_bytes','provenance','execution_status','design_verdict'])
+  literal(e.schema_version,'engineering.admission.v3');literal(e.provenance,'recorded_bytes_not_new_execution');literal(e.execution_status,'not_observed');literal(e.design_verdict,'inconclusive')
+  if(new TextEncoder().encode(JSON.stringify(e)).length>262144)invalid()
+  const recordHash=hash(e.record_hash),checkerHash=hash(e.checker_sha256)
+  const artifacts=unique(list(e.artifacts,192,v=>{const a=exact(v,['reference','size_bytes']);return {...ref(a.reference),size:num(a.size_bytes,1048576),roles:['eda_evidence']}}),referenceKey)
+  const totalBytes=num(e.total_artifact_bytes,16777216)
+  if (!artifacts.length || artifacts.reduce((sum,a)=>sum+a.size,0)!==totalBytes)invalid()
+  function retained(v: unknown) { const r=ref(v);if(!artifacts.some(a=>equalRef(a,r)))invalid();return r }
+  const r=exact(e.record,['schema_version','investigation_id','domain','requirements','candidate','baseline'])
+  literal(r.schema_version,'engineering.eda-investigation.v1');literal(r.investigation_id,s.nativeId)
+  const domain=one(r.domain,['vivado','kicad']);if(s.domains.length!==1||s.domains[0]!==domain)invalid()
+  const requirements=retained(r.requirements);literal(requirements.sha256,s.manifestHash)
+  function run(raw: unknown): EdaRunView {
+    const run=exact(raw,['project','sources','configuration','receipt','reports'])
+    const project=exact(run.project,['schema_version','project_id','revision_id','source_refs','configuration_hash'])
+    literal(project.schema_version,'engineering.project-revision.v1');literal(project.project_id,s.projectId)
+    const revisionId=identifier(project.revision_id),configurationHash=hash(project.configuration_hash)
+    const projectSources=unique(list(project.source_refs,64,retained),referenceKey)
+    const sources=unique(list(run.sources,64,v=>{const source=exact(v,['name','reference']),name=text(source.name);if(!/^[A-Za-z0-9_.-]{1,128}$/.test(name))invalid();return {name,reference:retained(source.reference)}}),s=>s.name)
+    if(!sources.length || !projectSources.length || sources.length!==projectSources.length)invalid()
+    unique(sources,s=>referenceKey(s.reference))
+    if(sources.some(source=>!projectSources.some(r=>equalRef(r,source.reference))))invalid()
+    const configuration=retained(run.configuration),receipt=retained(run.receipt);literal(configuration.sha256,configurationHash)
+    const allowedReports=domain==='vivado'?['methodology.rpt','check_timing.rpt','timing_summary.rpt','clocks.rpt','clock_interaction.rpt','cdc.rpt','utilization.rpt','route_status.rpt','drc.rpt','exceptions.rpt']:['erc.json','drc.json']
+    const reports=unique(list(run.reports,16,v=>{
+      const report=exact(v,['name','reference','source_refs']),name=one(report.name,allowedReports)
+      const refs=unique(list(report.source_refs,64,retained),referenceKey)
+      if(!refs.length || refs.some(r=>!sources.some(source=>equalRef(source.reference,r))))invalid()
+      if(domain==='vivado' && (refs.length!==sources.length||sources.some(source=>!refs.some(r=>equalRef(r,source.reference)))))invalid()
+      if(domain==='kicad' && (refs.length!==1||!sources.some(source=>source.name===(name==='erc.json'?'schematic.xml':'board.kicad_pcb')&&equalRef(source.reference,refs[0]))))invalid()
+      return {name,reference:retained(report.reference),sources:refs}
+    }),r=>r.name)
+    if(!reports.length)invalid()
+    if(domain==='kicad' && (sources.length!==2||!sources.some(s=>s.name==='schematic.xml')||!sources.some(s=>s.name==='board.kicad_pcb')))invalid()
+    return {revisionId,configurationHash,project,sources,configuration,receipt,reports}
+  }
+  const candidate=run(r.candidate),baseline=r.baseline===null?null:run(r.baseline)
+  literal(candidate.revisionId,s.revisionId);same(o.project_revision,candidate.project)
+  if(baseline && (baseline.revisionId===candidate.revisionId||!equalRef(baseline.configuration,candidate.configuration)))invalid()
+  // All EDA wire numbers are bounded integers. Rehash canonical admitted bytes,
+  // rather than accepting coordinated metadata changes under an old version ID.
+  const [envelopeDigest,recordDigest,revisionDigest]=await Promise.all([canonicalDigest(e),canonicalDigest(r),canonicalDigest(candidate.project)])
+  if(envelopeDigest!==s.contentHash||recordDigest!==recordHash||revisionDigest!==s.revisionHash)invalid()
+  return {...s,kind:'eda',domain,recordHash,checkerHash,requirements,candidate,baseline,artifacts,totalBytes}
+}

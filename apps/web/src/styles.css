@@ -134,6 +134,11 @@ time { display: block; color: var(--muted); font: 11px Consolas, monospace; marg
 .comparison>div { padding: 12px; background: var(--raised); border: 1px solid var(--line); border-radius: 5px; }
 .comparison p { font: 13px Consolas, monospace; margin: 0; }
 .table-scroll { max-width: 100%; overflow-x: auto; margin-bottom: 24px; }
+.domain-selector { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+.domain-selector button { flex: 1 1 140px; text-align: left; }
+.domain-selector button[aria-pressed='true'] { background: var(--selected); border-color: var(--teal); }
+.domain-count { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.recorded-preview pre { max-height: 420px; overflow: auto; white-space: pre; }
 table { border-collapse: collapse; width: 100%; font-size: 12px; text-align: left; }
 th { background: var(--raised); font-weight: 600; white-space: nowrap; }
 td, th { border-bottom: 1px solid var(--line); padding: 12px; }

@@ -1,9 +1,12 @@
 import { useEffect, useId, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { humanize } from './api'
-import { artifactHref, identifier, investigationGet, parseArtifacts, parseDetail, parseInvestigations, parseVersions, parseInvestigationCapabilities, parseNativeDetail, referenceKey, versionPath } from './engineeringInvestigationApi'
+import { artifactHref, identifier, investigationGet, parseArtifacts, parseDetail, parseEdaDetail, parseInvestigations, parseVersions, parseInvestigationCapabilities, parseNativeDetail, referenceKey, versionPath } from './engineeringInvestigationApi'
 import type { Artifact, Investigation, InvestigationDetail, Reference, VersionSummary, DiscoveryMode } from './engineeringInvestigationApi'
 import { NativeToolInvestigation } from './NativeToolInvestigation'
+import { DomainEvidenceNavigator } from './DomainEvidenceNavigator'
+import { InvestigationProjection } from './InvestigationProjection'
+import { EdaInvestigation } from './EdaInvestigation'
 
 const styles = `.engineering-investigation{display:grid;gap:20px;min-width:0}.engineering-investigation .ei-heading{display:flex;justify-content:space-between;align-items:start;gap:16px;flex-wrap:wrap}.engineering-investigation .ei-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:18px}.engineering-investigation .ei-record{padding:16px 0;border-top:1px solid var(--line)}.engineering-investigation .ei-record:target{outline:2px solid var(--teal);outline-offset:4px}.engineering-investigation dd,.engineering-investigation a{overflow-wrap:anywhere}.engineering-investigation .ei-tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.engineering-investigation .ei-links{display:flex;gap:12px;flex-wrap:wrap;padding-left:20px}.engineering-investigation .ei-download{display:inline-flex;align-items:center;min-height:44px}.engineering-investigation .artifact-list li{flex-wrap:wrap}.engineering-investigation .ei-record summary{overflow-wrap:anywhere}.engineering-investigation .ei-heading h2{margin-bottom:8px}.engineering-investigation .ei-pagination{margin-top:12px}`
 
@@ -76,7 +79,9 @@ function VersionDetail({ selected, base }: { selected: VersionSummary; base: str
   const client = useQueryClient()
   const query = useQuery({ queryKey: [...base, 'detail', selected.contentHash], queryFn: async ({ signal }) => {
     const path = versionPath(selected.investigationId, selected.id)
-    const detail = await investigationGet(path, v => selected.reportKind ? parseNativeDetail(v, selected) : parseDetail(v, selected), signal)
+    const detail = selected.schemaVersion==='engineering.admission.v3'
+      ? await investigationGet(path,v=>parseEdaDetail(v,selected),signal)
+      : await investigationGet(path, v => selected.reportKind ? parseNativeDetail(v, selected) : parseDetail(v, selected), signal)
     const artifacts = await investigationGet(`${path}/artifacts`, v => parseArtifacts(v, detail), signal)
     return { detail, artifacts }
   }, retry: false })
@@ -89,11 +94,12 @@ function VersionDetail({ selected, base }: { selected: VersionSummary; base: str
   }, [query.isError, client, ...base]) // base is a fixed-length immutable route key.
   if (query.isFetching || query.isPending) return <div className="panel"><Loading label="Validating recorded version…" /></div>
   if (query.isError) return <Failure error={query.error} retry={() => void query.refetch()} />
-  return 'kind' in query.data.detail ? <NativeToolInvestigation key={`${selected.id}:${selected.contentHash}`} detail={query.data.detail} artifacts={query.data.artifacts}/> : <EvidenceDetail detail={query.data.detail} artifacts={query.data.artifacts} />
+  return <><InvestigationProjection key={`projection:${selected.id}:${selected.contentHash}`} selected={selected} artifacts={query.data.artifacts}/>{'kind' in query.data.detail ? query.data.detail.kind==='eda' ? <EdaInvestigation detail={query.data.detail} artifacts={query.data.artifacts}/> : <NativeToolInvestigation key={`${selected.id}:${selected.contentHash}`} detail={query.data.detail} artifacts={query.data.artifacts}/> : <EvidenceDetail detail={query.data.detail} artifacts={query.data.artifacts} />}</>
 }
 function EvidenceDetail({ detail, artifacts }: { detail: InvestigationDetail; artifacts: Artifact[] }) {
   const uid = useId(), factAnchor = (id: string) => `${uid}-fact-${id}`
   return <>
+    <DomainEvidenceNavigator detail={detail} artifacts={artifacts} factAnchor={factAnchor}/>
     <section className="panel" aria-labelledby={`${uid}-identity`}>
       <div className="ei-heading"><div><span className="eyebrow">Recorded version {detail.ordinal}</span><h3 id={`${uid}-identity`}>Source and configuration identity</h3></div><span className="tag">Recorded import</span></div>
       <div className="status-strip"><div className="status-cell"><span className="eyebrow">Operation</span><strong>Admission only</strong><code>admission_only</code></div><div className="status-cell"><span className="eyebrow">New execution</span><strong>Not run</strong><code>not_run</code></div></div>

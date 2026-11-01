@@ -342,8 +342,13 @@ def test_health_advertises_only_fixed_capabilities_without_evidence_or_source_sc
     assert response.status_code == 200
     data = response.json()
     assert data["investigation_api"] == data["evidence_api"] == "1"
-    assert data["investigation_admission_schemas"] == ["engineering.admission.v1", "engineering.admission.v2"]
-    assert data["investigation_report_kinds"] == ["riscv.recorded-report.v1", "firmware.recorded-report.v1"]
+    # Current discovery includes the separately implemented EDA admission v3;
+    # native report v2 still uses admission v2, preserving both native v1 kinds.
+    # Capability advertising is not evidence of tool execution or acceptance.
+    assert data["investigation_admission_schemas"] == [
+        "engineering.admission.v1", "engineering.admission.v2", "engineering.admission.v3"]
+    assert data["investigation_report_kinds"] == [
+        "riscv.recorded-report.v1", "firmware.recorded-report.v1", "riscv.recorded-report.v2"]
     assert data["model"] == "not_integrated" and data["execution"] == "separate_worker"
     assert not any("ready" in key for key in data)
     assert counts(db) == before
