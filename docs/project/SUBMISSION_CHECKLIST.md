@@ -24,6 +24,8 @@ The supplied guide requires public source, Meta-model incorporation, a three-min
 - [x] Native API r2 bounded recorded-import/read-only matrix accepted on c14525e: two admissions,301 stored artifacts, zero execution rows,23responses/fourdownloads; no actual browser or new four-case adoption.
 - [x] [PG fifth six-case qualification](../evidence/planner/2026-10-31/README.md) accepted with mock HTTP; safe quarantine is not successful recovery or live Meta.
 - [x] Approved light/dark source merged [PR60](https://github.com/desanv01/VerifForge/pull/60) after [CI41210807765](https://github.com/desanv01/VerifForge/actions/runs/41210807765); actual browser/visual/keyboard/narrow-width gates remain open.
+- [x] Offline collection/export and reproduction-manifest validation implemented over existing evaluation ledgers and blobs, with focused synthetic developer integration. This checks metadata/bytes, not actual benchmark measurements or clean tool replay; independent feature review and real acceptance remain separate.
+- [x] Operator shot-script, draft transcript, seven-cue subtitle skeleton and submission-field template prepared. They contain explicit pending shots/null final fields; no recorded media, synchronized final captions, playback or submission is claimed.
 - [ ] Reconfirm final public repository access and exact submission commit; the planning audit's recorded public visibility is not a final link check.
 - [ ] Main reconciles release source, runtime image and current support matrix. Do not stage private receipts or blanket-add ignored evidence.
 - [ ] Select the project license with the human and retain required upstream notices. No root LICENSE/NOTICE was present at this handoff inspection; public visibility does not choose a license.
@@ -40,7 +42,7 @@ The supplied guide requires public source, Meta-model incorporation, a three-min
 - [ ] U8/sequence 6: independently supported cross-domain discrepancy and improvement/reruns. Bridge source fixes accepted; current native graphs/candidate remain inconclusive/no demonstrated improvement.
 - [ ] U9: actual browser finding/inspect/replay/candidate/validate/export and refresh/error behavior on frozen runtime. Bounded API r2 readback and PR60 light/dark source accepted separately; neither establishes actual browser/visual/keyboard/narrow-width acceptance or new four-case import adoption.
 - [ ] Reliability: current application running cancellation/stale/late handling and wider restart/broker recovery. PG fifth bounded mock-HTTP cancellation/quarantine accepted; unknown owner loss is not recovered. Original October24 backup restore accepted; newer database/artifact/application restoration remains open.
-- [ ] U10: adopt/calibrate source-reviewed strategy harness, freeze budgets/corpus/information policy, collect complete raw results/exclusions and independently audit claims. Append-only record source accepted; no actual comparative results or score exist.
+- [ ] U10: calibrate the integrated FIFO harness, freeze budgets/corpus/information policy, collect actual raw results/exclusions and independently audit claims. New offline collection/reproduction tooling has developer checks; no actual comparative results, clean reproduction or score follows from those checks.
 - [ ] Start U11/sequence 7 only after required work and submission-critical gates are stable. Sequence 8 remains deferred.
 
 [PR #23](https://github.com/desanv01/VerifForge/pull/23) and [#24](https://github.com/desanv01/VerifForge/pull/24) are merged; [#25](https://github.com/desanv01/VerifForge/pull/25) merged as `1db9916dff8e2fbdf181727bc8ba4a4862b254fa` after [current-head CI 40922456584](https://github.com/desanv01/VerifForge/actions/runs/40922456584). Source publication is separate from actual execution acceptance and application/browser adoption. The accepted RISC-V and firmware hosted gates have their own exact source/image/checker records in their linked evidence summaries.
@@ -53,11 +55,11 @@ An open checkbox is a precise missing gate, not an instruction to invent a favor
 |---|---|---|
 | Public repository | Final commit/tag, README/setup/support boundaries, accessible links | Existing repository recorded; final snapshot not frozen |
 | Meta incorporation | Actual requested/returned model/provider, prompt/schema identity, call/attempt/feedback lineage | Live gate pending |
-| Three-minute demo | Reviewed final video/transcript and accessible playback URL | Not produced |
+| Three-minute demo | Reviewed final video/transcript and accessible playback URL | Unrecorded script/transcript/subtitle skeleton prepared; final footage/captions/playback absent |
 | Contribution description | [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md) with dated source/execution distinctions and confirmed human roles | Source merges and scoped new evidence recorded; final release/roles pending |
 | Attribution/license | [PROVENANCE.md](PROVENANCE.md), actual upstream revisions/licenses/notices and project license decision | Inventory incomplete; license decision pending |
-| Evaluation | [EVALUATION.md](EVALUATION.md), frozen methods and complete raw/summary records | Protocol and record source accepted; scoped harness source reviewed, adoption/calibration/results pending |
-| Reproduction | Exact selected plans, source/checker/contract/environment, dependencies and verified clean replay | Accepted RISC-V recompiled/saved-program and firmware saved-program records exist; clean release-snapshot reproduction3/3 and final accessible packet pending |
+| Evaluation | [EVALUATION.md](EVALUATION.md), frozen methods and complete raw/summary records | Protocol/records/harness source integrated; offline collection implemented, independent feature review/calibration/actual results pending |
+| Reproduction | Exact selected plans, source/checker/contract/environment, dependencies and verified clean replay | Offline manifest/byte validator implemented; actual clean release reproduction3/3 remains separate from metadata validation and historical replay acceptance |
 | Product access | Local setup or an explicitly authorized hosted route if required by the final form | Local-only product; no hosted deployment claimed |
 | Portal confirmation | Submitted record ID, timestamp MYT/UTC, final URLs and confirmation/receipt | Not submitted |
 
