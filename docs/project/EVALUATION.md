@@ -74,7 +74,26 @@ Count rejected proposals, failed model calls and infrastructure work in elapsed/
 
 ## Raw record contract and implementation status
 
-Append-only attempt/model-round record source and its rejected-response correction were independently accepted and merged in PR58. A separate strategy-harness source candidate passed scoped synthetic review; its operational adoption and actual evaluation remain separate. No real comparative dataset, calibrated study or score is established. One campaign row links immutable per-call and per-attempt records, not a flattened overwritten final plan.
+Append-only attempt/model-round record source and its rejected-response correction were independently accepted and merged in PR58. The bounded FIFO harness, locked ledger snapshots and owned journal/storage interfaces were integrated in PR62. Operational provider/tool transport and actual evaluation remain separate. One campaign row links immutable per-call and per-attempt records, not a flattened overwritten final plan. No real comparative dataset, calibrated study or score is established.
+
+## Offline collection and reproduction validation
+
+The collection implementation reuses the existing `Study`, `Trial`, `EvaluationLog` and content-addressed `BlobStore`. Its request and reproduction models are in [collection.py](../../src/veriforge/evaluation/collection.py); the offline entry points are [collect_evaluation.py](../../scripts/collect_evaluation.py) and [reproduce_release.py](../../scripts/reproduce_release.py). This implementation has focused synthetic developer integration checks; independent feature review and actual release acceptance remain separate.
+
+A `CollectionRequest` freezes the exact study/case/strategy/seed/repeat matrix, source/checker/contract and information-policy identities, allocated budget profile, source commit/dirty-patch state and version inventory. Every coordinate must have either a captured measurement ledger with its independently retained expected head or a reviewed, reasoned exclusion. Missing/duplicate/foreign coordinates are rejected, not silently removed from a denominator. Case bindings include ground-truth classification and review hash; this private operator metadata is never sent to a planner.
+
+Versions must explicitly include Python, Verilator, cocotb, GCC and runtime image, plus model when a model strategy is planned. Unknown versions remain null and are listed as missing. No host version is guessed for an old run. Captured attempt versions, where available, must agree. Declared evidence kind cannot relabel existing mock/recorded ledgers as actual. Rejected/unknown model responses, usage nulls, partial trials, terminal stop reasons, right-censoring and exclusion reasons remain visible in retained records. No score or superiority claim is accepted as a request field or computed by collection.
+
+Use the installed locked environment and an operator-prepared private request:
+
+```sh
+uv run --no-sync python scripts/collect_evaluation.py --request /path/to/private-request.json --root /path/to/private-input --output /path/to/new-private-export
+uv run --no-sync python scripts/reproduce_release.py --root /path/to/new-private-export --expected-manifest-sha256 RETAINED_SHA256
+```
+
+The output directory must not already exist. Validation precedes export; any partial output after an I/O failure is preserved for review rather than overwritten or automatically deleted. Original measurement JSONL bytes and referenced hashed blob bytes are retained. Export contains `collection.json`, exact per-trial ledgers/blobs and `release-manifest.json`; retain the reported manifest hash independently. The verifier rechecks matrix/budget/identity/ledger/blob closure and the derived report, and rejects changed or unlisted files. It reports `manifest_validation_passed`, `execution=not_run` and `clean_tool_reproduction=not_established`.
+
+These are **private, unreviewed exports**. Raw proposals/responses and classification metadata require an explicit publication allowlist/privacy review; do not publish the directory or pass it to a model. Trusted local directory ACLs, cooperating writers and trusted producer/operator provenance remain assumptions. Hash consistency is not remote attestation, and metadata validation is not a new simulator execution, clean replay or release3/3. Actual tool/model execution is not exposed by either CLI. Live Meta holds and resource reservations remain unchanged.
 
 Required fields:
 
