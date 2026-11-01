@@ -9,3 +9,4 @@ tests/native_validator_registration/asset-hashes.json -text
 src/veriforge/contracts/native_tools.py text eol=lf
 src/veriforge/system_investigation/native_tool_records.py text eol=lf
 src/veriforge/system_investigation/native_tool_import.py text eol=lf
+tests/acceptance/fixtures/planner-role-source-review/*.py.txt -text

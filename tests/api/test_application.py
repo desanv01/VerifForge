@@ -145,12 +145,13 @@ def test_worker_error_is_infrastructure_not_design(client, db, tmp_path):
     assert "private detail" not in str(result)
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_migration_downgrade_upgrade(db):
     config = Config("alembic.ini")
     with db[0].begin() as connection:
         config.attributes["connection"] = connection
         command.downgrade(config, "base")
-        command.upgrade(config, "head")
+        command.upgrade(config, "13engineeringprojects")
 
 
 @pytest.mark.parametrize("changed", ["source_hash", "checker_hash", "contract_hash", "experiment_hash"])

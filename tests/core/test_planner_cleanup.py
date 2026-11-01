@@ -26,12 +26,12 @@ AT = datetime(2026, 10, 29, 15, tzinfo=timezone.utc)
 
 
 @pytest.fixture
-def db(tmp_path):
+def db(tmp_path, request):
     engine = make_engine("sqlite:///" + (tmp_path / "cleanup.db").as_posix())
     config = Config("alembic.ini")
     with engine.begin() as connection:
         config.attributes["connection"] = connection
-        command.upgrade(config, "head")
+        command.upgrade(config, getattr(request, 'param', 'head'))
     sessions = session_factory(engine)
     with sessions.begin() as session:
         seed_catalog(session)
@@ -195,6 +195,7 @@ def test_unknown_and_settled_history_cannot_be_rewritten(db):
         with db[1].begin() as session: session.get(PlannerCleanup, ticket.round_id).settled_at = AT + timedelta(seconds=3)
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_downgrade_refuses_cleanup_history(db):
     register(db)
     config = Config("alembic.ini")
@@ -204,12 +205,13 @@ def test_downgrade_refuses_cleanup_history(db):
             command.downgrade(config, "9u2rounds")
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_additive_migration_roundtrip_preserves_old_call(db):
     config = Config("alembic.ini")
     with db[0].begin() as connection:
         config.attributes["connection"] = connection
         command.downgrade(config, "9u2rounds")
-        command.upgrade(config, "head")
+        command.upgrade(config, "13engineeringprojects")
     with db[1]() as session:
         assert session.get(PlannerModelCall, db[2].round_id).request_hash == db[2].request_hash
         assert session.get(PlannerRound, db[2].round_id).lease == db[2].lease

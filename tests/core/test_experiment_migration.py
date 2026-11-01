@@ -100,12 +100,13 @@ def test_backfill_preserves_legacy_payload_bytes_hashes_references_and_attempt_i
 
 def test_single_plan_downgrade_and_reupgrade_preserve_raw_history_and_stable_record_ids(legacy):
     engine, _ = legacy
-    with engine.begin() as connection: command.upgrade(config_for(connection), "head")
+    # Historical roundtrip ends before repair migration14's preservation fence.
+    with engine.begin() as connection: command.upgrade(config_for(connection), "13engineeringprojects")
     with session_factory(engine)() as session: original_ids = set(session.scalars(select(ExperimentRecord.id)))
     with engine.connect() as connection: before = table_snapshot(connection)
     with engine.begin() as connection:
         command.downgrade(config_for(connection), "7bf054adapter")
-        command.upgrade(config_for(connection), "head")
+        command.upgrade(config_for(connection), "13engineeringprojects")
     with engine.connect() as connection: assert table_snapshot(connection) == before
     with session_factory(engine)() as session: assert set(session.scalars(select(ExperimentRecord.id))) == original_ids
 
