@@ -266,3 +266,16 @@ def bundle_files(report: BridgeReport):
     if sum(len(value) for value in files.values()) > 4 * 1_048_576:
         raise ValueError("bridge bundle exceeds 4MiB")
     return files
+
+
+def check_register_manifest(report: BridgeReport):
+    """Feed existing extracted address records to the reviewed manifest checker."""
+    from .manifest_checks import ManifestCheck, check_manifest
+    report = BridgeReport.model_validate_json(report.model_dump_json())
+    if report.family != "firmware_decode":
+        raise ValueError("register bridge required")
+    checks = tuple(ManifestCheck(check_id=b.binding_id, quantity="register_address",
+        fact_ids=("header-" + b.binding_id, "rtl-" + b.binding_id),
+        requirement_fact_ids=("intent-" + b.binding_id,), field="value", expected=b.expected_address, reviewed_by=report.intent.reviewed_by)
+        for b in report.intent.bindings)
+    return check_manifest(report.manifest, {r.fact.fact_id: r.data.model_dump(mode="json") for r in report.native_records}, checks)

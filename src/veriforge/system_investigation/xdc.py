@@ -46,3 +46,31 @@ def extract_package_pins(data: bytes, ports: tuple[str, ...], *, board_reference
         if len(rows) > 64:
             raise ValueError("pin declaration limit exceeded")
     return tuple(rows)
+
+
+def extract_clock_periods(data: bytes, ports: tuple[str, ...]):
+    """Active literal create_clock only; integer picoseconds, never Tcl execution.
+
+    Caller must bind returned records to the exact source hash and reviewed
+    manifest. Generated clocks, variables and waveform overrides are unsupported.
+    """
+    from decimal import Decimal
+    if type(data) is not bytes or len(data) > 1_048_576 or not 1 <= len(ports) <= 16 or len(set(ports)) != len(ports):
+        raise ValueError("bounded unique clock selection required")
+    if any(re.fullmatch(PORT, p) is None for p in ports):
+        raise ValueError("literal clock port required")
+    pattern = re.compile(r"create_clock\s+(?:-name\s+[A-Za-z_][A-Za-z0-9_]*\s+)?-period\s+([0-9]{1,9}(?:\.[0-9]{1,3})?)\s+\[get_ports\s+\{(" + PORT + r")\}\]\s*;?")
+    rows = []
+    for line, raw in enumerate(data.decode("utf-8-sig").splitlines(), 1):
+        text = raw.split("#", 1)[0].strip()
+        if not text: continue
+        match = pattern.fullmatch(text)
+        if match:
+            if match[2] in ports:
+                period = int(Decimal(match[1]) * 1000)
+                if period <= 0 or any(r["port"] == match[2] for r in rows):
+                    raise ValueError("ambiguous or nonpositive clock period")
+                rows.append(dict(kind="clock_period", port=match[2], period_ps=period, line=line))
+        elif PATTERN.fullmatch(text) is None:
+            raise ValueError("active XDC outside literal clock/pin subset")
+    return tuple(rows)
