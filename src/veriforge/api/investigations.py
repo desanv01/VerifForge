@@ -13,18 +13,18 @@ def investigations_router(sessions):
 
     @router.get('/projects/{project_id}/investigations')
     def project_investigations(project_id: str, after: str = Query('', max_length=128), limit: int = Query(20, ge=1, le=50),
-                              admission_schema: Literal['v1', 'v2', 'all'] = 'v1'):
+                              admission_schema: Literal['v1', 'v2', 'v3', 'all'] = 'v1'):
         with sessions() as session:
             return investigations.list_investigations(session, project_id, after=after, limit=limit, admission_schema=admission_schema)
 
     @router.get('/investigations/{investigation_id}')
-    def investigation(investigation_id: str, admission_schema: Literal['v1', 'v2', 'all'] = 'v1'):
+    def investigation(investigation_id: str, admission_schema: Literal['v1', 'v2', 'v3', 'all'] = 'v1'):
         with sessions() as session:
             return investigations.investigation_view(session, investigation_id, admission_schema=admission_schema)
 
     @router.get('/investigations/{investigation_id}/versions')
     def versions(investigation_id: str, after: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=50),
-                 admission_schema: Literal['v1', 'v2', 'all'] = 'v1'):
+                 admission_schema: Literal['v1', 'v2', 'v3', 'all'] = 'v1'):
         with sessions() as session:
             return investigations.list_versions(session, investigation_id, after=after, limit=limit, admission_schema=admission_schema)
 
@@ -42,6 +42,17 @@ def investigations_router(sessions):
     def artifacts(investigation_id: str, version_id: str):
         with sessions() as session:
             return investigations.artifact_list(session, investigation_id, version_id)
+
+    @router.get('/investigations/{investigation_id}/versions/{version_id}/projection')
+    def projection(investigation_id: str, version_id: str, request: Request):
+        from veriforge.core.investigation_projection import projection_response
+        with sessions() as session:
+            data, digest = projection_response(session, investigation_id, version_id)
+        etag = '"' + digest + '"'
+        headers = {'ETag': etag, 'Cache-Control': 'private, no-cache', 'X-Content-Type-Options': 'nosniff'}
+        if request.headers.get('if-none-match') == etag:
+            return Response(status_code=304, headers=headers)
+        return Response(data, media_type='application/json', headers=headers)
 
     @router.get('/investigations/{investigation_id}/versions/{version_id}/artifacts/{artifact_id}/download')
     def download(investigation_id: str, version_id: str, artifact_id: str):

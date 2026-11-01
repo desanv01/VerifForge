@@ -1,78 +1,182 @@
-"""Installed producer compatibility is narrow; recorded evidence stays immutable."""
+"""Production compatibility composition; fake legacy storage is not native proof.
+
+The synthetic old-proof routing fixture deliberately uses a trusted backend
+double. Exact legacy checker execution remains separate accepted/held evidence.
+"""
+from contextlib import contextmanager
+from datetime import datetime, timezone
 import hashlib
+import json
 from pathlib import Path
+import runpy
+import shutil
+import socket
+import subprocess
+from types import ModuleType, SimpleNamespace
 
 import pytest
+import sqlalchemy as sa
 
-from veriforge.system_investigation import native_tool_import as importer
+from veriforge.core import investigations as store, native_validator_policy as policy, service
+from veriforge.core.database import Base, Investigation, InvestigationVersion, InvestigationArtifact, make_engine, session_factory
+from veriforge.core.engineering_catalog import EngineeringProjectSpec, create_engineering_project
+from veriforge.system_investigation import native_tool_import as importer, records
 
+ROOT=Path(__file__).resolve().parents[2]
+PURE=runpy.run_path(str(Path(__file__).with_name('test_native_tool_records.py')))
+AT=datetime(2026,11,1,tzinfo=timezone.utc)
+sha=lambda raw:hashlib.sha256(raw).hexdigest()
 
-MANIFEST = "474e91456137cc12aecae1b28bd64fae43c8a701381041460bb52282685e3f23"
-PAIRS = {
-    "src/veriforge/riscv/runner.py": (
-        "c392ae910b354b55319036266a45621a930a69eb045ae57774a0c798026499cf",
-        "80524f263ebf569f0d5f2fc989f82dbc3993e8e7b2e24490c96563435e0045e5"),
-    "src/veriforge/riscv/__main__.py": (
-        "90f8727405f2c565fb704d88e483a29f0df1095f247e31f0889ae557816ecb57",
-        "439e8c8bfdb54fca6ba271d6c57e685b94b3bf530277b0f69c372af6747c851d"),
-}
-ROOT = Path(__file__).resolve().parents[2]
-
+@pytest.fixture(autouse=True)
+def isolated(monkeypatch):
+    policy.configure_registered_validator(None)
+    monkeypatch.setattr(subprocess,'run',lambda *a,**k:pytest.fail('No child/tool validation authorized'))
+    monkeypatch.setattr(subprocess,'Popen',lambda *a,**k:pytest.fail('No process authorized'))
+    monkeypatch.setattr(socket,'create_connection',lambda *a,**k:pytest.fail('No network authorized'))
+    yield
+    policy.configure_registered_validator(None)
 
 @pytest.fixture
-def producer_revision(monkeypatch):
-    # Isolate portable policy tests from which accepted producer revision is
-    # checked out. Real retained-bundle tests separately inspect installed bytes.
-    actual_read, actual_sha = importer._read_regular, importer._sha
-    markers = {name: ("synthetic installed producer " + name).encode() for name in PAIRS}
-    by_path = {(ROOT / name).absolute(): marker for name, marker in markers.items()}
-    by_marker = {markers[name]: pair[1] for name, pair in PAIRS.items()}
-    monkeypatch.setattr(importer, "_read_regular", lambda path: by_path.get(Path(path).absolute()) or actual_read(path))
-    monkeypatch.setattr(importer, "_sha", lambda data: by_marker.get(data) or actual_sha(data))
-    return {name: pair[0] for name, pair in PAIRS.items()}
+def old_rows(tmp_path):
+    record,artifacts,authority=PURE['bundle'](PURE['synthetic_riscv']())
+    admitted=records.admit_investigation(record,artifacts,authority=authority)
+    envelope=admitted.envelope.model_copy(update={'validation':admitted.envelope.validation.model_copy(update={'implementation_hash':policy.LEGACY_HASH})})
+    raw=store._encode(envelope.model_dump(mode='json'))
+    engine=make_engine('sqlite:///'+(tmp_path/'routing-fixture.db').as_posix())
+    Base.metadata.create_all(engine)
+    sessions=session_factory(engine)
+    with sessions.begin() as session:
+        create_engineering_project(session,EngineeringProjectSpec(project_id=record.project_id,name='Synthetic routing fixture',domains=('riscv',)))
+        parent=Investigation(project_id=record.project_id,create_key='old-key',request_hash=sha(raw),created_at=AT)
+        session.add(parent);session.flush()
+        row=InvestigationVersion(investigation_id=parent.id,project_id=record.project_id,ordinal=1,admission_key='old-key',
+            schema_version=envelope.schema_version,revision_id=record.revision_id,revision_hash=record.project_revision_ref.sha256,
+            manifest_hash=record.manifest_ref.sha256,content_hash=sha(raw),content=raw,created_at=AT)
+        session.add(row);session.flush()
+        metadata={store._key(item.reference):item for item in envelope.artifacts}
+        for item in artifacts:
+            ref=item.reference
+            session.add(InvestigationArtifact(version_id=row.id,artifact_id=ref.artifact_id,native_revision_id=ref.revision_id,
+                native_attempt_id=ref.attempt_id,identity_key=store._identity(ref),sha256=ref.sha256,size_bytes=len(item.data),
+                role=','.join(metadata[store._key(ref)].roles),media_type='application/octet-stream',data=item.data))
+        ids=parent.id,row.id
+    yield SimpleNamespace(sessions=sessions,ids=ids,raw=raw,envelope=envelope,admitted=admitted,artifacts=artifacts)
+    engine.dispose()
 
+def state(session):
+    return {table.name:[tuple(row) for row in session.execute(sa.select(table).order_by(*table.primary_key.columns))]
+            for table in Base.metadata.sorted_tables}
 
-def test_only_exact_reviewed_producer_pairs_are_compatible(producer_revision):
-    assert importer._installed(producer_revision, source_manifest_hash=MANIFEST) == importer._VALIDATOR_HASH
-    assert importer._INSTALLED_SOURCE_POLICY == "native-import.installed-source.v1"
+def backend_double(tmp_path,old_rows):
+    module=ModuleType('synthetic_registered_backend')
+    source=tmp_path/'backend-source-identity.py'
+    source.write_bytes(b'# synthetic host registration identity; no wheel/native code\n')
+    module.__file__=str(source)
+    for name in ('LEGACY_HASH','CURRENT_HASH','REPORT_KINDS','MAX_NATIVE_PAGE','MAX_OPERATION_BYTES','OPERATION_SECONDS'):
+        setattr(module,name,getattr(policy,name))
+    module.PolicyUnavailable=type('FakeUnavailable',(ValueError,),{})
+    module.LegacyReadView=SimpleNamespace
+    module._verify_sources=lambda:None
+    module.calls=0
+    module.operations=0
+    module.keys=set()
+    @contextmanager
+    def operation():
+        module.operations+=1;module.keys=set()
+        try: yield
+        finally: module.keys=set()
+    def read(raw,artifacts):
+        if raw!=old_rows.raw or len(artifacts)!=len(old_rows.artifacts): raise ValueError('Exact fixture differs')
+        for item in artifacts:
+            if sha(item.data)!=item.reference.sha256: raise ValueError('Fresh artifact bytes differ')
+        if sha(raw) not in module.keys: module.calls+=1;module.keys.add(sha(raw))
+        return module.LegacyReadView(envelope=old_rows.envelope,project_revision=old_rows.admitted.project_revision,
+            manifest=old_rows.admitted.manifest,native_report=old_rows.admitted.native_report)
+    module.validation_operation=operation
+    module.select_route=lambda envelope:'legacy' if envelope.validation.implementation_hash==policy.LEGACY_HASH else 'current'
+    module.read_legacy=read
+    module.queue_legacy=lambda raw,artifacts,**kw:read(raw,artifacts)
+    module.flush_legacy=lambda:None
+    return module,source
 
+def test_old_persisted_bytes_are_unavailable_without_registration_and_unchanged(old_rows):
+    with old_rows.sessions() as session:
+        before=state(session)
+        with pytest.raises(service.Conflict): store.version_view(session,*old_rows.ids)
+        assert state(session)==before
+    assert policy._REGISTERED is None
 
-@pytest.mark.parametrize("manifest", [None, "0" * 64, "fc727ccb8d52b1fb1b76e1dddf95b647954a7f0779b95f31254addc36b131bb3"])
-def test_other_or_absent_manifest_cannot_enable_override(producer_revision, manifest):
-    with pytest.raises(importer.NativeImportError, match="installed_domain_version_differs"):
-        importer._installed(producer_revision, source_manifest_hash=manifest)
+def test_registered_backend_reads_and_exact_retry_preserve_proofs_blobs_and_rows(tmp_path,old_rows):
+    module,source=backend_double(tmp_path,old_rows)
+    policy.configure_registered_validator(module,source_sha256=sha(source.read_bytes()))
+    with old_rows.sessions() as session:
+        before=state(session)
+        detail=store.version_view(session,*old_rows.ids)
+        assert detail['envelope']['validation']['implementation_hash']==policy.LEGACY_HASH
+        assert store._encode(detail['envelope'])==old_rows.raw
+        retried=store.retry_legacy_admission(session,envelope_bytes=old_rows.raw,artifacts=old_rows.artifacts,idempotency_key='old-key')
+        assert retried['id']==old_rows.ids[1] and state(session)==before
+        with pytest.raises(service.Conflict):
+            store.retry_legacy_admission(session,envelope_bytes=old_rows.raw,artifacts=old_rows.artifacts,idempotency_key='new-key')
+        assert state(session)==before
+    assert module.operations>=2
 
+@pytest.mark.parametrize('damage',['owner','blob'])
+def test_registered_read_keeps_fresh_owner_and_blob_rejection(tmp_path,old_rows,damage):
+    module,source=backend_double(tmp_path,old_rows)
+    policy.configure_registered_validator(module,source_sha256=sha(source.read_bytes()))
+    with old_rows.sessions.begin() as session:
+        if damage=='owner': session.execute(sa.update(Investigation).where(Investigation.id==old_rows.ids[0]).values(owner='foreign'))
+        else:
+            blob=session.scalar(sa.select(InvestigationArtifact).where(InvestigationArtifact.version_id==old_rows.ids[1]))
+            session.execute(sa.update(InvestigationArtifact).where(InvestigationArtifact.id==blob.id).values(data=bytes([blob.data[0]^1])+blob.data[1:]))
+    with old_rows.sessions() as session:
+        with pytest.raises(service.NotFound if damage=='owner' else service.Conflict):
+            store.projection_inputs(session,*old_rows.ids)
 
-@pytest.mark.parametrize("name", list(PAIRS))
-def test_other_historical_producer_hash_cannot_enable_override(producer_revision, name):
-    producer_revision[name] = "0" * 64
-    with pytest.raises(importer.NativeImportError, match="installed_domain_version_differs"):
-        importer._installed(producer_revision, source_manifest_hash=MANIFEST)
+def test_registration_capture_and_source_end_guard_remain_operation_local(tmp_path,old_rows):
+    module,source=backend_double(tmp_path,old_rows)
+    policy.configure_registered_validator(module,source_sha256=sha(source.read_bytes()))
+    with policy.validation_operation():
+        policy.read_legacy(old_rows.raw,old_rows.artifacts)
+        policy.configure_registered_validator(None)
+        policy.read_legacy(old_rows.raw,old_rows.artifacts)
+    assert module.calls==1
+    with pytest.raises(policy.PolicyUnavailable): policy.read_legacy(old_rows.raw,old_rows.artifacts)
+    policy.configure_registered_validator(module,source_sha256=sha(source.read_bytes()))
+    with pytest.raises(policy.PolicyUnavailable):
+        with policy.validation_operation(): source.write_bytes(b'# changed test source\n')
 
+def test_registered_policy_requires_exact_source_and_supported_caps(tmp_path,old_rows):
+    module,source=backend_double(tmp_path,old_rows)
+    with pytest.raises(policy.PolicyUnavailable): policy.configure_registered_validator(module,source_sha256='0'*64)
+    module.MAX_NATIVE_PAGE=50
+    with pytest.raises(ValueError): policy.configure_registered_validator(module,source_sha256=sha(source.read_bytes()))
+    assert policy._REGISTERED is None
 
-@pytest.mark.parametrize("name", list(PAIRS))
-def test_unreviewed_installed_producer_fails(producer_revision, monkeypatch, name):
-    real_read = importer._read_regular
-    monkeypatch.setattr(importer, "_read_regular", lambda path:
-        b"unreviewed producer change" if Path(path).absolute() == (ROOT / name).absolute() else real_read(path))
-    with pytest.raises(importer.NativeImportError, match="installed_domain_version_differs"):
-        importer._installed(producer_revision, source_manifest_hash=MANIFEST)
-
-
-@pytest.mark.parametrize("name", ["checker.py", "profile.py", "contracts.py", "trace.py", "sim_job.py"])
-def test_compatibility_never_waives_checker_or_execution_contract(producer_revision, monkeypatch, name):
-    relative = "src/veriforge/riscv/" + name
-    producer_revision[relative] = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
-    real_read = importer._read_regular
-    monkeypatch.setattr(importer, "_read_regular", lambda path:
-        b"changed immutable checker or execution contract" if Path(path).absolute() == (ROOT / relative).absolute() else real_read(path))
-    with pytest.raises(importer.NativeImportError, match="installed_domain_version_differs"):
-        importer._installed(producer_revision, source_manifest_hash=MANIFEST)
-
-
-def test_new_saved_replay_origin_and_four_case_format_are_not_admitted(tmp_path):
-    assert set(importer._CASES) == {"riscv-40920450439", "firmware-40929665294"}
-    assert tuple(case[0] for case in importer._RV_CASES) == ("control", "mutant", "control-replay")
-    with pytest.raises(importer.NativeImportError, match="unsupported_family"):
-        importer.prepare_native_bundle(family="riscv-saved-replay", bundle_root=tmp_path,
-            project_id="project", revision_id="revision")
+def test_four_case_retained_import_current_read_and_separate_old_history(tmp_path,old_rows):
+    source=ROOT/'.artifacts/u4-riscv/ci-41202693632/riscv-evidence-c14525e3791569215ba385a1c5582d52d0b8858f-41202693632-1'
+    if not source.is_dir(): pytest.skip('Retained four-case bundle unavailable; no native execution fabricated')
+    before={p.relative_to(source).as_posix():sha(p.read_bytes()) for p in source.rglob('*') if p.is_file()}
+    copied=tmp_path/'recorded-four-case'
+    shutil.copytree(source,copied)
+    assert before=={p.relative_to(copied).as_posix():sha(p.read_bytes()) for p in copied.rglob('*') if p.is_file()}
+    assert before=={p.relative_to(source).as_posix():sha(p.read_bytes()) for p in source.rglob('*') if p.is_file()}
+    prepared=importer.prepare_native_bundle(family='riscv-41202693632',bundle_root=copied,
+        project_id=old_rows.envelope.record.project_id,revision_id='fourcase-working-source')
+    report=prepared.admitted.native_report
+    saved=next(case for case in report.cases if case.locator.case_label=='control-saved-replay')
+    assert report.schema_version=='riscv.recorded-report.v2' and len(report.cases)==4
+    assert saved.inputs.saved_program is not None and saved.producer_phases==('reference','dut')
+    with old_rows.sessions.begin() as session:
+        old=state(session)
+        result=store.persist_investigation(session,prepared.admitted.envelope.record,prepared.admitted.artifacts,
+            authority=prepared.authority,idempotency_key='fourcase-key',at=AT)
+        summary,admitted,blobs=store.projection_inputs(session,result['investigation_id'],result['id'])
+        assert summary['report_kind']=='riscv.recorded-report.v2' and admitted.envelope.validation.version=='2'
+        assert len(blobs)==len(prepared.admitted.artifacts)
+        assert session.get(InvestigationVersion,old_rows.ids[1]).content==old_rows.raw
+        with pytest.raises(service.Conflict,match='report family changed'):
+            store.persist_investigation(session,prepared.admitted.envelope.record,prepared.admitted.artifacts,
+                authority=prepared.authority,idempotency_key='cannot-relabel-history',at=AT,investigation_id=old_rows.ids[0])
+        assert [row for row in old['investigation_versions'] if row[0]==old_rows.ids[1]]

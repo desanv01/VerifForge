@@ -22,6 +22,7 @@ from veriforge.contracts.native_tools import (
     EvidenceReference, FirmwareRecordedCase, FirmwareRecordedReport, HostedOrigin,
     Identifier, NativeCaseLocator, ProducerAttemptLocator, RecordedToolReport,
     RiscvRecordedAttempt, RiscvRecordedReport, Sha256,
+    RiscvRecordedAttemptV2, RiscvRecordedReportV2, ProducerAttemptLocatorV2,
 )
 from . import records as v1
 
@@ -50,11 +51,11 @@ _REGISTERED_SOURCES = {
     "targets/firmware/executable/candidate/registers.h": "552749250f2edae188589e9c62d7ef6bcc203bbb310ac68756b327a38573a755",
     "targets/firmware/executable/offset_bug/registers.h": "89891862308d9069b94647c8bdc2a6605afbf6973c4e3383b727bad5de6788b8",
 }
-ReportKind = Literal["riscv.recorded-report.v1", "firmware.recorded-report.v1"]
+ReportKind = Literal["riscv.recorded-report.v1", "riscv.recorded-report.v2", "firmware.recorded-report.v1"]
 Role = Literal["project_revision", "project_source", "native_report", "native_case", "provenance_source",
     "receipt", "manifest", "native_result", "native_execution", "native_check", "native_trace",
     "reference_trace", "program", "source_snapshot", "configuration", "replay_record", "candidate_diff"]
-NATIVE_SCHEMA_ALLOWLIST = frozenset({("riscv", "riscv.recorded-attempt.v1"), ("firmware", "firmware.recorded-case.v1")})
+NATIVE_SCHEMA_ALLOWLIST = frozenset({("riscv", "riscv.recorded-attempt.v1"), ("riscv", "riscv.recorded-attempt.v2"), ("firmware", "firmware.recorded-case.v1")})
 _REPORT = TypeAdapter(RecordedToolReport)
 _LOCATOR = TypeAdapter(NativeCaseLocator)
 _AUTHORITY_SEAL, _ADMISSION_SEAL = object(), object()
@@ -63,7 +64,7 @@ _AUTHORITY_SEAL, _ADMISSION_SEAL = object(), object()
 class NativeToolAttachment(WireModel):
     fact_id: Identifier
     domain: Literal["riscv", "firmware"]
-    native_schema_id: Literal["riscv.recorded-attempt.v1", "firmware.recorded-case.v1"]
+    native_schema_id: Literal["riscv.recorded-attempt.v1", "riscv.recorded-attempt.v2", "firmware.recorded-case.v1"]
     reference: EvidenceReference
 
 
@@ -80,7 +81,7 @@ class EngineeringInvestigationV2(WireModel):
 
     @model_validator(mode="after")
     def fixed_family(self):
-        expected = ("riscv", "riscv.recorded-attempt.v1", 3) if self.report_kind == "riscv.recorded-report.v1" else ("firmware", "firmware.recorded-case.v1", 5)
+        expected = ("riscv", "riscv.recorded-attempt.v2", 4) if self.report_kind == "riscv.recorded-report.v2" else ("riscv", "riscv.recorded-attempt.v1", 3) if self.report_kind == "riscv.recorded-report.v1" else ("firmware", "firmware.recorded-case.v1", 5)
         if len(self.native_records) != expected[2] or len({x.fact_id for x in self.native_records}) != len(self.native_records):
             raise ValueError("complete unique native case attachments required")
         if any((x.domain, x.native_schema_id) != expected[:2] for x in self.native_records):
@@ -97,7 +98,7 @@ class VerifiedArtifactV2(WireModel):
 
 class NativeValidation(WireModel):
     validator_id: Literal["veriforge.native-tool-admission"] = VALIDATOR_ID
-    version: Literal["1"] = VALIDATOR_VERSION
+    version: Literal["1", "2"] = VALIDATOR_VERSION
     implementation_hash: Sha256
     implementation_hash_provenance: Literal["host_pinned_installed_source_hash"] = "host_pinned_installed_source_hash"
     scope: Literal["exact_bytes_and_registered_pure_checkers_not_remote_attestation"] = "exact_bytes_and_registered_pure_checkers_not_remote_attestation"
@@ -150,10 +151,11 @@ def create_external_admission_authority(*, project_id, revision_id, project_revi
         manifest_ref=manifest_ref, report_kind=report_kind, report_ref=report_ref,
         locators=locators, validator_implementation_hash=validator_implementation_hash)
     pins = v1._decode(v1._encode(pins), _Pins, MAX_ENVELOPE_BYTES)
-    expected = 3 if report_kind == "riscv.recorded-report.v1" else 5
+    expected = 4 if report_kind == "riscv.recorded-report.v2" else 3 if report_kind == "riscv.recorded-report.v1" else 5
     if len(pins.locators) != expected or len({x.case_label for x in pins.locators}) != expected:
         raise ValueError("complete external locator authority required")
-    if any(isinstance(x, ProducerAttemptLocator) != (expected == 3) for x in pins.locators):
+    locator_type = ProducerAttemptLocatorV2 if expected == 4 else ProducerAttemptLocator
+    if any(isinstance(x, locator_type) != (expected in (3, 4)) for x in pins.locators):
         raise ValueError("external locator family differs")
     value = object.__new__(TrustedExternalAdmissionAuthority)
     object.__setattr__(value, "pins", pins)
@@ -305,11 +307,13 @@ def _elf_program(elf_data, binary, *, firmware=False, disassembly=None, attribut
     return words
 
 
-def _riscv_case(locator, inputs, resolve, path, source):
+def _riscv_case(locator, inputs, resolve, path, source, *, original_locator=None):
     from veriforge.riscv.contracts import RiscvExperiment, SimulationOutput, Comparison
     from veriforge.riscv.trace import normalize_rvfi, parse_spike_commits
     from veriforge.riscv.checker import compare_retirements
     from veriforge.riscv.profile import PLATFORM, CORE_REVISION, REFERENCE_REVISION, ASSEMBLER_FLAGS, COMPILER_FLAGS
+    saved = locator.case_label == "control-saved-replay"
+    modern = isinstance(locator, ProducerAttemptLocatorV2)
     raw = _named_inputs(locator, inputs, resolve, path, {
         "plan": "experiment.json", "profile": "profile.json", "source_manifest": "source-manifest.json",
         "checker_manifest": "checker-manifest.json", "environment": "environment.json", "raw_rvfi": "dut/rvfi.json",
@@ -332,11 +336,11 @@ def _riscv_case(locator, inputs, resolve, path, source):
     _require(native_source["profile_code_hash"] == source["src/veriforge/riscv/profile.py"], "native profile implementation differs")
     _keys(checker, ("checker.py", "trace.py", "contracts.py"))
     _require(_semantic(checker) == RISCV_CHECKER_HASH and all(checker[x] == source["src/veriforge/riscv/" + x] for x in checker), "unsupported retirement checker version")
-    _keys(environment, ("tools", "reference_revision", "reference_submodules", "elf_hash", "binary_hash", "object_hash", "assembly_command", "compiler_command", "reference_command", "driver_hash", "memory_hash", "job_hash", "spike_binary_hash", "image_package_hash"))
+    _keys(environment, ("tools", "reference_revision", "reference_submodules", "elf_hash", "binary_hash", "object_hash", "assembly_command", "compiler_command", "reference_command", "driver_hash", "memory_hash", "job_hash", "spike_binary_hash", "image_package_hash"), ("program_mode", "saved_program_sha256") if saved else ())
     _require(environment["tools"] == [tool.model_dump(mode="json") for tool in result.tool_versions]
-        and {tool.name for tool in result.tool_versions} == {"verilator", "riscv-gcc", "spike-revision", "cocotb", "python"}, "native tool version record differs")
-    _require(environment["assembly_command"] == ["riscv64-unknown-elf-gcc", *ASSEMBLER_FLAGS, "-c", "/workspace/targets/riscv/smoke.S", "-o", "/output/smoke.o"]
-        and environment["compiler_command"] == ["riscv64-unknown-elf-gcc", *COMPILER_FLAGS, "-T", "/workspace/targets/riscv/link.ld", "/output/smoke.o", "-o", "/output/smoke.elf"]
+        and {tool.name for tool in result.tool_versions} == ({"verilator", "spike-revision", "cocotb", "python"} if saved else {"verilator", "riscv-gcc", "spike-revision", "cocotb", "python"}), "native tool version record differs")
+    _require((environment["assembly_command"] == environment["compiler_command"] == [] if saved else environment["assembly_command"] == ["riscv64-unknown-elf-gcc", *ASSEMBLER_FLAGS, "-c", "/workspace/targets/riscv/smoke.S", "-o", "/output/smoke.o"]
+        and environment["compiler_command"] == ["riscv64-unknown-elf-gcc", *COMPILER_FLAGS, "-T", "/workspace/targets/riscv/link.ld", "/output/smoke.o", "-o", "/output/smoke.elf"])
         and environment["reference_command"] == ["spike", "--isa=RV32I", "--priv=m", "--pcs=0:0x80000000", "-m0x80000000:0x10000", "--log-commits", "--log=/output/reference/commit.log", "--instructions="+str(plan.max_retired), "/output/smoke.elf"], "unsupported native tool command configuration")
     _require(environment["spike_binary_hash"] == "7020158c1a7b39119a6b1a08b6f43bc6097f95db883ea53a79cf98b4994765e7"
         and environment["image_package_hash"] == "e43d1b9d3074e5c9b6a7718a68b81096fef1559b2ad100b6bb58bb97e21de994"
@@ -381,10 +385,45 @@ def _riscv_case(locator, inputs, resolve, path, source):
             _semantic({"checker": identity["checker_hash"], "contract": identity["contract_hash"], "field": first.field})), "native failure signature differs")
     else:
         _require(result.failure_signature is None, "unexpected native failure signature")
-    phases = ("assembler", "compiler", "objcopy", "reference", "dut")
+    phases = ("reference", "dut") if saved else ("assembler", "compiler", "objcopy", "reference", "dut")
+    extras = {}
+    if modern:
+        _require(plan.max_cycles == 100000 and plan.max_retired == 256 and plan.wall_time_seconds == 120.0, "unsupported four-case limits")
+        _require(len({x.path for x in result.artifacts}) == len(result.artifacts) and len({x.artifact_id for x in result.artifacts}) == len(result.artifacts), "duplicate native artifact identity")
+        _require(result.usage.wall_time_seconds < 120.0 and result.usage.artifact_bytes == sum(x.size_bytes for x in result.artifacts), "four-case usage differs")
+        _require(not any(x.path.startswith(("assembler/", "compiler/", "objcopy/")) for x in result.artifacts) if saved else True, "saved replay contains compilation phases")
+        import xml.etree.ElementTree as ET
+        xml = ET.fromstring(path(locator.case_label + "/dut/results.xml"))
+        tests = list(xml.iter("testcase"))
+        _require(tests and not any(list(node.iter(tag)) for node in tests for tag in ("failure", "error", "skipped")), "native HDL test did not complete")
+        _require(path(locator.case_label + "/dut/built.marker"), "missing recorded HDL rebuild")
+        if saved:
+            proof_raw = resolve(inputs.saved_program, "configuration")
+            _require(path(locator.case_label + "/saved-program.json", inputs.saved_program.sha256) == proof_raw, "saved proof path differs")
+            _require(environment["program_mode"] == "saved_program_no_compilation" and environment["saved_program_sha256"] == _hash(proof_raw), "saved environment proof differs")
+            original = v1._decode(path("control/result.json"), AttemptResult)
+            _require(original.execution_status == "completed" and original.verdict == "pass_within_scope", "saved original did not pass")
+            expected_origin = _riscv_origin(locator.origin, original, _hash(path("control/result.json")))
+            _require(_json(path("control/saved-origin.json")) == expected_origin, "saved original run differs")
+            proof = _json(proof_raw)
+            expected = dict(schema_version="riscv.saved-program.v1", original_attempt_id=original.attempt_id,
+                original_experiment_id=original.experiment_id, original_identity=original.identity.model_dump(mode="json"),
+                original_result_sha256=_hash(path("control/result.json")), original_run_identity=expected_origin,
+                program_hashes={name: _hash(path("control/"+name)) for name in ("smoke.o", "smoke.elf", "smoke.bin")})
+            _require(proof == expected, "saved original proof differs")
+            for name in ("smoke.o", "smoke.elf", "smoke.bin"):
+                _require(path(locator.case_label+"/"+name) == path("control/"+name), "saved executable bytes differ")
+            _require(original_locator is not None and original_locator.native_attempt_id == original.attempt_id and original_locator.raw_result_ref.sha256 == _hash(path("control/result.json")), "saved original locator differs")
+            extras["replay_of"] = original_locator
+        if inputs.original_run is not None:
+            origin_raw = resolve(inputs.original_run, "configuration")
+            _require(path("control/saved-origin.json", inputs.original_run.sha256) == origin_raw and _json(origin_raw) == _riscv_origin(locator.origin, result, _hash(result_raw)), "original run proof differs")
+        extras["program_mode"] = "saved_executable_no_program_compilation" if saved else "fresh_compilation"
+
     for phase in phases:
         _require(any(x.path.startswith(phase + "/") for x in result.artifacts), "native phase evidence missing")
-    return RiscvRecordedAttempt(locator=locator, inputs=inputs, identity=identity,
+    attempt_type = RiscvRecordedAttemptV2 if modern else RiscvRecordedAttempt
+    return attempt_type(locator=locator, inputs=inputs, identity=identity, **extras,
         checker=CheckerIdentity(checker_id="riscv-retirement", version="1", sha256=identity["checker_hash"]),
         configuration_hash=_semantic({"profile": profile, "source": native_source, "checker": checker, "environment": environment}),
         producer_execution_status="completed", termination=observed_raw.termination, checker_evidence_status="valid", verdict=comparison.verdict,
@@ -544,7 +583,8 @@ def _validate_native_report(report, resolve, path):
     by_label = {case.locator.case_label: case for case in report.cases}
     for case in report.cases:
         if isinstance(case, RiscvRecordedAttempt):
-            derived = _riscv_case(case.locator, case.inputs, resolve, path, source)
+            derived = _riscv_case(case.locator, case.inputs, resolve, path, source,
+                original_locator=by_label["control"].locator if isinstance(case, RiscvRecordedAttemptV2) and case.locator.case_label == "control-saved-replay" else None)
         else:
             original_ref = by_label[case.locator.case_label.removesuffix("-replay")].locator.execution_ref if case.locator.case_label.endswith("-replay") else None
             derived = _firmware_case(case.locator, case.inputs, resolve, path, source, original_ref=original_ref)
@@ -553,7 +593,17 @@ def _validate_native_report(report, resolve, path):
                 execution = _json(resolve(case.locator.execution_ref, "native_execution"))
                 _require(execution.get("replay_original_hash") == original.locator.execution_ref.sha256, "saved replay binds a different original execution")
         _require(derived == case, "native derived case metadata differs from registered byte revalidation")
-    if isinstance(report, RiscvRecordedReport):
+    if isinstance(report, RiscvRecordedReportV2):
+        original = by_label["control"]
+        original_env = _json(resolve(original.inputs.environment, "configuration"))
+        runtime_names = ("reference_revision", "reference_submodules", "spike_binary_hash", "image_package_hash", "driver_hash", "memory_hash", "job_hash")
+        original_tools = [tool for tool in original_env["tools"] if tool["name"] != "riscv-gcc"]
+        for case in report.cases:
+            env = _json(resolve(case.inputs.environment, "configuration"))
+            _require(all(env[name] == original_env[name] for name in runtime_names)
+                and [tool for tool in env["tools"] if tool["name"] != "riscv-gcc"] == original_tools, "four-case common runtime differs")
+            _require(all(getattr(case.inputs, name).sha256 == getattr(original.inputs, name).sha256 for name in ("object", "elf", "binary", "raw_spike")), "four-case common program/reference differs")
+    if isinstance(report, (RiscvRecordedReport, RiscvRecordedReportV2)):
         comparison_raw = resolve(report.recompiled_control.record_ref, "replay_record")
         _require(path("summary.json", report.recompiled_control.record_ref.sha256) == comparison_raw, "recompiled comparison path differs")
         _validate_summary(report, _json(comparison_raw), resolve)
@@ -572,14 +622,22 @@ def _validate_native_report(report, resolve, path):
             _validate_summary(report, _json(comparison_raw), resolve)
 
 
+def _riscv_origin(origin, original, raw_result_sha256):
+    return dict(schema_version="riscv.ci-origin.v1", source_commit=origin.source_commit, run_id=str(origin.run_id),
+        run_attempt=str(origin.run_attempt), case="control", attempt_id=original.attempt_id,
+        result_sha256=raw_result_sha256)
+
+
 def _validate_summary(report, summary, resolve):
-    riscv = isinstance(report, RiscvRecordedReport)
+    riscv = isinstance(report, (RiscvRecordedReport, RiscvRecordedReportV2))
     _keys(summary, ("schema_version", "accepted", "builder_settled", "commit", "run_id", "run_attempt", "image_id", "wall_seconds", "attempts" if riscv else "cases"), () if riscv else ("reference_support",))
     origin = report.selection.origin
     _require(summary["schema_version"] == ("riscv.ci.v1" if riscv else "firmware.ci.v1") and summary["accepted"] is True and summary["builder_settled"] is True
         and (summary["commit"], summary["run_id"], summary["run_attempt"]) == (origin.source_commit, str(origin.run_id), str(origin.run_attempt)), "native summary origin/status differs")
     _require(type(summary["image_id"]) is str and re.fullmatch(r"sha256:[0-9a-f]{64}", summary["image_id"]) is not None and type(summary["wall_seconds"]) in (int,float)
         and math.isfinite(summary["wall_seconds"]) and 0 <= summary["wall_seconds"] <= 3600, "native summary metadata unsupported")
+    if isinstance(report, RiscvRecordedReportV2):
+        _require(summary["image_id"] == "sha256:5f9a62c1043089d6eb4f7b2d966640ab25d2c53dc2934d11f37f141b1ddc6fff", "unsupported four-case recorded image")
     cases = summary["attempts" if riscv else "cases"]
     _require(type(cases) is dict and set(cases) == {x.locator.case_label for x in report.cases}, "native summary case set differs")
     for case in report.cases:
@@ -588,6 +646,14 @@ def _validate_summary(report, summary, resolve):
             expected = dict(binary_hash=case.inputs.binary.sha256, compared=case.compared_count, cycles=case.cycles, elf_hash=case.inputs.elf.sha256,
                 first_divergence=_json(resolve(case.inputs.comparison, "native_check"))["first_divergence"], identity=case.identity.model_dump(mode="json"), object_hash=case.inputs.object.sha256,
                 pair_hash=_semantic(pair), reference_hash=_semantic(pair["reference"]), verdict=case.verdict)
+            if isinstance(report, RiscvRecordedReportV2):
+                environment = _json(resolve(case.inputs.environment, "configuration"))
+                runtime_names = ("reference_revision", "spike_binary_hash", "image_package_hash", "driver_hash", "memory_hash", "job_hash")
+                runtime = {name: environment[name] for name in runtime_names}
+                runtime["tools"] = [tool for tool in environment["tools"] if tool["name"] != "riscv-gcc"]
+                proof = _json(resolve(case.inputs.saved_program, "configuration")) if case.inputs.saved_program else None
+                origin = _json(resolve(case.inputs.original_run, "configuration")) if case.inputs.original_run else None
+                expected.update(result_sha256=case.locator.raw_result_ref.sha256, run_origin=origin, runtime_identity=runtime, saved_program=proof)
         else:
             expected = _json(resolve(case.inputs.check, "native_check"))
             tools = _json(resolve(case.inputs.tool_metadata, "configuration"))
@@ -681,7 +747,7 @@ def admit_native_investigation(record, artifacts, *, authority):
         native = resolve(attachment.reference, "native_case", type(case), canonical_bytes=True)
         _require(native == case and fact.native_record_hash == canonical_hash(native), "native wrapper differs from report case")
         proof = fact.provenance.extraction
-        _require(proof is not None and proof.method == "native_parser" and proof.implementation_hash == pins.validator_implementation_hash and proof.extractor_id == VALIDATOR_ID and proof.extractor_version == VALIDATOR_VERSION,
+        _require(proof is not None and proof.method == "native_parser" and proof.implementation_hash == pins.validator_implementation_hash and proof.extractor_id == VALIDATOR_ID and proof.extractor_version == ("2" if record.report_kind == "riscv.recorded-report.v2" else VALIDATOR_VERSION),
             "native extraction differs from pinned registered validator")
         raw_ref = case.locator.raw_result_ref if isinstance(case, RiscvRecordedAttempt) else case.inputs.check
         _require(raw_ref in tuple(x.artifact for x in fact.provenance.sources), "native provenance omits primary producer bytes")
@@ -690,12 +756,12 @@ def admit_native_investigation(record, artifacts, *, authority):
             resolve(provenance.artifact, "provenance_source")
         decoded.append(native)
     _require(set(roles) == set(supplied), "unreferenced native artifact bytes")
-    native_ids = {x.native_attempt_id for x in pins.locators if isinstance(x, ProducerAttemptLocator)}
+    native_ids = {x.native_attempt_id for x in pins.locators if isinstance(x, (ProducerAttemptLocator, ProducerAttemptLocatorV2))}
     _require(all(key[2] is None or key[2] in native_ids for key in roles), "unbound external native attempt namespace")
     ordered = sorted(supplied, key=lambda x: (x[0], x[1], x[2] or ""))
     verified = tuple(VerifiedArtifactV2(reference=supplied[key].reference, size_bytes=len(supplied[key].data),
         roles=tuple(sorted(roles[key])), canonical_record_hash=canonical.get(key)) for key in ordered)
-    envelope = AdmissionEnvelopeV2(validation=NativeValidation(implementation_hash=pins.validator_implementation_hash),
+    envelope = AdmissionEnvelopeV2(validation=NativeValidation(version="2" if record.report_kind == "riscv.recorded-report.v2" else "1", implementation_hash=pins.validator_implementation_hash),
         record=record, record_hash=canonical_hash(record), artifacts=verified, total_artifact_bytes=total)
     _require(len(v1._encode(envelope)) <= MAX_ENVELOPE_BYTES, "native admission envelope byte limit exceeded")
     value = object.__new__(AdmittedNativeInvestigation)

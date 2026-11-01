@@ -33,9 +33,9 @@ def test_health_advertises_closed_recorded_capabilities_without_revalidation(cli
     body = response.json()
     assert body['investigation_api'] == '1'
     assert body['investigation_admission_schemas'] == list(store.ADMISSION_SCHEMAS) == [
-        'engineering.admission.v1', 'engineering.admission.v2']
+        'engineering.admission.v1', 'engineering.admission.v2', 'engineering.admission.v3']
     assert body['investigation_report_kinds'] == list(store.NATIVE_REPORT_KINDS) == [
-        'riscv.recorded-report.v1', 'firmware.recorded-report.v1']
+        'riscv.recorded-report.v1', 'firmware.recorded-report.v1', 'riscv.recorded-report.v2']
     assert body['model'] == 'not_integrated' and body['execution'] == 'separate_worker'
     assert body['planner_admission_enabled'] is False
 

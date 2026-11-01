@@ -152,6 +152,50 @@ def import_corrected_case(session, *, idempotency_key, at, bundle_root, xdc, net
     return _persist_prepared(session, admitted, idempotency_key=idempotency_key, at=at)
 
 
+def import_native_bundle(session, *, family, bundle_root, project_id, revision_id,
+                         idempotency_key, at, investigation_id=None):
+    """Curated native preparation + current admission in the caller transaction.
+
+    The project must already be owned engineering state. This function neither
+    creates a project nor commits, migrates, dispatches or executes input code.
+    New four-case reports remain separate from old persisted report history.
+    """
+    from veriforge.system_investigation import native_tool_import
+    require_supported_schema(session)
+    try:
+        prepared = native_tool_import.prepare_native_bundle(family=family, bundle_root=bundle_root,
+            project_id=project_id, revision_id=revision_id)
+        return native_tool_import.apply_prepared(session, prepared, idempotency_key=idempotency_key,
+            at=at, investigation_id=investigation_id)
+    except native_tool_import.NativeImportError as error:
+        raise RecordedImportError(error.stage, error.code) from None
+
+
+def retry_legacy_native_admission(session, *, envelope_bytes, artifacts, idempotency_key,
+                                   investigation_id=None):
+    """Exact existing legacy key/bytes only; never admits or rewrites a version.
+
+    Full independent legacy validation is delegated to the registered core
+    reader. Missing runtime, owner/content drift and unknown keys fail closed.
+    A successful read-only retry is not a new import, commit or tool execution.
+    """
+    require_supported_schema(session)
+    if session.new or session.dirty or session.deleted:
+        raise RecordedImportError("transaction", "clean_caller_session_required")
+    if type(idempotency_key) is not str or not 1 <= len(idempotency_key) <= 128:
+        raise RecordedImportError("arguments", "bounded_idempotency_key_required")
+    try:
+        summary = investigations.retry_legacy_admission(session, envelope_bytes=envelope_bytes,
+            artifacts=artifacts, idempotency_key=idempotency_key, investigation_id=investigation_id)
+        return {"db_investigation_id": summary["investigation_id"], "db_version_id": summary["id"],
+            "content_sha256": summary["content_hash"], "operation": "legacy_exact_retry_only",
+            "new_execution": "not_run", "database": "unchanged"}
+    except (service.NotFound, service.Conflict, SQLAlchemyError):
+        raise RecordedImportError("compatibility", "owned_legacy_evidence_or_runtime_unavailable") from None
+    except (ValueError, TypeError, KeyError, AttributeError):
+        raise RecordedImportError("compatibility", "exact_legacy_retry_required") from None
+
+
 class _Parser(argparse.ArgumentParser):
     def error(self, message):
         # argparse's default error echoes operator-supplied values/paths.

@@ -51,6 +51,7 @@ FirmwareLabel = Literal["control", "bad", "candidate", "bad-replay", "candidate-
 Phase = Literal["assemble_start", "assemble_probe", "compile_main", "compiler", "binary", "disassembly", "elf_headers", "simulator"]
 
 _RUNS = {
+    41202693632: ("c14525e3791569215ba385a1c5582d52d0b8858f", 13042803636),
     40920450439: ("44b8b5e40ce7841f076e4178df13f38ecdbd05fd", 12919420477),
     40929665294: ("5565985bbe2bb2a0be869d366baa48c715057657", 12922737365),
 }
@@ -132,8 +133,34 @@ class ProducerCaseLocator(WireModel):
         return self
 
 
-NativeCaseLocator = Annotated[ProducerAttemptLocator | ProducerCaseLocator, Field(discriminator="kind")]
-ArtifactScope = Annotated[HostedOrigin | ProducerAttemptLocator | ProducerCaseLocator, Field(discriminator="kind")]
+
+_ATTEMPTS_V2 = {
+    "control": ("attempt-dbafbe5ba8334d1f89afce0b131d1226", "rv32i-control-v1"),
+    "mutant": ("attempt-74f3f66cde2645afab8300c5d587b27f", "rv32i-functional-register-mutant-v1"),
+    "control-replay": ("attempt-50931cab3f4e4a118a01f43c8a332aec", "rv32i-control-v1"),
+    "control-saved-replay": ("attempt-49fa3f22304943aeacb099107dad6bd9", "rv32i-control-v1"),
+}
+
+
+class ProducerAttemptLocatorV2(WireModel):
+    kind: Literal["producer_attempt_v2"] = "producer_attempt_v2"
+    origin: HostedOrigin
+    case_label: Literal["control", "mutant", "control-replay", "control-saved-replay"]
+    native_attempt_id: Identifier
+    wire_experiment_id: Identifier
+    raw_result_ref: EvidenceReference
+
+    @model_validator(mode="after")
+    def original_identity(self):
+        if self.origin.run_id != 41202693632 or _ATTEMPTS_V2[self.case_label] != (self.native_attempt_id, self.wire_experiment_id):
+            raise ValueError("unsupported four-case RISC-V identity")
+        if self.raw_result_ref.attempt_id != self.native_attempt_id:
+            raise ValueError("result native attempt differs")
+        return self
+
+
+NativeCaseLocator = Annotated[ProducerAttemptLocator | ProducerAttemptLocatorV2 | ProducerCaseLocator, Field(discriminator="kind")]
+ArtifactScope = Annotated[HostedOrigin | ProducerAttemptLocator | ProducerAttemptLocatorV2 | ProducerCaseLocator, Field(discriminator="kind")]
 Role = Literal["receipt", "manifest", "native_result", "native_execution", "native_check", "native_trace", "reference_trace", "program", "source_snapshot", "configuration", "replay_record", "candidate_diff"]
 
 
@@ -160,7 +187,7 @@ class RecordedArtifactBinding(WireModel):
         else:
             if self.original_relative_path is None:
                 raise ValueError("producer artifact requires original path")
-            native_id = self.scope.native_attempt_id if isinstance(self.scope, ProducerAttemptLocator) else None
+            native_id = self.scope.native_attempt_id if isinstance(self.scope, (ProducerAttemptLocator, ProducerAttemptLocatorV2)) else None
             if self.ref.attempt_id != native_id:
                 raise ValueError("artifact native attempt differs from scope")
             if not isinstance(self.scope, HostedOrigin):
@@ -311,6 +338,37 @@ class RiscvRecordedAttempt(WireModel):
             raise ValueError("unvalidated checker evidence is inconclusive")
         if self.verdict == "pass_within_scope" and (not self.compared_count or self.producer_execution_status != "completed" or self.termination != "completion_store_retired" or self.compared_count != self.retired_count or self.compared_count != self.reference_count):
             raise ValueError("pass requires completed full comparison")
+        return self
+
+
+
+class RiscvInputsV2(RiscvInputs):
+    saved_program: EvidenceReference | None = None
+    original_run: EvidenceReference | None = None
+
+
+class RiscvRecordedAttemptV2(RiscvRecordedAttempt):
+    schema_version: Literal["riscv.recorded-attempt.v2"] = "riscv.recorded-attempt.v2"
+    locator: ProducerAttemptLocatorV2
+    inputs: RiscvInputsV2
+    program_mode: Literal["fresh_compilation", "saved_executable_no_program_compilation"]
+    replay_of: ProducerAttemptLocatorV2 | None = None
+    runtime_scope: Literal["fresh_spike_and_recorded_hdl_cpp_rebuild_not_isa_certification"] = "fresh_spike_and_recorded_hdl_cpp_rebuild_not_isa_certification"
+
+    @model_validator(mode="after")
+    def program_semantics(self):
+        saved = self.locator.case_label == "control-saved-replay"
+        if saved != (self.program_mode == "saved_executable_no_program_compilation"):
+            raise ValueError("saved execution mode differs from case")
+        if saved:
+            if self.replay_of is None or self.replay_of.case_label != "control" or self.replay_of.origin != self.locator.origin or self.inputs.saved_program is None:
+                raise ValueError("saved executable requires same-run control and proof")
+            if self.producer_phases != ("reference", "dut"):
+                raise ValueError("saved program cannot claim assembly/link/objcopy")
+        elif self.replay_of is not None or self.inputs.saved_program is not None or self.producer_phases != ("assembler", "compiler", "objcopy", "reference", "dut"):
+            raise ValueError("fresh compilation evidence differs")
+        if (self.locator.case_label == "control") != (self.inputs.original_run is not None):
+            raise ValueError("original run proof belongs only to control")
         return self
 
 
@@ -503,6 +561,7 @@ def _report_closure(report):
         else:
             require(case.locator.execution_ref, case.locator, "native_execution")
         roles = {
+            "saved_program": "configuration", "original_run": "configuration",
             "plan": "configuration", "profile": "configuration", "source_manifest": "source_snapshot",
             "checker_manifest": "configuration", "environment": "configuration", "raw_rvfi": "native_trace",
             "raw_spike": "reference_trace", "normalized_pair": "native_trace", "comparison": "native_check",
@@ -512,6 +571,8 @@ def _report_closure(report):
         }
         for name in type(case.inputs).model_fields:
             value = getattr(case.inputs, name)
+            if value is None:
+                continue
             if isinstance(value, (FirmwareProgram, FirmwareSources)):
                 for ref in _input_refs(value):
                     require(ref, case.locator, "program" if isinstance(value, FirmwareProgram) else "source_snapshot")
@@ -598,4 +659,58 @@ class FirmwareRecordedReport(WireModel):
         return self
 
 
-RecordedToolReport = Annotated[RiscvRecordedReport | FirmwareRecordedReport, Field(discriminator="schema_version")]
+
+class RecompiledControlComparisonV2(WireModel):
+    kind: Literal["recompiled_control"] = "recompiled_control"
+    original: ProducerAttemptLocatorV2
+    repeated: ProducerAttemptLocatorV2
+    record_ref: EvidenceReference
+    outcome: Literal["byte_identical_recompiled_control"]
+
+
+class SavedExecutableComparisonV2(WireModel):
+    kind: Literal["saved_executable"] = "saved_executable"
+    original: ProducerAttemptLocatorV2
+    repeated: ProducerAttemptLocatorV2
+    record_ref: EvidenceReference
+    outcome: Literal["byte_identical_saved_executable_with_fresh_reference_and_hdl_rebuild"]
+
+
+class RiscvRecordedReportV2(WireModel):
+    schema_version: Literal["riscv.recorded-report.v2"] = "riscv.recorded-report.v2"
+    family: Literal["riscv_retirement"] = "riscv_retirement"
+    operation: Literal["admission_only"] = "admission_only"
+    new_execution: Literal["not_run"] = "not_run"
+    manifest_ref: EvidenceReference
+    selection: ArtifactSelection
+    cases: Annotated[tuple[RiscvRecordedAttemptV2, ...], Field(min_length=4, max_length=4)]
+    recompiled_control: RecompiledControlComparisonV2
+    saved_executable: SavedExecutableComparisonV2
+
+    @model_validator(mode="after")
+    def comparison_closure(self):
+        require = _report_closure(self)
+        by_label = {case.locator.case_label: case for case in self.cases}
+        if set(by_label) != set(_ATTEMPTS_V2):
+            raise ValueError("four-case set incomplete")
+        a, b, c = (by_label[name] for name in ("control", "control-replay", "control-saved-replay"))
+        for comparison, repeated in ((self.recompiled_control, b), (self.saved_executable, c)):
+            if (comparison.original, comparison.repeated) != (a.locator, repeated.locator):
+                raise ValueError("comparison refers to wrong cases")
+            require(comparison.record_ref, self.selection.origin, "replay_record")
+        if self.saved_executable.record_ref != self.recompiled_control.record_ref:
+            raise ValueError("replay comparisons require the same exact summary")
+        full = ("object", "elf", "binary", "raw_rvfi", "raw_spike", "normalized_pair", "comparison")
+        if a.identity != b.identity or a.configuration_hash != b.configuration_hash or a.inputs.environment.sha256 != b.inputs.environment.sha256:
+            raise ValueError("recompiled identity differs")
+        for repeated in (b, c):
+            if any(getattr(a.inputs, name).sha256 != getattr(repeated.inputs, name).sha256 for name in full):
+                raise ValueError("program or replay evidence differs")
+            if (a.verdict, a.cycles, a.compared_count) != (repeated.verdict, repeated.cycles, repeated.compared_count) or a.verdict != "pass_within_scope":
+                raise ValueError("replay result differs")
+        if c.replay_of != a.locator or any(getattr(a.identity, field) != getattr(c.identity, field) for field in ("source_hash", "checker_hash", "contract_hash", "experiment_hash")):
+            raise ValueError("saved control design identity differs")
+        return self
+
+
+RecordedToolReport = Annotated[RiscvRecordedReport | RiscvRecordedReportV2 | FirmwareRecordedReport, Field(discriminator="schema_version")]
