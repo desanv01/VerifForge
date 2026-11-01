@@ -61,3 +61,30 @@ including both added tables. Earlier revision13 evidence and its 23-table
 restore requirements remain historical; they cannot establish a revision14
 restore. Keep the original data and evidence intact. Full feature review and
 real tool/application acceptance remain separate gates.
+
+## Fixed-profile Vivado candidate orchestration
+
+`veriforge.vivado.repair_execution` prepares separate original and candidate
+snapshots and connects one bounded candidate attempt to the existing report
+investigation and comparison functions. Protected source, recipe, checker and
+configuration identities are verified before and after execution. A one-shot
+claim prevents automatic retry after an uncertain effect; raw receipts and
+infrastructure failures remain inspectable.
+
+The current Exercise3 profile admits only its existing unchanged XDC and fixed
+synthesis/routed recipes. Its accepted baseline has missing I/O timing
+requirements, so candidate dispatch is blocked. A hash alone cannot clear those
+findings. A separately reviewed requirements-bearing profile is necessary;
+this implementation does not invent delays or timing exceptions.
+
+The concrete native adapter requires exact host-installed controller bytes that
+are not distributed in the public repository. Missing installation fails closed.
+API/worker wiring and qualification of the relocated controller binding remain
+open. Trusted callbacks supply current control, exclusive reservation,
+cancellation and available memory; a startup memory check is not a continuous
+quota. No public request may supply a launcher or script.
+
+Focused tests use temporary source snapshots, synthetic reports and fake tools.
+They are not new Vivado execution. `repair_status` remains `not_validated` even
+when execution completes or reported internal timing improves: functional,
+CDC, board and independently checked repair acceptance are still required.
