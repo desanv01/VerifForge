@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>carrier.kicad_sch</source>
+    <date>2026-10-29T22:51:03</date>
+    <tool>Eeschema 10.0.6</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>VerifForge passive cable carrier - control</title>
+        <company/>
+        <rev>U7-source-v1</rev>
+        <date/>
+        <source>carrier.kicad_sch</source>
+        <comment number="1" value="Curated demo; exact MPN and mechanical compatibility UNREVIEWED"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="J1">
+      <value>MPN_UNRESOLVED</value>
+      <footprint>VerifForge:Header2x6_2.54_Unreviewed</footprint>
+      <fields>
+        <field name="Manufacturer"/>
+        <field name="MPN"/>
+        <field name="Footprint">VerifForge:Header2x6_2.54_Unreviewed</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="VerifForge" part="CarrierHeader2x6" description=""/>
+      <property name="Manufacturer" value=""/>
+      <property name="MPN" value=""/>
+      <property name="Sheetname" value="carrier"/>
+      <property name="Sheetfile" value="carrier.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>fd02745d-c92c-591b-86dd-16605f12562d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="7"/>
+            <pin num="9"/>
+            <pin num="11"/>
+            <pin num="2"/>
+            <pin num="4"/>
+            <pin num="6"/>
+            <pin num="8"/>
+            <pin num="10"/>
+            <pin num="12"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J2">
+      <value>MPN_UNRESOLVED</value>
+      <footprint>VerifForge:Header2x6_2.54_Unreviewed</footprint>
+      <fields>
+        <field name="Manufacturer"/>
+        <field name="MPN"/>
+        <field name="Footprint">VerifForge:Header2x6_2.54_Unreviewed</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="VerifForge" part="CarrierHeader2x6" description=""/>
+      <property name="Manufacturer" value=""/>
+      <property name="MPN" value=""/>
+      <property name="Sheetname" value="carrier"/>
+      <property name="Sheetfile" value="carrier.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6440f962-c95b-5e21-8041-3c3ea54d4432</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="7"/>
+            <pin num="9"/>
+            <pin num="11"/>
+            <pin num="2"/>
+            <pin num="4"/>
+            <pin num="6"/>
+            <pin num="8"/>
+            <pin num="10"/>
+            <pin num="12"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="VerifForge" part="CarrierHeader2x6">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">CarrierHeader2x6</field>
+        <field name="Footprint">VerifForge:Header2x6_2.54_Unreviewed</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="VerifForge">
+      <uri>${KIPRJMOD}/VerifForge.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="/GND" class="Default">
+      <node ref="J1" pin="10" pinfunction="Pin_10_10" pintype="passive"/>
+      <node ref="J1" pin="9" pinfunction="Pin_9_9" pintype="passive"/>
+      <node ref="J2" pin="10" pinfunction="Pin_10_10" pintype="passive"/>
+      <node ref="J2" pin="9" pinfunction="Pin_9_9" pintype="passive"/>
+    </net>
+    <net code="2" name="/JA1" class="Default">
+      <node ref="J1" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+    </net>
+    <net code="3" name="/JA2" class="Default">
+      <node ref="J1" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+    </net>
+    <net code="4" name="/JA3" class="Default">
+      <node ref="J1" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
+      <node ref="J2" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
+    </net>
+    <net code="5" name="/JA4" class="Default">
+      <node ref="J1" pin="7" pinfunction="Pin_7_7" pintype="passive"/>
+      <node ref="J2" pin="7" pinfunction="Pin_7_7" pintype="passive"/>
+    </net>
+    <net code="6" name="/JA7" class="Default">
+      <node ref="J1" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+    </net>
+    <net code="7" name="/JA8" class="Default">
+      <node ref="J1" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
+    </net>
+    <net code="8" name="/JA9" class="Default">
+      <node ref="J1" pin="6" pinfunction="Pin_6_6" pintype="passive"/>
+      <node ref="J2" pin="6" pinfunction="Pin_6_6" pintype="passive"/>
+    </net>
+    <net code="9" name="/JA10" class="Default">
+      <node ref="J1" pin="8" pinfunction="Pin_8_8" pintype="passive"/>
+      <node ref="J2" pin="8" pinfunction="Pin_8_8" pintype="passive"/>
+    </net>
+    <net code="10" name="/VCC3V3" class="Default">
+      <node ref="J1" pin="11" pinfunction="Pin_11_11" pintype="passive"/>
+      <node ref="J1" pin="12" pinfunction="Pin_12_12" pintype="passive"/>
+      <node ref="J2" pin="11" pinfunction="Pin_11_11" pintype="passive"/>
+      <node ref="J2" pin="12" pinfunction="Pin_12_12" pintype="passive"/>
+    </net>
+  </nets>
+</export>

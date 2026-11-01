@@ -6,6 +6,10 @@ from .adapter import (
 )
 from .readiness import BatchPlan, BatchRecipe, ProjectReadiness, inspect_exercise3, plan_batch, render_batch_recipe
 from .recorded import PartObservation, RecordedAttempt, RecordedBudget, RecordedStorage, ReportAvailability, inspect_recorded_attempt
+from .investigation import (
+    VivadoProjectIdentity, VivadoExecution, VivadoReportFact, VivadoFinding,
+    VivadoInvestigation, VivadoCandidateComparison, investigate_vivado_reports, compare_vivado_candidate, vivado_projection,
+)
 
 __all__ = [
     "Capability", "Diagnostic", "ImportedReport", "PreparedAttempt", "Recipe",
@@ -13,4 +17,7 @@ __all__ = [
     "BatchPlan", "BatchRecipe", "ProjectReadiness", "inspect_exercise3", "plan_batch", "render_batch_recipe",
     "PartObservation", "RecordedAttempt", "ReportAvailability", "inspect_recorded_attempt",
     "RecordedBudget", "RecordedStorage",
+    "VivadoProjectIdentity", "VivadoExecution", "VivadoReportFact", "VivadoFinding",
+    "VivadoInvestigation", "VivadoCandidateComparison", "investigate_vivado_reports", "compare_vivado_candidate",
+    "vivado_projection",
 ]
