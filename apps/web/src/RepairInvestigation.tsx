@@ -55,7 +55,7 @@ function RepairScope({attempt,adapter,family,hasIdentity}:{attempt:string;adapte
 function RepairJobView({attempt,family,jobId,available,scope,onSettled}:{attempt:string;family:RepairFamily;jobId:string;available:boolean;scope:string;onSettled:(v:boolean)=>void}){
   const [pollUntil,setPollUntil]=useState(()=>Date.now()+REPAIR_POLL_WINDOW),[showReport,setShowReport]=useState(false)
   const previous=useRef<RepairStatus|null>(null),cancelKey=useRef(crypto.randomUUID()),client=useQueryClient()
-  const query=useQuery({queryKey:['repair-job',attempt,jobId,scope],queryFn:({signal})=>repairGet(`/repairs/${encodeURIComponent(jobId)}`,v=>{const value=compatibleStatus(previous.current,parseRepairStatus(v,attempt,family,jobId));previous.current=value;return value},signal),enabled:available,retry:false,staleTime:0,gcTime:0,refetchOnMount:'always',refetchInterval:q=>q.state.error?false:repairPollInterval(q.state.data,available,pollUntil)})
+  const query=useQuery({queryKey:['repair-job',attempt,jobId,scope],queryFn:({signal})=>repairGet(`/repairs/${encodeURIComponent(jobId)}`,v=>{const value=compatibleStatus(previous.current,parseRepairStatus(v,attempt,family,jobId));previous.current=value;return value},signal),enabled:available,retry:false,staleTime:Infinity,gcTime:0,refetchOnMount:'always',refetchInterval:q=>q.state.error?false:repairPollInterval(q.state.data,available,pollUntil)})
   const job=available&&query.isSuccess&&!query.isFetching?query.data:undefined
   useEffect(()=>{onSettled(!!job&&job.state!=='active')},[job?.state,job?.id,onSettled])
   const cancel=useMutation({retry:false,mutationFn:()=>{

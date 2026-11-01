@@ -137,3 +137,19 @@ it('blocks replacements when browser request storage is corrupt',async()=>{
   expect(screen.getByRole('button',{name:'Submit repair investigation'})).toBeDisabled();expect(screen.getByRole('alert')).toHaveTextContent('storage is unavailable or corrupt')
   expect(fetch.mock.calls.every(([,init])=>init?.method!=='POST')).toBe(true)
 })
+it('does not restart terminal status polling on health toggles and still refreshes explicitly',async()=>{
+  history.replaceState(null,'','/?repair=job-1')
+  const done=fixture('reduction','completed');let healthReads=0,statusReads=0,release!:(r:Response)=>void
+  vi.spyOn(globalThis,'fetch').mockImplementation(async input=>{
+    if(String(input)==='/api/health'){healthReads++;return healthReads===1?json(health):new Promise<Response>(resolve=>{release=resolve})}
+    if(String(input)==='/api/repairs/job-1'){statusReads++;return json(done)}
+    throw new Error('Unexpected synthetic request')
+  })
+  mount();await screen.findByRole('button',{name:'Inspect settled repair report'});expect(statusReads).toBe(1)
+  await userEvent.click(screen.getByRole('button',{name:'Refresh availability'}))
+  await screen.findByText('Checking durable repair availability…')
+  expect(screen.queryByRole('region',{name:'Repair child executions'})).not.toBeInTheDocument()
+  await act(async()=>{release(json(health));await new Promise(resolve=>setTimeout(resolve,30))})
+  await screen.findByRole('button',{name:'Inspect settled repair report'});expect(statusReads).toBe(1)
+  await userEvent.click(screen.getByRole('button',{name:'Refresh repair job'}));await waitFor(()=>expect(statusReads).toBe(2))
+})
