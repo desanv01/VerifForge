@@ -17,12 +17,12 @@ from veriforge.core.database import Campaign, Project, make_engine, session_fact
 
 
 @pytest.fixture
-def db(tmp_path):
+def db(tmp_path, request):
     engine = make_engine('sqlite:///' + (tmp_path / 'catalog.db').as_posix())
     config = Config('alembic.ini')
     with engine.begin() as connection:
         config.attributes['connection'] = connection
-        command.upgrade(config, 'head')
+        command.upgrade(config, getattr(request, 'param', 'head'))
     sessions = session_factory(engine)
     with sessions.begin() as session: seed_catalog(session)
     yield engine, sessions
@@ -116,6 +116,7 @@ def test_conflicting_legacy_metadata_fails_closed_and_foreign_engineering_hidden
         with pytest.raises(service.NotFound): catalog.get_engineering_project(session, 'foreign')
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_downgrade_refuses_engineering_history(db):
     create(db)
     config = Config('alembic.ini')

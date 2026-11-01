@@ -37,12 +37,17 @@ class RQDispatcher:
                                    job_timeout=180, result_ttl=0)
 
 
-def dispatch_pending(sessions, dispatcher: Dispatcher, *, clock=now, control=None, configuration=None) -> dict:
+def dispatch_pending(sessions, dispatcher: Dispatcher, *, clock=now, control=None, configuration=None,
+                     repair_runtime=None) -> dict:
     sent = failed = 0
     with sessions() as session:
         ids = list(session.scalars(select(Dispatch.attempt_id).join(Attempt).where(or_(Dispatch.sent_at.is_(None), Dispatch.sent_at < stamp(clock) - timedelta(seconds=60)), Attempt.execution_status == "queued").limit(100)))
     for attempt_id in ids:
         with sessions.begin() as session:
+            from . import repair_runtime as repairs
+            repair_allowed = repairs.allowed(session, attempt_id, runtime=repair_runtime, at=stamp(clock))
+            if repair_allowed is False:
+                continue
             attempt = session.get(Attempt, attempt_id)
             planner_owned = bool(attempt and session.get(PlannerState, attempt.campaign_id))
             effective = resolve_control(planner_owned=planner_owned, explicit_control=control, configuration=configuration)

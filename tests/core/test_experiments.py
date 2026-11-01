@@ -31,9 +31,9 @@ def migrate(engine, revision="head"):
 
 
 @pytest.fixture
-def db(tmp_path):
+def db(tmp_path, request):
     engine = make_engine("sqlite:///" + (tmp_path / "state.db").as_posix())
-    migrate(engine)
+    migrate(engine, getattr(request, 'param', 'head'))
     sessions = session_factory(engine)
     with sessions.begin() as session:
         seed_catalog(session)
@@ -264,6 +264,7 @@ def test_multiple_attempts_can_bind_same_record_but_never_run_concurrently(db):
         assert resolve_attempt_experiment(session, retry).id == record.id
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_downgrade_refuses_to_discard_sequential_semantics(db):
     create(db[1], policy="sequential")
     config = Config("alembic.ini")

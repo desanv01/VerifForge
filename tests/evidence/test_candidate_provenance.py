@@ -82,6 +82,40 @@ def model_provenance():
             model_call_id="call-1", prompt_sha256=H, response_sha256="b" * 64))
 
 
+def test_family_suite_cannot_count_renamed_stimulus_or_rebind_checker():
+    from veriforge.arithmetic import directed_experiment
+    from veriforge.evidence import build_family_validation_suite, FamilyValidationSuite
+    suite = build_family_validation_suite(directed_experiment("multiplier_data_bug"))
+    data = suite.model_dump(mode="json")
+    data["cases"][1]["experiment"] = {**data["cases"][0]["experiment"], "experiment_id": "renamed-only"}
+    with pytest.raises(ValueError, match="duplicate stimulus"):
+        FamilyValidationSuite.model_validate(data)
+    data = suite.model_dump(mode="json")
+    data["checker_sha256"] = "f" * 64
+    with pytest.raises(ValueError, match="immutable checks"):
+        FamilyValidationSuite.model_validate(data)
+
+
+def test_generated_family_suite_does_not_enlarge_budget():
+    from veriforge.arithmetic import ArithmeticExperiment
+    from veriforge.evidence import build_family_validation_suite
+    tiny = ArithmeticExperiment(experiment_id="tiny-reset-only", fixture_id="multiplier_data_bug",
+        operations=({"op": "reset"},), budget={"max_cycles": 1})
+    with pytest.raises(ValueError): build_family_validation_suite(tiny)
+
+
+@pytest.mark.parametrize("width", [1, 32])
+def test_family_suite_uses_exact_nondefault_unsigned_width(width):
+    from veriforge.arithmetic import ArithmeticExperiment
+    from veriforge.evidence import build_family_validation_suite
+    original = ArithmeticExperiment(experiment_id="width-case", fixture_id="multiplier_data_bug",
+        parameters={"width": width}, operations=({"op": "reset"}, {"op": "multiply", "a": 1, "b": 1},
+                                               {"op": "idle", "cycles": 2}))
+    suite = build_family_validation_suite(original)
+    assert all(case.experiment.parameters.width == width for case in suite.cases)
+    assert all(case.experiment.budget == original.budget for case in suite.cases)
+
+
 def test_review_exact_source_and_variant_diffs_preserves_originals(snapshots):
     original, candidate = snapshots
     before = {(path.parent.name, path.name): sha(path.read_bytes())

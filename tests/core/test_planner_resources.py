@@ -29,12 +29,12 @@ ROLE = resources.ROLE
 
 
 @pytest.fixture
-def db(tmp_path):
+def db(tmp_path, request):
     engine = make_engine('sqlite:///' + (tmp_path / 'resources.db').as_posix())
     config = Config('alembic.ini')
     with engine.begin() as connection:
         config.attributes['connection'] = connection
-        command.upgrade(config, 'head')
+        command.upgrade(config, getattr(request, 'param', 'head'))
     sessions = session_factory(engine)
     with sessions.begin() as session: seed_catalog(session)
     yield engine, sessions
@@ -317,6 +317,7 @@ def test_validation_reads_cleanup_after_campaign_lock_handoff(db, monkeypatch, c
         assert changed and session.get(PlannerCleanup, grant.lease.round_id).local_state == cleanup_state
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_sql_fence_cannot_reset_delete_or_release_without_proof(db):
     grant = claim(db, queued(db, 'sql'))
     for sql in ('DELETE FROM planner_runtime_slots', 'UPDATE planner_runtime_slots SET fence=0',

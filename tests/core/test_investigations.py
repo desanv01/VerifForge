@@ -97,12 +97,12 @@ def execution_bundle(db):
 
 
 @pytest.fixture
-def db(tmp_path):
+def db(tmp_path, request):
     engine = make_engine('sqlite:///' + (tmp_path / 'investigations.db').as_posix())
     config = Config('alembic.ini')
     with engine.begin() as connection:
         config.attributes['connection'] = connection
-        command.upgrade(config, 'head')
+        command.upgrade(config, getattr(request, 'param', 'head'))
     sessions = session_factory(engine)
     with sessions.begin() as session: seed_catalog(session)
     yield engine, sessions
@@ -157,6 +157,7 @@ def test_immutable_sql_history(db, table, operation):
         with db[0].begin() as connection: connection.execute(sa.text(sql))
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_downgrade_retains_history(db):
     schema_version(db)
     config = Config('alembic.ini')
@@ -335,10 +336,11 @@ def test_execution_link_composite_fk_rejects_cross_project_even_raw_sql(db):
                 association_hash='b' * 64, content=b'{}'))
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_no_history_empty_migration_roundtrip(db):
     config = Config('alembic.ini')
     with db[0].begin() as connection:
         config.attributes['connection'] = connection
         command.downgrade(config, '10u2cleanup')
-        command.upgrade(config, 'head')
+        command.upgrade(config, '13engineeringprojects')
     assert persist(db)['ordinal'] == 1

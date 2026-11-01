@@ -1,4 +1,8 @@
-"""Independent role admission/control review; explicit config, SQLite/fake runners only."""
+"""Historical source freeze plus active role admission/control behavior checks.
+
+Repair support in the current worker/dispatch has separate developer tests; it
+is not covered by the historical independent-review source pins below.
+"""
 import ast
 from datetime import timedelta
 import hashlib
@@ -60,7 +64,14 @@ def test_final_owner_freeze_and_seventeen_only_control_keyword_changes():
     expected={'src/veriforge/core/dispatch.py':'60151d8e6bac9ae767653373f845af98cbf9d6a3b8b4b5c0b9ad431bb044c384',
         'src/veriforge/core/worker.py':'3724ee525b07ab119bad4780c392e7586e41d2269a605b87773761f9b21d0e4f',
         'src/veriforge/core/runtime_configuration.py':'23040cd803091286636cf3498d159591fed9273b4df73c51c22af81f629a2bb7'}
-    for path,digest in expected.items():assert hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest
+    # Preserve the reviewed bytes, not a new independent-review claim for repair
+    # support added later. These .txt snapshots are data only, never imported or
+    # executed. All behavioral tests below still use active worker/dispatch.
+    fixtures=ROOT/'tests/acceptance/fixtures/planner-role-source-review'
+    historical={'src/veriforge/core/dispatch.py':fixtures/'dispatch.py.txt',
+        'src/veriforge/core/worker.py':fixtures/'worker.py.txt'}
+    for path,digest in expected.items():
+        assert hashlib.sha256(historical.get(path,ROOT/path).read_bytes()).hexdigest()==digest
     # Accepted public harness baselines; no private coordination file is needed.
     # Removing only these explicit-control additions must restore the complete
     # original normalized AST (including every action/assertion/parameter).

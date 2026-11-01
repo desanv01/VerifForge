@@ -459,3 +459,8 @@ def make_engine(url: str | None = None):
 
 def session_factory(engine):
     return sessionmaker(engine, expire_on_commit=False)
+
+
+# Register additive repair tables in the same metadata used by migrations and
+# catalogue inspection. Importing these models never creates or migrates a DB.
+from . import repair_models as _repair_models  # noqa: E402,F401

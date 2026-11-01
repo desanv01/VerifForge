@@ -68,6 +68,94 @@ def scripted_arithmetic(plan, output, *, fail=True, failure_class="arithmetic.pr
     return result
 
 
+def recorded_arithmetic(plan, output):
+    """Complete synthetic observation artifacts with the installed immutable checks."""
+    output = Path(output)
+    output.mkdir(parents=True)
+    descriptor = get_adapter("rtl.arithmetic.v1")
+    contract = descriptor.contract_for(plan)
+    expected = oracle.expected_trace(oracle.expand(plan), plan.parameters.latency)
+    observed = [{"cycle": row["cycle"], "valid": row["valid"], "product": row["product"] or 0} for row in expected]
+    if plan.fixture_id != "multiplier_correct":
+        cycle = next((row["cycle"] for row in expected if row["valid"]), None)
+        if cycle is not None: observed[cycle]["product"] ^= 1
+    difference = oracle.compare(expected, observed)
+    tools = (ToolVersion(name="synthetic-observations-no-native", version="1"),)
+    environment = json.dumps({"tools": [tool.model_dump(mode="json") for tool in tools]}, sort_keys=True).encode()
+    files = {"experiment.json": plan.model_dump_json().encode(),
+        "arithmetic-trace.json": json.dumps({"schema_version": "arithmetic.trace.v1", "expected": expected, "observed": observed}).encode(),
+        "observed.json": json.dumps(observed).encode(), "stimulus.json": json.dumps(oracle.expand(plan)).encode(),
+        "multiplier.sv": (ROOT / "targets/arithmetic/multiplier.sv").read_bytes(),
+        "checker.py": Path(oracle.__file__).read_bytes(), "contract.json": contract.model_dump_json().encode(),
+        "environment.json": environment}
+    refs = []
+    for name, raw in files.items():
+        (output / name).write_bytes(raw)
+        refs.append(ArtifactReference(artifact_id="synthetic-" + str(len(refs)), path=name,
+            sha256=hashlib.sha256(raw).hexdigest(), size_bytes=len(raw), media_type="text/plain"))
+    identity = EvidenceIdentity(**descriptor.expected_identity(plan), environment_hash=hashlib.sha256(environment).hexdigest())
+    signature = None
+    if difference:
+        failure_class = "arithmetic." + difference["signal"]
+        payload = {"contract": identity.contract_hash, "checker": identity.checker_hash,
+                   "requirement": difference["requirement"], "class": failure_class}
+        signature = FailureSignature(requirement_id=difference["requirement"], failure_class=failure_class,
+            first_cycle=difference["cycle"], expected=str(difference["expected"]), observed=str(difference["observed"]),
+            signature_hash=hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest())
+    result = AttemptResult(attempt_id=output.name, experiment_id=plan.experiment_id, execution_status="completed",
+        verdict="design_mismatch" if difference else "pass_within_scope", identity=identity, failure_signature=signature,
+        artifacts=tuple(refs), tool_versions=tools, usage=ResourceUsage(cycles=plan.cycle_count,
+            artifact_bytes=sum(ref.size_bytes for ref in refs)), uncertainties=("Synthetic observations; no HDL execution.",))
+    (output / "result.json").write_text(result.model_dump_json())
+    return result
+
+
+@pytest.mark.parametrize("origin", ["curated_catalog", "external_recommendation", "model_recommendation"])
+def test_complete_arithmetic_repair_workflow_with_suite_identity_and_replay(tmp_path, origin):
+    from veriforge.evidence import (validate_family_candidate, replay_family_attempt,
+        FamilyCandidateReport, FamilyValidationSuite, build_family_validation_suite, CandidateProvenance)
+    original = tmp_path / "complete-original"
+    recorded_arithmetic(arithmetic_plan(), original)
+    suite = build_family_validation_suite(arithmetic_plan())
+    assert FamilyValidationSuite.model_validate_json(suite.model_dump_json()) == suite
+    provenance_data = {"recommendation_origin": origin}
+    if origin != "curated_catalog":
+        provenance_data.update(proposal_id="synthetic-proposal", proposal_sha256="c" * 64)
+    if origin == "external_recommendation": provenance_data["external_reference_id"] = "synthetic-external"
+    elif origin == "model_recommendation": provenance_data["model_call"] = dict(provider="synthetic-meta-no-call",
+        model="synthetic-model", model_call_id="synthetic-call", prompt_sha256="d" * 64, response_sha256="e" * 64)
+    report = validate_family_candidate(original, tmp_path / "complete-candidate", candidate_fixture_id="multiplier_correct",
+        original_runner=recorded_arithmetic, candidate_runner=recorded_arithmetic,
+        provenance=CandidateProvenance.model_validate(provenance_data))
+    assert report.validation.status == "validated_under_checks"
+    assert report.validation.source_review.provenance.authorship_claim == "curated_source_not_generated_patch"
+    assert report.validation.provenance.recommendation_origin == origin
+    assert report.suite_sha256 == canonical_hash(suite)
+    assert FamilyCandidateReport.model_validate_json(report.model_dump_json()) == report
+    assert replay_family_attempt(original, tmp_path / "complete-replay", runner=recorded_arithmetic).same_semantic_failure
+    reduced = reduce_failure(original, tmp_path / "complete-reduction", runner=recorded_arithmetic, max_attempts=3)
+    assert len(reduced.attempts) <= 3
+    for change in ("suite", "result", "missing-result", "origin"):
+        data = report.model_dump(mode="json")
+        if change == "suite": data["suite"]["cases"][-1]["label"] = "tampered"
+        elif change == "result": data["validation"]["regressions"][0]["verdict"] = "timeout"
+        elif change == "missing-result": data["validation"]["regressions"] = []
+        else: data["validation"]["provenance"] = None
+        with pytest.raises(ValueError): FamilyCandidateReport.model_validate(data)
+
+
+def test_arithmetic_strict_recheck_rejects_rehashed_forged_expectation(tmp_path):
+    from veriforge.evidence import checked_family_attempt
+    original = tmp_path / "forged-expectation"
+    recorded_arithmetic(arithmetic_plan(), original)
+    raw = json.loads((original / "arithmetic-trace.json").read_bytes())
+    cycle = next(i for i, row in enumerate(raw["expected"]) if row["valid"])
+    raw["expected"][cycle]["product"] ^= 1
+    replace_artifact(original, "arithmetic-trace.json", json.dumps(raw).encode())
+    with pytest.raises(ValueError, match="mathematical expectation"):
+        checked_family_attempt(original)
+
+
 @pytest.fixture
 def scripted_original(tmp_path):
     path = tmp_path / "original"

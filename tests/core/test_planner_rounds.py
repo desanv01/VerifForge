@@ -43,12 +43,12 @@ def result(session, attempt_id, *, verdict="pass_within_scope", artifacts=()):
 
 
 @pytest.fixture
-def db(tmp_path):
+def db(tmp_path, request):
     engine = make_engine("sqlite:///" + (tmp_path / "planner.db").as_posix())
     config = Config("alembic.ini")
     with engine.begin() as connection:
         config.attributes["connection"] = connection
-        command.upgrade(config, "head")
+        command.upgrade(config, getattr(request, 'param', 'head'))
     sessions = session_factory(engine)
     with sessions.begin() as session: seed_catalog(session)
     yield engine, sessions
@@ -443,6 +443,7 @@ def test_duplicate_proposal_fingerprint_survives_restart(db):
         assert session.scalar(select(func.count()).select_from(PlannerReservation)) == 4
 
 
+@pytest.mark.parametrize('db', ['13engineeringprojects'], indirect=True)
 def test_downgrade_cannot_delete_retained_planner_reservations(db):
     parent_id, _ = attached(db)
     config = Config("alembic.ini")

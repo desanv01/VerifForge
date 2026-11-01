@@ -41,7 +41,7 @@ Key = Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=12
 
 
 def create_app(engine=None, *, initialize_catalog=True, artifact_root=None,
-               planner_policy=None, planner_control=None, planner_clock=None):
+               planner_policy=None, planner_control=None, planner_clock=None, repair_runtime=None):
     engine = engine if engine is not None else make_engine()
     sessions = session_factory(engine)
     from datetime import datetime, timezone
@@ -74,6 +74,17 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None,
     from .investigations import investigations_router
     app.include_router(investigations_router(sessions))
     app.include_router(planner_router(sessions, policy=planner_policy, control=planner_control, now=planner_at))
+    from veriforge.core.repair_runtime import RepairRuntime
+    from .repairs import repairs_router
+    repair_binding = repair_runtime if repair_runtime is not None else RepairRuntime()
+    if type(repair_binding) is not RepairRuntime:
+        raise ValueError('Expected trusted repair runtime')
+    if repair_binding.root is not None:
+        from pathlib import Path
+        if artifact_root is None or Path(artifact_root).resolve() != repair_binding.root.resolve():
+            raise ValueError('Repair runtime and API artifact roots differ')
+    app.include_router(repairs_router(sessions, policy_reader=repair_binding.policy,
+        control=repair_binding.running, root=repair_binding.root, clock=planner_at))
 
     @app.exception_handler(service.NotFound)
     async def missing(request, error):
@@ -91,7 +102,10 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None,
             session.execute(text("SELECT 1"))
         from veriforge.core.artifacts import EVIDENCE_ADAPTERS
         from veriforge.core.investigations import ADMISSION_SCHEMAS, NATIVE_REPORT_KINDS
-        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "investigation_api": "1", "investigation_admission_schemas": list(ADMISSION_SCHEMAS), "investigation_report_kinds": list(NATIVE_REPORT_KINDS), "evidence_adapters": sorted(EVIDENCE_ADAPTERS), "planner_api": "1", "planner_admission_enabled": planner_policy.enabled}
+        repair_policy = repair_binding.policy()
+        return {"status": "ok", "mode": "local", "execution": "separate_worker", "model": "not_integrated", "evidence_api": "1", "investigation_api": "1", "investigation_admission_schemas": list(ADMISSION_SCHEMAS), "investigation_report_kinds": list(NATIVE_REPORT_KINDS), "evidence_adapters": sorted(EVIDENCE_ADAPTERS), "planner_api": "1", "planner_admission_enabled": planner_policy.enabled,
+            "repair_api": "1", "repair_admission_enabled": bool(repair_policy.enabled and repair_policy.runtime_configured and repair_policy.runtime_identity and repair_binding.running() == 'RUNNING'),
+            "repair_families": ["arithmetic", "axi_lite"]}
 
     @app.get("/api/projects")
     def projects():

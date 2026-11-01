@@ -256,7 +256,8 @@ def reduce_failure(attempt_dir: Path, output_dir: Path, *, runner: EvidenceRunne
         raise ValueError("max_attempts must be between 1 and 1000")
     experiment, original = load_attempt(attempt_dir)
     if descriptor_for(experiment).trace_schema == "axi_lite.trace.v1":
-        raise NotImplementedError("AXI cycle reduction has not been independently accepted")
+        from .families import reduce_axi_failure
+        return reduce_axi_failure(attempt_dir, output_dir, runner=runner, max_attempts=max_attempts)
     if not same_failure(original, original):
         raise ValueError("reduction requires an independently checked design failure")
     root = _new_output(output_dir)

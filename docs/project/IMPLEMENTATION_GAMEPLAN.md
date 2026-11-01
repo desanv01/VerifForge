@@ -2,13 +2,15 @@
 
 ## Current direction — 30 October 2026
 
+Execution update, 1 November 2026: the human approved implementation-first delivery across U0-U10. Assign complete feature scopes, retain focused developer tests and basic integration checks, and batch comprehensive independent reviews by coherent feature before system acceptance. See [IMPLEMENTATION_DELIVERY.md](IMPLEMENTATION_DELIVERY.md). This changes work sequencing, not engineering verdicts, preservation requirements, operational resource gates or explicit live-provider holds.
+
 VerifForge connects specifications, source files, engineering tools and test results to investigate failures, propose repairs and independently validate them. The active execution order is: reliable RTL diagnosis and checked repair; one pinned RISC-V core with an independent architectural reference; firmware/register-map and boot investigation; actual Vivado project/timing/CDC investigation; actual KiCad ERC/DRC/connectivity and exact-part mapping; then independently sourced cross-checks across board, constraints, RTL and firmware. These capabilities belong to one investigation product and retain explicit supported configurations and Import / Execute / Repair gates.
 
 The [support matrix](SUPPORT_MATRIX.md) and [master checklist](MASTER_CHECKLIST.md) record actual acceptance. Source, unit tests, report imports and recorded playback do not establish new tool execution. The model proposes typed experiments; independent immutable checks determine each scoped verdict. Preserve original revisions, exact stimulus, source/checker/contract identities, native evidence and resource/recovery state. Generated artifacts sharing one source do not establish independent agreement.
 
 Keep the existing modular Python backend, React/TypeScript/Vite workbench, PostgreSQL and worker queue. Extend domain adapters and shared evidence records rather than rewriting the application. The workbench remains local. Analog/ASIC investigations are stretch work after the six primary sequences and submission-critical gates; broader software/desktop adapters remain deferred.
 
-Submission preparation targets **5 November 2026, 10:00 AM MYT** and includes real Meta feedback, reproducible evidence, known limitations, provenance and the three-minute demonstration. Live Meta access is currently unavailable; independent work continues. Public source delivery uses focused reviewed commits, CI and PRs. Application deployment and final external submission remain separate actions.
+Submission preparation targets **5 November 2026, 10:00 AM MYT** and includes real Meta feedback, reproducible evidence, known limitations, provenance and the three-minute demonstration. Live Meta acceptance has not yet been performed; independent work continues. Public source delivery uses focused reviewed commits, CI and PRs. Application deployment and final external submission remain separate actions.
 
 The October23 architecture below is retained as the historical foundation. Its initial two-workflow scope and planning-time status are superseded by this direction and the current acceptance records; applicable technical contracts remain in force.
 
