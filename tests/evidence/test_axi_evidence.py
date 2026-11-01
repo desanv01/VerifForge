@@ -50,7 +50,7 @@ def scripted(experiment, output, *, fail=None):
     rows = [{"cycle": index, "aw_ready": cycle.reset_n, "w_ready": cycle.reset_n,
              "b_valid": False, "b_resp": 0, "ar_ready": cycle.reset_n,
              "r_valid": False, "r_data": 0, "r_resp": 0} for index, cycle in enumerate(experiment.cycles)]
-    if fail:
+    if fail and len(rows) >= 3:
         rows[2]["b_valid"] = True  # Deliberately synthetic unsolicited response.
     native = {"schema_version": "axi_lite.trace.v1", "observations": rows}
     checked = oracle.check(experiment, native)
@@ -164,15 +164,69 @@ def test_rehashed_companions_are_bound_to_oracle_schema_environment_source_and_p
     with pytest.raises(ValueError): load_attempt(directory)
 
 
-def test_common_fifo_trace_is_rejected_and_axi_reduction_is_explicitly_unsupported(original, tmp_path):
+def test_common_fifo_trace_is_rejected_and_axi_reduction_is_bounded(original, tmp_path):
     directory, result = original
-    def must_not_run(*args): pytest.fail("unaccepted AXI reducer must not execute")
-    with pytest.raises(NotImplementedError, match="AXI cycle reduction"):
-        reduce_failure(directory, tmp_path / "must-not-create", runner=must_not_run)
-    assert not (tmp_path / "must-not-create").exists()
+    reduced = reduce_failure(directory, tmp_path / "reduction", runner=scripted, max_attempts=2)
+    assert len(reduced.attempts) <= 2
+    assert all(exp.cycles[0].reset_n is False for exp in reduced.submitted_experiments)
     (directory / "result.json").write_text(result.model_copy(update={"trace": (TraceSample(cycle=0, operation_index=0),)}).model_dump_json())
     with pytest.raises(ValueError, match="FIFO trace"):
         load_attempt(directory)
+
+
+def test_axi_reduction_preserves_semantic_failure_and_original_bytes(tmp_path):
+    original = tmp_path / "long-original"
+    experiment = plan().model_copy(update={"cycles": (*plan().cycles, *plan().cycles[1:], *plan().cycles[1:])})
+    before = scripted(experiment, original)
+    snapshot = {p.name: p.read_bytes() for p in original.iterdir()}
+    reduced = reduce_failure(original, tmp_path / "reduced", runner=scripted, max_attempts=8)
+    assert reduced.improved and reduced.reduced_experiment.cycle_count < experiment.cycle_count
+    assert reduced.reduced_result.failure_signature.failure_class == before.failure_signature.failure_class
+    assert len(reduced.attempts) <= 8
+    assert snapshot == {p.name: p.read_bytes() for p in original.iterdir()}
+
+
+def test_axi_checked_replay_and_suite_candidate_with_explicit_synthetic_checks(original, tmp_path):
+    from veriforge.evidence import (FamilyValidationCase, FamilyValidationSuite, FamilyCandidateReport,
+        replay_family_attempt, validate_family_candidate)
+    experiment, _ = load_attempt(original[0])
+    descriptor = get_adapter("rtl.axi_lite.v1")
+    identities = descriptor.expected_identity(experiment)
+    cases = [FamilyValidationCase(role="witness", label="witness", experiment=experiment)]
+    for role, count in (("neighbor", 4), ("regression", 5)):
+        changed = AxiLiteExperiment.model_validate({**experiment.model_dump(mode="json"),
+            "experiment_id": role, "cycles": [{"reset_n": False}] + [{}] * (count - 1)})
+        cases.append(FamilyValidationCase(role=role, label=role, experiment=changed))
+    suite = FamilyValidationSuite(adapter_id=descriptor.adapter_id, checker_sha256=identities["checker_hash"],
+        contract_sha256=identities["contract_hash"], cases=tuple(cases))
+    assert replay_family_attempt(original[0], tmp_path / "checked-replay", runner=scripted).same_semantic_failure
+    report = validate_family_candidate(original[0], tmp_path / "checked-candidate", candidate_fixture_id="axil_registers_correct",
+        original_runner=scripted, candidate_runner=lambda exp, out: scripted(exp, out, fail=False), suite=suite)
+    assert report.validation.status == "validated_under_checks"
+    assert report.validation.provenance.recommendation_origin == "curated_catalog"
+    assert FamilyCandidateReport.model_validate_json(report.model_dump_json()) == report
+
+
+def test_axi_independent_recheck_rejects_rehashed_false_pass(original):
+    from veriforge.evidence import checked_family_attempt
+    directory, result = original
+    check = json.loads((directory / "check.json").read_bytes())
+    check.update(verdict="pass_within_scope", failure=None)
+    replace_artifact(directory, "check.json", encoded(check))
+    current = AttemptResult.model_validate_json((directory / "result.json").read_bytes())
+    (directory / "result.json").write_text(json.dumps({**current.model_dump(mode="json"),
+        "verdict": "pass_within_scope", "failure_signature": None}))
+    with pytest.raises(ValueError, match="immutable checker"):
+        checked_family_attempt(directory)
+
+
+def test_axi_default_suite_has_exact_distinct_native_cycles():
+    from veriforge.evidence import build_family_validation_suite
+    from veriforge.axi_lite.runner import witness_experiment
+    suite = build_family_validation_suite(witness_experiment("strobe", "axil_strobe_bug"))
+    assert {case.role for case in suite.cases} == {"witness", "neighbor", "regression"}
+    assert any(case.label == "axil-register-regression" for case in suite.cases)
+    assert all(case.experiment.parameters == suite.cases[0].experiment.parameters for case in suite.cases)
 
 
 def test_typed_native_replay_dispatch_uses_stub_not_simulator(original, tmp_path, monkeypatch):

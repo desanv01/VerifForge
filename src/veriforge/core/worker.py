@@ -27,27 +27,40 @@ def validate_identity(experiment, result: AttemptResult):
 
 
 class LeaseCancellation:
-    def __init__(self, sessions, attempt_id, lease, control=planner_driver.running_control):
+    def __init__(self, sessions, attempt_id, lease, control=planner_driver.running_control, authorization=None):
         self.sessions, self.attempt_id, self.lease = sessions, attempt_id, lease
         self.last_check = 0.0
         self.cancelled = False
         self.control = control
+        self.authorization = authorization
 
     def is_set(self):
         if time.monotonic() - self.last_check > 0.2:
             with self.sessions() as session:
-                self.cancelled = self.cancelled or planner_driver.read_control(self.control) != "RUNNING" or not service.authorized(session, self.attempt_id, self.lease)
+                self.cancelled = (self.cancelled or planner_driver.read_control(self.control) != "RUNNING" or
+                    self.authorization is not None and not self.authorization(session) or
+                    not service.authorized(session, self.attempt_id, self.lease))
             self.last_check = time.monotonic()
         return self.cancelled
 
 
 def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_root=None,
-                    now=service_now, control=None, configuration=None):
+                    now=service_now, control=None, configuration=None, repair_runtime=None):
+    from . import repair_runtime as repairs
     sessions = sessions or session_factory(make_engine())
+    repair_binding = repairs.resolve(repair_runtime)
     with sessions.begin() as session:
+        repair_allowed = repairs.allowed(session, attempt_id, runtime=repair_binding,
+                                          at=planner_driver.stamp(now), lock=True)
+        repair_owned = repair_allowed is not None
+        if repair_allowed is False:
+            return {"accepted": False}
+        if repair_owned and artifact_root is not None and Path(artifact_root).resolve() != Path(repair_binding.root).resolve():
+            return {"accepted": False}
         attempt = session.get(Attempt, attempt_id)
         planner_hint = bool(attempt and session.get(PlannerState, attempt.campaign_id))
-        effective_control = resolve_control(planner_owned=planner_hint, explicit_control=control, configuration=configuration)
+        effective_control = (repair_binding.running if repair_owned else
+            resolve_control(planner_owned=planner_hint, explicit_control=control, configuration=configuration))
         current_control = planner_driver.read_control(effective_control)
         if current_control == "RUNNING":
             claimed, planner_owned = planner_driver.claim_attempt(session, attempt_id, at=planner_driver.stamp(now), control=current_control)
@@ -78,6 +91,10 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
             return "STOPPED"
         return planner_driver.read_control(effective_control)
 
+    def repair_authorized(session, *, lock=False):
+        return repairs.allowed(session, attempt_id, runtime=repair_binding,
+                               at=planner_driver.stamp(now), lock=lock) is True
+
     try:
         from .database import Campaign, ReplayLink
         with sessions() as session:
@@ -90,8 +107,9 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
                 raise ValueError("Installed execution provenance changed since campaign creation")
         if runner is None:
             runner = descriptor.resolve_runner("container" if os.name == "nt" else "native")
-        output = Path(artifact_root or os.getenv("VERIFORGE_ARTIFACT_ROOT", "artifacts")) / attempt_id
-        cancellation = LeaseCancellation(sessions, attempt_id, lease, effective_control)
+        output = Path(repair_binding.root if repair_owned else artifact_root or os.getenv("VERIFORGE_ARTIFACT_ROOT", "artifacts")) / attempt_id
+        cancellation = LeaseCancellation(sessions, attempt_id, lease, effective_control,
+                                          repair_authorized if repair_owned else None)
         result = AttemptResult.model_validate(runner(experiment, output, cancel_event=cancellation))
         validate_identity(experiment, result)
         if is_replay:
@@ -102,7 +120,7 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
                 accepted = planner_rounds.finish_execution_step(session, attempt_id, lease, result.model_dump(mode="json"),
                     at=planner_driver.stamp(now), control=final_control())
             else:
-                if final_control() != "RUNNING":
+                if (repair_owned and not repair_authorized(session, lock=True)) or final_control() != "RUNNING":
                     service.cancel(session, session.get(Attempt, attempt_id).campaign_id)
                     accepted = False
                 else:
@@ -115,7 +133,7 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
                 accepted = planner_rounds.finish_execution_step(session, attempt_id, lease, failure,
                     infrastructure_error=True, at=planner_driver.stamp(now), control=final_control())
             else:
-                if final_control() != "RUNNING":
+                if (repair_owned and not repair_authorized(session, lock=True)) or final_control() != "RUNNING":
                     service.cancel(session, session.get(Attempt, attempt_id).campaign_id)
                     accepted = False
                 else:
@@ -124,9 +142,12 @@ def execute_attempt(attempt_id: str, *, sessions=None, runner=None, artifact_roo
     finally:
         stop.set()
         heartbeat_thread.join(timeout=2)
+        if repair_owned:
+            repairs.advance_batch(sessions, runtime=repair_binding, clock=now, limit=1, attempt_id=attempt_id)
 
 
-def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=None, configuration=None):
+def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=None, configuration=None,
+                   repair_runtime=None):
     from .dispatch import RQDispatcher, dispatch_pending
     from .artifacts import dispatch_exports, recover_exports
     sessions = sessions or session_factory(make_engine())
@@ -134,11 +155,14 @@ def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=N
         interrupted = service.recover_stale(session)
         interrupted_exports = recover_exports(session)
     dispatcher = dispatcher if dispatcher is not None else RQDispatcher()
+    from . import repair_runtime as repairs
+    repair = repairs.advance_batch(sessions, runtime=repair_runtime, clock=now)
     planner_control = resolve_control(planner_owned=True, explicit_control=control, configuration=configuration)
     planner = planner_driver.reconcile_once(sessions, dispatcher, now=now, control=planner_control)
-    return {**dispatch_pending(sessions, dispatcher, clock=now, control=control, configuration=configuration), "interrupted": interrupted,
+    return {**dispatch_pending(sessions, dispatcher, clock=now, control=control, configuration=configuration,
+                              repair_runtime=repair_runtime), "interrupted": interrupted,
             "exports": dispatch_exports(sessions, dispatcher), "interrupted_exports": interrupted_exports,
-            "planner": planner}
+            "planner": planner, "repairs": repair}
 
 
 if __name__ == "__main__":

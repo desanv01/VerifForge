@@ -25,6 +25,8 @@ from .engineering_catalog import EngineeringProjectSpec, create_engineering_proj
 
 
 SUPPORTED_REVISION = "13engineeringprojects"
+# Revision14 adds repair state without changing any admitted investigation table.
+SUPPORTED_REVISIONS = frozenset((SUPPORTED_REVISION, "14u3repairjobs"))
 PROJECT_SPEC = EngineeringProjectSpec(
     project_id=prepare_import.PROJECT_ID,
     name="Recorded carrier board investigation",
@@ -55,8 +57,8 @@ def require_supported_schema(session):
         if connection.dialect.name not in {"sqlite", "postgresql"}:
             raise RecordedImportError("schema", "unsupported_database_dialect")
         schema = inspect(connection)
-        if not schema.has_table("alembic_version") or connection.execute(
-                text("SELECT version_num FROM alembic_version")).scalars().all() != [SUPPORTED_REVISION]:
+        revisions = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all() if schema.has_table("alembic_version") else []
+        if len(revisions) != 1 or revisions[0] not in SUPPORTED_REVISIONS:
             raise RecordedImportError("schema", "unsupported_schema_revision")
         for model in (Project, Investigation, InvestigationVersion, InvestigationArtifact, InvestigationExecutionLink):
             table = model.__table__

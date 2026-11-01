@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { downloadEvidence, humanize, mutate, request } from './api'
 import type { Campaign, DownloadableArtifact, ExportJob, Health } from './api'
 import { AXI_LITE, evidenceAvailable, familyName, FIFO } from './families'
+import { RepairInvestigation } from './RepairInvestigation'
 
 function Failure({ error, retry }: { error: Error | null; retry?: () => void }) {
   return error ? <div role="alert" className="notice error"><p>{error.message}</p>{retry ? <button onClick={retry}>Retry evidence request</button> : null}</div> : null
@@ -36,7 +37,7 @@ export function EvidenceActions({ attemptId, adapterId = FIFO, hasIdentity, onRe
   const restoringExport = !!exportId && (!job || exportJob.isPending || exportJob.isError)
   return <section className="evidence-actions" aria-labelledby="evidence-actions-title">
     <h3 id="evidence-actions-title">Replay & portable evidence</h3>
-    {adapterId === AXI_LITE ? <p className="notice">AXI-Lite reduction is unsupported. Candidate verification has no accepted application endpoint on this runtime; no repair action is available here.</p> : null}
+    <RepairInvestigation attemptId={attemptId} adapterId={adapterId} hasIdentity={hasIdentity}/>
     <p className="meta">Attempt record <code>{attemptId}</code></p>
     {health.isPending ? <p role="status">Checking evidence API support…</p> : !available ? <p className="notice">This server has not advertised evidence API support for {familyName(adapterId)}. Replay and export are unavailable for this family.</p> : !hasIdentity ? <p className="notice">This attempt has no complete checked identity. Portable evidence and exact replay are unavailable.</p> : null}
     <Failure error={health.error} retry={() => { void health.refetch() }}/>

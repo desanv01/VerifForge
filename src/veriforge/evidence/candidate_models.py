@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from pydantic import Field, StrictBool, StrictInt, model_validator
 
 from veriforge.contracts import Identifier, Sha256, WireModel
+from veriforge.adapters import ValidatedExperiment
 
 SafeLabel = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_./:-]{0,127}$")]
 
@@ -88,4 +89,46 @@ class CandidateSourceReview(WireModel):
             raise ValueError("identical source bytes cannot have different recorded sizes")
         if self.configuration_changed != configuration_changed or bool(self.unified_configuration_diff) != configuration_changed:
             raise ValueError("configuration change flag/diff contradict recorded fixture/variant identities")
+        return self
+
+
+class FamilyValidationCase(WireModel):
+    role: Literal["witness", "neighbor", "regression"]
+    label: SafeLabel
+    # Resolve the union by its target; no input-supplied imports or runners.
+    experiment: Annotated[ValidatedExperiment, Field(discriminator="target")]
+
+
+class FamilyValidationSuite(WireModel):
+    schema_version: Literal["family.validation-suite.v1"] = "family.validation-suite.v1"
+    adapter_id: Identifier
+    checker_sha256: Sha256
+    contract_sha256: Sha256
+    cases: Annotated[tuple[FamilyValidationCase, ...], Field(min_length=3, max_length=101)]
+
+    @model_validator(mode="after")
+    def exact_family_cases(self):
+        from .families import descriptor_for, stimulus_identity
+        first = self.cases[0].experiment
+        descriptor = descriptor_for(first)
+        if descriptor.adapter_id not in {"rtl.arithmetic.v1", "rtl.axi_lite.v1"} or self.adapter_id != descriptor.adapter_id:
+            raise ValueError("repair suite requires a supported arithmetic or AXI family")
+        if self.cases[0].role != "witness" or any(case.role == "witness" for case in self.cases[1:]):
+            raise ValueError("repair suite requires exactly one leading witness")
+        if not {"neighbor", "regression"} <= {case.role for case in self.cases}:
+            raise ValueError("repair suite requires neighboring and regression checks")
+        expected = descriptor.expected_identity(first)
+        if (self.checker_sha256, self.contract_sha256) != (expected["checker_hash"], expected["contract_hash"]):
+            raise ValueError("repair suite must retain the installed immutable checks")
+        seen, labels = set(), set()
+        for case in self.cases:
+            plan = descriptor.validate_experiment(case.experiment)
+            if (plan.parameters, plan.fixture_id, plan.contract_id, plan.objective_ids, plan.budget) != (
+                    first.parameters, first.fixture_id, first.contract_id, first.objective_ids, first.budget):
+                raise ValueError("repair cases cannot change the original scope or budgets")
+            key = stimulus_identity(plan)
+            if key in seen or case.label in labels:
+                raise ValueError("repair suite cannot count duplicate stimulus or labels")
+            seen.add(key)
+            labels.add(case.label)
         return self

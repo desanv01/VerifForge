@@ -124,3 +124,11 @@ Release targets from the approved plan: an actual Meta-to-tool-to-feedback inves
 5. A reviewed sanitized claim/result summary and accessible reproduction prerequisites. Local private raw evidence is not a public permalink.
 
 Use [DEMO_PLAN.md](DEMO_PLAN.md) for the narrative, [PROVENANCE.md](PROVENANCE.md) for attribution and [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for delivery gates. None of these documents authorizes a job, publication or submission.
+
+## Three-family input corpus
+
+`uv run python scripts/freeze_family_corpus.py --output .coordination/family-corpus-NEW` freezes the installed nine-fixture corpus without executing experiments. The new directory contains a trusted private manifest, a separate planner file containing only neutral aliases, and exact file hashes. Existing output is refused and preserved. Never send the private manifest, fixture roles or expected-answer metadata to a planner.
+
+The corpus contains 54 deterministic detection, exact-replay, neighboring and regression plan records across FIFO, arithmetic and bounded AXI-Lite. It binds source/checker/contract/stimulus identities and uses the existing typed adapter experiments. Selected parameters are documented in the module; this is disclosed development coverage, not a held-out study or exhaustive parameter coverage. All cases remain unclassified until supported by separately reviewed ground-truth evidence. A seeded fixture role is not an observed defect verdict.
+
+`execution_plans(manifest, alias)` supplies typed inputs to a trusted collector/runtime. Actual attempts, tool/model identities, resource use, results and replay relationships must be collected during execution. The existing FIFO-only strategy harness remains scoped to FIFO; this input corpus does not claim that its strategy transport has become a general three-family planner. Actual comparative measurements remain open.

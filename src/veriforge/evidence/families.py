@@ -28,6 +28,20 @@ def validate_experiment(payload: ValidatedExperiment | Mapping[str, Any]) -> Val
     return descriptor_for(payload).validate_experiment(payload)
 
 
+def stimulus_identity(experiment) -> str:
+    """Hash exact applied cycles, excluding arithmetic's presentation indices."""
+    rows = [{k: v for k, v in row.items() if k != "operation_index"}
+            for row in descriptor_for(experiment).expand_stimulus(experiment)]
+    return hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def stimulus_identity(experiment) -> str:
+    """Hash exact applied cycles, excluding arithmetic's presentation indices."""
+    rows = [{k: v for k, v in row.items() if k != "operation_index"}
+            for row in descriptor_for(experiment).expand_stimulus(experiment)]
+    return hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
 class ExpectedArithmeticRow(WireModel):
     cycle: StrictInt
     operation_index: StrictInt
@@ -168,3 +182,163 @@ def validate_family_trace(raw: bytes, experiment: ValidatedExperiment, result: A
         validate_axi_trace(raw, experiment, result, artifact_reader=artifact_reader)
     else:
         raise ValueError("family trace schema has no accepted evidence validator")
+
+
+def checked_family_attempt(attempt_dir):
+    """Recompute a retained family verdict with installed code, never copied code.
+
+    This strengthens new repair workflows without relabeling historical imports.
+    Observation provenance still depends on the supplied/native execution evidence.
+    """
+    from pathlib import Path
+    from .workflow import load_attempt, _read, _artifact
+    plan, result = load_attempt(attempt_dir)
+    descriptor = descriptor_for(plan)
+    if descriptor.adapter_id not in {"rtl.arithmetic.v1", "rtl.axi_lite.v1"}:
+        raise ValueError("checked repair supports arithmetic and AXI only")
+    expected_identity = descriptor.expected_identity(plan)
+    if any(getattr(result.identity, key) != value for key, value in expected_identity.items()):
+        raise ValueError("repair source/checker/contract/stimulus identity changed")
+    if result.execution_status != "completed":
+        raise ValueError("repair evidence must be completed")
+    def read(name):
+        ref = next((ref for ref in result.artifacts if ref.path == name), None)
+        if ref is None:
+            raise ValueError("checked repair requires complete recorded artifacts")
+        raw = _read(_artifact(Path(attempt_dir).resolve(), ref.path), ref.size_bytes)
+        if len(raw) != ref.size_bytes or _digest(raw) != ref.sha256:
+            raise ValueError("repair artifact changed during checking")
+        return raw
+    if _strict_json(read("stimulus.json")) != descriptor.expand_stimulus(plan):
+        raise ValueError("repair recorded stimulus differs from exact plan")
+    if descriptor.adapter_id == "rtl.axi_lite.v1":
+        from veriforge.axi_lite import contracts
+        from veriforge.axi_lite.oracle import check
+        if _digest(read("checker-contracts.py")) != _digest(Path(contracts.__file__).read_bytes()):
+            raise ValueError("repair AXI checker schema changed")
+        checked = check(plan, _strict_json(read("observed.json")))
+        if checked.model_dump(mode="json") != _strict_json(read("check.json")):
+            raise ValueError("repair AXI verdict differs from immutable checker")
+    else:
+        from veriforge.arithmetic import oracle
+        trace = _strict_json(read("arithmetic-trace.json"))
+        expected = oracle.expected_trace(descriptor.expand_stimulus(plan), plan.parameters.latency)
+        if trace["expected"] != expected or trace["observed"] != _strict_json(read("observed.json")):
+            raise ValueError("repair arithmetic trace differs from mathematical expectation")
+        difference = oracle.compare(expected, trace["observed"])
+        verdict = "design_mismatch" if difference else "pass_within_scope"
+        signature = result.failure_signature
+        if result.verdict != verdict or bool(difference) != bool(signature):
+            raise ValueError("repair arithmetic verdict differs from immutable checker")
+        if difference:
+            failure_class = "arithmetic." + difference["signal"]
+            payload = {"contract": result.identity.contract_hash, "checker": result.identity.checker_hash,
+                       "requirement": difference["requirement"], "class": failure_class}
+            values = (difference["requirement"], failure_class, difference["cycle"],
+                      str(difference["expected"]), str(difference["observed"]),
+                      _digest(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()))
+            if values != (signature.requirement_id, signature.failure_class, signature.first_cycle,
+                          signature.expected, signature.observed, signature.signature_hash):
+                raise ValueError("repair arithmetic failure signature changed")
+        # Bind checker and contract snapshots as well as their installed identities.
+        contract = descriptor.contract_model.model_validate(_strict_json(read("contract.json")))
+        if _digest(read("checker.py")) != result.identity.checker_hash or canonical_hash(contract) != result.identity.contract_hash:
+            raise ValueError("repair arithmetic checker/contract snapshots changed")
+        environment = read("environment.json")
+        if (_digest(environment) != result.identity.environment_hash or
+                _strict_json(environment).get("tools") != [tool.model_dump(mode="json") for tool in result.tool_versions]):
+            raise ValueError("repair arithmetic environment snapshot changed")
+        revision = {"source": _digest(read(descriptor.source_artifact)),
+                    "variant": descriptor.fixture_source(plan.fixture_id)["variant"],
+                    "parameters": plan.parameters.model_dump()}
+        if _digest(json.dumps(revision, sort_keys=True, separators=(",", ":")).encode()) != result.identity.source_hash:
+            raise ValueError("repair arithmetic source snapshot changed")
+    return plan, result
+
+
+def _checked_runner(runner):
+    def execute(plan, output):
+        result = AttemptResult.model_validate(runner(plan, output).model_dump(mode="json"))
+        if result.execution_status == "completed" and result.verdict in {
+                "pass_within_scope", "design_mismatch", "property_failure"}:
+            recorded_plan, recorded_result = checked_family_attempt(output)
+            if recorded_plan != plan or recorded_result != result:
+                raise ValueError("runner result differs from recorded repair evidence")
+        return result
+    return execute
+
+
+def replay_family_attempt(attempt_dir, output_dir, *, runner=None):
+    """Exact replay with independent retained-verdict checking and saved lineage."""
+    from pathlib import Path
+    from .workflow import replay_attempt, _save
+    plan, _ = checked_family_attempt(attempt_dir)
+    output = Path(output_dir).resolve()
+    original = Path(attempt_dir).resolve()
+    if output.is_relative_to(original) or original.is_relative_to(output):
+        raise ValueError("repair output must be separate from original evidence")
+    runner = runner or descriptor_for(plan).resolve_runner("native")
+    record = replay_attempt(attempt_dir, output, runner=_checked_runner(runner))
+    _save(output / "replay.json", record)
+    return record
+
+
+def _axi_reduction_cycles(plan):
+    rows = plan.model_dump(mode="json")["cycles"]
+    # Keep the initial reset, then remove chunks; the unchanged checker rejects
+    # broken manager handshakes/harness outcomes rather than calling them repairs.
+    size = max(1, (len(rows) - 1) // 2)
+    while size:
+        for start in range(1, len(rows), size):
+            yield rows[:start] + rows[start + size:]
+        size //= 2
+    for index, row in enumerate(rows):
+        for field in ("aw_addr", "aw_prot", "w_data", "w_strb", "ar_addr", "ar_prot"):
+            if row[field]:
+                yield rows[:index] + [{**row, field: 0}] + rows[index + 1:]
+
+
+def reduce_axi_failure(attempt_dir, output_dir, *, runner, max_attempts=30):
+    """Bounded cycle/payload deletion; no global minimality or protocol waiver."""
+    from pathlib import Path
+    from pydantic import ValidationError
+    from .workflow import ReductionRecord, _identity_matches, _new_output, _save, same_failure
+    if type(max_attempts) is not int or not 1 <= max_attempts <= 1000:
+        raise ValueError("max_attempts must be between 1 and 1000")
+    original_plan, original_result = checked_family_attempt(attempt_dir)
+    if descriptor_for(original_plan).adapter_id != "rtl.axi_lite.v1" or not same_failure(original_result, original_result):
+        raise ValueError("AXI reduction requires a checked original design/property failure")
+    source, output = Path(attempt_dir).resolve(), Path(output_dir).resolve()
+    if output.is_relative_to(source) or source.is_relative_to(output):
+        raise ValueError("reduction output must be separate from original evidence")
+    root = _new_output(output)
+    best, best_result = original_plan, original_result
+    results, submitted, seen = [], [], {canonical_hash(best)}
+    execute = _checked_runner(runner)
+    while len(results) < max_attempts:
+        improved = False
+        for rows in _axi_reduction_cycles(best):
+            try:
+                proposed = validate_experiment({**best.model_dump(mode="json"), "cycles": rows})
+            except ValidationError:
+                continue
+            key = canonical_hash(proposed)
+            if key in seen:
+                continue
+            seen.add(key)
+            result = execute(proposed, root / f"attempt-{len(results):04d}")
+            results.append(result)
+            submitted.append(proposed)
+            if _identity_matches(result, proposed, original_result) and same_failure(original_result, result):
+                best, best_result, improved = proposed, result, True
+                break
+            if len(results) >= max_attempts:
+                break
+        if not improved:
+            break
+    record = ReductionRecord(original_experiment=original_plan, original_result=original_result,
+        reduced_experiment=best, reduced_result=best_result, attempts=tuple(results),
+        submitted_experiments=tuple(submitted), max_attempts=max_attempts,
+        improved=canonical_hash(best) != canonical_hash(original_plan))
+    _save(root / "reduction.json", record)
+    return record
