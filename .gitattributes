@@ -2,3 +2,6 @@
 docs/evidence/** -text
 targets/kicad/** -text
 docs/project/KICAD.md -text
+# Native registration recipes and fixtures pin exact retained source bytes.
+src/veriforge/native_validator_registration/** -text
+tests/native_validator_registration/asset-hashes.json -text
