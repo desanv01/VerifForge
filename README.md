@@ -24,7 +24,7 @@ The model proposes experiments. The independent checker determines the verdict. 
 |---|---|---|
 | Define | Bind a curated source revision to reviewed requirements and a checker | Contract, parameters, source and checker identities |
 | Plan | Select typed stimulus and finite resource limits | Exact operations, seed, objectives and budget |
-| Execute | Dispatch to the trusted Linux simulator worker | Tool versions, execution status, logs and observations |
+| Execute | Dispatch a bounded experiment to its trusted adapter | Tool versions, execution status, logs and observations |
 | Check | Compare observations with an independent reference model | Expected/observed values, verdict and failure signature |
 | Reproduce | Replay, reduce or export a curated finding | Original evidence, fresh attempts and remaining uncertainty |
 
@@ -32,23 +32,24 @@ Deterministic FIFO execution and replay require no model key. Model-driven plann
 
 ## Current capabilities
 
-Active development, as of 30 October 2026 MYT. These statuses describe scoped evidence, not a completed release or benchmark result. The [support matrix](docs/project/SUPPORT_MATRIX.md) separates Import, Execute and Repair gates.
+Active development, as of 1 November 2026 MYT. These are scoped acceptance records, not a completed release or benchmark result. The [support matrix](docs/project/SUPPORT_MATRIX.md) separates Import, Execute and Repair gates.
 
-| Area | Available today | Boundary / remaining work |
+| Area | Accepted evidence / source | Boundary / remaining work |
 |---|---|---|
-| FIFO verification | Real correct-fixture pass, curated reset-mutant mismatch, exact replay and independent checking | Only installed curated fixtures; no arbitrary RTL upload support |
-| Evidence workflows | Curated local replay, bounded reduction, export and candidate-validation evidence accepted | Real API export/download accepted on the tested runtime image; exact API replay passed on that image and browser integration remains pending |
-| API and local runtime | Actual FIFO/arithmetic API attempts, exact replay and export independently checked; three-family image adopted with earlier data preserved | AXI application execution and broader recovery/browser gates remain; health is not functional verification |
-| Workbench | Local contract/campaign/trace/artifact controls and immutable engineering-investigation views | Native investigation runtime admission and complete browser qualification remain in progress |
-| Meta planner | Typed provider, durable experiments/rounds/reservations/feedback and cleanup source independently reviewed | Live inference, broker/runtime adoption and real Meta feedback remain deferred; no key available |
-| Arithmetic pipeline | Real WIDTH=8, latency=2 control plus latency/data mutants, API execution and replay accepted | Broader coverage, candidate regression and actual browser gate remain |
-| AXI-Lite | Seven real bounded peripheral cases independently accepted; native evidence/API source merged | Local API execution blocked before first campaign by memory; application, replay/candidate and browser gates remain |
-| RISC-V | Actual pinned PicoRV32/Spike control and seeded divergence; exact recompiled object/ELF/binary/trace replay independently accepted | [Inspect curated raw evidence](docs/evidence/riscv/2026-10-30/README.md); no full ISA certification, saved-executable replay or firmware claim |
-| Firmware | Register-map facts, curated executable preparation, native MMIO observation and independent checker source merged | Actual compiler/core execution and candidate validation remain pending |
-| Vivado | Actual version/part readiness, bounded imports and recorded-attempt inspection | Synthesis attempt hit a resource limit; no successful timing, CDC or functional-repair claim |
-| KiCad and cross-domain | Actual configured ERC/DRC correction; native source/fact/relationship admission source | Ignored checks remain unchanged; exact-part/physical/electrical gates remain; common ancestry keeps recorded system verdicts inconclusive |
+| FIFO verification | Real correct-fixture pass, seeded reset-mutant mismatch, exact replay and independent checking | Curated installed fixtures; no arbitrary RTL uploads or model-discovered bug claim |
+| Evidence workflows | Bounded reduction, curated candidate validation, exact replay and tested API export/download | Generated repair, current browser flow and clean release-snapshot reproduction remain open |
+| API and local runtime | Family FIFO/arithmetic API execution; isolated native recorded readback: two admissions, 301 stored artifacts, zero execution rows, 23 HTTP responses and four downloads | Snapshot-specific results; no new four-case RISC-V admission, browser acceptance or general runtime adoption |
+| Workbench | Approved responsive light/dark source merged in [PR60](https://github.com/desanv01/VerifForge/pull/60) after source review and web CI | Actual visual, keyboard, narrow-width and browser workflow acceptance remain open |
+| Meta planner | Typed experiments, immutable-checker feedback and bounded durable controller; [six actual PG/RQ/process cases](docs/evidence/planner/2026-10-31/README.md) qualified with **mock HTTP** | No live Meta feedback; safe owner-death quarantine is not successful recovery or populated-database restore |
+| Arithmetic pipeline | WIDTH=8, latency=2 control, latency/data mutants, API execution and exact replay accepted | Broader corpus, candidate regression and actual browser gate remain |
+| AXI-Lite | [Fourth hosted gate](docs/evidence/axi/2026-10-30/README.md): seven bounded API/tool attempts, exact strobe replay, export and preservation/cleanup | 32-bit, four-register supported subset; local revision adoption, candidate RTL repair and browser gate remain |
+| RISC-V | [Four-case PicoRV32/Spike gate](docs/evidence/riscv/2026-10-31/README.md): control, seeded divergence, exact recompiled replay and same-run saved object/ELF/binary replay | RAM-only RV32I smoke, not ISA certification/core repair. Saved replay rebuilds HDL/C++; new-format application import remains unadopted |
+| Firmware | [Native-MMIO gate](docs/evidence/firmware/2026-10-30/README.md): control, seeded STATUS-address defect, curated header correction and exact saved-program replay | HDL rebuilt; no Spike MMIO, arbitrary firmware, generated repair, physical-board or full workbench claim |
+| Vivado | 2026.1 synthesis/six reports; routed characterization accepted in 344.797s with ten reports, tool-reported constrained internal timing and 35/35 routable nets fully routed | Exact private snapshot: 12 inputs/6 outputs lack delays; 20 methodology warnings. Complete I/O timing, CDC safety, function, board, repair and application gates remain open |
+| KiCad and cross-domain | Configured ERC/DRC correction and native fact/relationship source accepted | Four ERC/five DRC checks remain ignored; exact parts/mating/physical/electrical gates open; recorded system graphs remain inconclusive |
+| Evaluation | Bounded FIFO strategy harness, append-only records and owned journal/storage source merged in [PR62](https://github.com/desanv01/VerifForge/pull/62) | Source acceptance only; calibrated corpus/budgets, actual comparative results and model usage remain open |
 
-There is no hosted application release or general-purpose code-execution service. A successful build is not functional correctness, and a timeout is not automatically a design defect.
+There is no hosted application release or general-purpose code-execution service. Newer database/artifact restore, independent connected-system improvement, live Meta, final video and release reproduction remain open. A successful build is not functional correctness, and a timeout is not automatically a design defect.
 
 ## Quick start
 
@@ -116,7 +117,7 @@ npm run typecheck
 npm run build
 ```
 
-Choose tests for the component being changed. HTTP/async tests need local socket access; planner tests can launch controlled test processes. Real simulator and runtime suites have separate prerequisites and are not interchangeable with mock-provider or SQLite checks. See [CONTRIBUTING.md](CONTRIBUTING.md) for evidence expectations and [the CI workflow](.github/workflows/ci.yml) for the exact selected checks. The badge reports GitHub workflow status; it does not attest to live Meta, Vivado, arithmetic, or full runtime acceptance.
+Choose tests for the component being changed. HTTP/async tests need local socket access; planner tests can launch controlled test processes. Real simulator and runtime suites have separate prerequisites and are not interchangeable with mock-provider or SQLite checks. See [CONTRIBUTING.md](CONTRIBUTING.md) for evidence expectations and [the CI workflow](.github/workflows/ci.yml) for the exact selected checks. The badge reports selected GitHub source checks; actual tool/model/runtime acceptance is recorded separately in the support matrix.
 
 ## Repository layout
 
@@ -137,7 +138,8 @@ docs/project/             Interfaces, setup, support boundaries and implementati
 | Local services and workbench | [Runtime](docs/project/LOCAL_RUNTIME.md) · [UI](docs/project/UI.md) |
 | Contracts and adapters | [Shared interfaces](docs/project/INTERFACES.md) · [Adapter registry](docs/project/ADAPTERS.md) |
 | Execution and evidence | [FIFO toolchain](docs/project/RTL_TOOLCHAIN.md) · [Evidence workflows](docs/project/EVIDENCE.md) · [API](docs/project/API.md) |
-| Additional integrations | [Arithmetic](docs/project/ARITHMETIC.md) · [Meta planner](docs/project/META_INTEGRATION.md) · [Vivado import](docs/project/VIVADO.md) |
+| Additional integrations | [Arithmetic](docs/project/ARITHMETIC.md) · [RISC-V / firmware](docs/project/FIRMWARE.md) · [Meta planner](docs/project/META_INTEGRATION.md) · [Vivado](docs/project/VIVADO.md) |
+| Evidence and evaluation | [RISC-V results](docs/evidence/riscv/2026-10-31/README.md) · [Firmware results](docs/evidence/firmware/2026-10-30/README.md) · [Evaluation protocol](docs/project/EVALUATION.md) · [Provenance](docs/project/PROVENANCE.md) |
 | Intended release scope | [Implementation gameplan](docs/project/IMPLEMENTATION_GAMEPLAN.md) |
 
 ## Contributing and security

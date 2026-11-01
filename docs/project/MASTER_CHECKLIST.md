@@ -6,6 +6,10 @@ Updated 1 November 2026 after direct human resume. Implementation is RUNNING and
 
 The gameplan defines intended release scope. Source and mocked tests do not establish live tool/model execution. Counts overlap and must not be added into a project total.
 
+## November1 resumed integration
+
+[PR61](https://github.com/desanv01/VerifForge/pull/61) reconciled accepted evidence and remaining release gates after independent documentation review and scoped CI. [PR62](https://github.com/desanv01/VerifForge/pull/62) integrated the bounded FIFO strategy harness, public locked ledger snapshots and owned journal/storage interfaces after independent source review and [exact-revision Python CI](https://github.com/desanv01/VerifForge/actions/runs/41263145346). No actual comparative evaluation or live Meta is implied. Issue7 remains open for corpus, transport/runtime, recovery, budgets and measurements. Current restore adapters and browser runners passed independent source recheck; operator-environment and compatibility packaging corrections remain under review. A subsequent actual Vivado run completed in344.797s with ten routed reports; independent audit accepted35/35 routable nets and constrained internal timing (WNS7.074ns/WHS0.216ns).12 inputs/6 outputs still lack delays; asynchronous ingress/reset, functional, board, repair and workbench gates remain open. API/frontend/browser have not yet been launched for the current browser gate.
+
 ## October31 resumed integration
 
 PRs #50–60 are merged. Independent review accepted the retained fifth planner qualification run40958744363: six bounded PostgreSQL/RQ/process lifecycle cases with explicitly mocked HTTP, including duplicate delivery, resource fencing, cancellation and safe quarantine after worker death. [Audit scope and evidence identity](../evidence/planner/2026-10-31/README.md). No expensive execution was repeated for this audit. Local runtime adoption, successful recovery from quarantined owner loss, populated-database restore, browser acceptance and live Meta remain separate.
@@ -48,11 +52,11 @@ Current [support matrix](SUPPORT_MATRIX.md) separates Import / Execute / Repair 
 | U3 | Actual family API and AXI seven-case native gates accepted; three-family image adopted/preserved; AXI controls merged PR30 and hosted gate merged PR31; local API execution blocked before POST; fourth hosted run independently accepted all seven attempts, exact replay/export and preservation; browser/candidate gates remain open |
 | U4 | Actual PicoRV32/Spike control, seeded divergence, exact recompiled replay and saved-executable replay independently accepted; separately versioned four-case importer candidate and workbench acceptance open |
 | U5 | Facts, executable harness and bounded controller merged PR15/25/29; actual hosted run40929665294 control/seeded mismatch/curated candidate/saved-program replay independently accepted; workbench open |
-| U6 | Actual Vivado2026.1 synthesis and six post-synthesis report captures independently accepted; missing I/O timing requirements, asynchronous-input safety, routed/functional checks, repair and workbench acceptance open |
+| U6 | Actual Vivado2026.1 synthesis/six reports and subsequent routed run/ten reports independently accepted within constrained internal timing/route/DRC scope; missing I/O requirements, asynchronous ingress/reset, functional/board checks, repair and workbench acceptance open |
 | U7 | Actual candidate configured ERC/DRC checks independently accepted with4ERC/5DRC ignored checks unchanged; exact-part/physical acceptance unresolved |
 | U8 | Manifest/native bridge source accepted; recorded graphs remain inconclusive; independent system evidence pending |
 | U9 | Three actual inert Windows containment cases and bounded isolated native API import/readback independently accepted; approved responsive light/dark source merged PR60 after independent review and web CI; actual browser and application candidate flows remain open |
-| U10 | Curated evidence published; append-only evaluation records and runtime-test correction merged in PR58 after CI; private FIFO strategy harness independently source-reviewed; shared integration, comparative results, release reproduction and video remain open |
+| U10 | Curated evidence published; append-only evaluation records and runtime-test correction merged in PR58 after CI; bounded FIFO strategy harness and shared ledger/storage interfaces independently reviewed and merged PR62; runtime/transport/recovery, comparative results, release reproduction and video remain open |
 | U11 | Analog/ASIC stretch after primary scope and submission-critical gates |
 
 ## Earlier foundation milestones
