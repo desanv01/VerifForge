@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Header, HTTPException
 from sqlalchemy.exc import IntegrityError
 
+from veriforge.contracts import canonical_hash
 from veriforge.core import repair_jobs as jobs, service
 from veriforge.core.database import now
 
@@ -37,9 +38,19 @@ def repairs_router(sessions, *, policy=None, policy_reader=None, control=None, r
     @router.post("/attempts/{attempt_id}/repairs", status_code=202)
     def admit(attempt_id: str, body: jobs.RepairRequest, idempotency_key: Key):
         try:
+            admitted_policy = current_policy()
+
+            def admission_control():
+                # Evidence/suite validation can take time. Policy withdrawal or
+                # a changed runtime/budget identity must fence the final check
+                # before the service persists its dispatch intent, too.
+                if canonical_hash(current_policy()) != canonical_hash(admitted_policy):
+                    return "STOPPED"
+                return control() if callable(control) else "STOPPED"
+
             with sessions.begin() as session:
-                job = jobs.admit(session, attempt_id, idempotency_key, body, policy=current_policy(),
-                                 control=control, root=root, at=clock())
+                job = jobs.admit(session, attempt_id, idempotency_key, body, policy=admitted_policy,
+                                 control=admission_control, root=root, at=clock())
                 return jobs.status(session, job.id)
         except (jobs.RepairDisabled, service.NotFound, service.Conflict, ValueError, IntegrityError) as problem:
             raise error(problem) from None
