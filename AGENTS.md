@@ -1,5 +1,7 @@
 # VerifForge implementation
 
+Latest workflow: direct human approval on 3 November 2026 resumed the hybrid implementation-first plan in `.coordination/hybrid-execution/PLAN.md`. Persistent Sol6.1/medium workers implement Phase A; temporary Sol6.1/high reviewers perform focused checks. Main owns Phase B DeepSeek task packets, acceptance, integration and GitHub. The human confirmed Meta credits and authorized live work; current canonical controls and exact operation scope govern execution. Earlier pause/credits-hold records are historical unless a later human pause supersedes this resume.
+
 Read docs/project/IMPLEMENTATION_GAMEPLAN.md and your assigned scope before editing. In the coordinator's local checkout, also read the latest private planning handoff and .coordination/current-state.json. The user authorized implementation and persistent phase worker chats, with no three-worker limit. Human resumed implementation, workers and the existing schedule on 29 October 2026, explicitly superseding the October24 pause. The active coordinator and current controls are recorded in private canonical state; migration archives remain historical.
 
 ## Coordination

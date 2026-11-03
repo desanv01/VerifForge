@@ -1,5 +1,21 @@
 # Implementation checklist
 
+Current implementation status, 3 November 2026: **Phase A source implementation is complete**, including focused independent reviews and source integration. PR72 repaired fresh admission policy, PR73 supplied the native KiCad backend, PR74 integrated the evaluation/workbench/Vivado/cross-domain batch, and [PR75](https://github.com/desanv01/VerifForge/pull/75) completed the native candidate API, durable dispatch, trusted resolver, schema admission and UI. PR75 merged at `41c62dd` after [CI41651046524](https://github.com/desanv01/VerifForge/actions/runs/41651046524) passed on `c96a107`. The separately preserved schema15 cold-restore implementation and host binding passed focused source review; this does not mean a database was migrated or restored.
+
+| Phase A packet | Implementation outcome |
+|---|---|
+| A0 — resume and ownership | Current controls, finite assignments and existing coordinator schedule established |
+| A1 — evaluation | Family collection, export and reproduction source integrated and reviewed |
+| A2 — cold restore | Concrete orchestration and explicit schema13/14/15 selection integrated and reviewed; earlier source/evidence preserved |
+| A3 — planner/runtime | Role, durable feedback and trusted credential-loading implementation reviewed |
+| A4 — RTL repair | Supported arithmetic/AXI repair integration and admission corrections reviewed |
+| A5 — Vivado candidate | Runtime, immutable source binding, API/worker dispatch and UI integrated and reviewed |
+| A6 — KiCad candidate | Fixed-command backend, reviewed native association binding, API/worker dispatch and UI integrated and reviewed |
+| A7 — domains/workbench | Evidence views, cross-domain corrections and recovery-safe candidate UI integrated and reviewed |
+| A8 — delivery preparation | Evaluation/demo/submission guidance, support descriptions and execution-packet drafts prepared |
+
+**Phase B operational acceptance remains open.** Actual schema/migration/restore qualification, trusted native installation, real candidate execution, browser/recovery flows, comparative evaluation and model-to-tool feedback require their own evidence. One authorized Meta readiness request returned HTTP500 without a typed completion or verified usage; no automatic retry or successful feedback claim follows. Private execution-packet drafts are not assigned runtime grants. Existing engineering verdicts and historical acceptance below retain their scope. Public deployment and final submission remain separate actions.
+
 Implementation-first integration update, 1 November 2026: PR67 evaluation source and PR68 EDA source merged with exact CI; connected API/workbench PR69 merged after exact CI. Durable family repair service/worker source and additive schema/API wiring have focused temporary-SQLite/HTTP checks; actual PostgreSQL/native/browser acceptance remains open. See [implementation delivery](IMPLEMENTATION_DELIVERY.md) and [repair execution](REPAIR_EXECUTION.md). Existing accepted runs and historical gates below are preserved.
 
 > Direct human resume on 1 November 2026 at 09:44 MYT supersedes the 31 October 22:44 MYT pause. Implementation and the existing coordinator schedule are running; worker scopes and operational reservations remain controlled by canonical state.
