@@ -1,4 +1,4 @@
-"""Bounded Vivado fixture preparation and report import (no live executor)."""
+"""Bounded report adapters and explicitly installed fixed candidate orchestration."""
 
 from .adapter import (
     Capability, Diagnostic, ImportedReport, PreparedAttempt, Recipe, StageObservation,
@@ -10,6 +10,8 @@ from .investigation import (
     VivadoProjectIdentity, VivadoExecution, VivadoReportFact, VivadoFinding,
     VivadoInvestigation, VivadoCandidateComparison, investigate_vivado_reports, compare_vivado_candidate, vivado_projection,
 )
+from .repair_execution import ControllerInstallation, RepairHooks, RepairPins, PrivateFixedBatchAdapter
+from .repair_runtime import RepairTicket, VivadoRepairRuntime
 
 __all__ = [
     "Capability", "Diagnostic", "ImportedReport", "PreparedAttempt", "Recipe",
@@ -20,4 +22,6 @@ __all__ = [
     "VivadoProjectIdentity", "VivadoExecution", "VivadoReportFact", "VivadoFinding",
     "VivadoInvestigation", "VivadoCandidateComparison", "investigate_vivado_reports", "compare_vivado_candidate",
     "vivado_projection",
+    "ControllerInstallation", "RepairHooks", "RepairPins", "PrivateFixedBatchAdapter",
+    "RepairTicket", "VivadoRepairRuntime",
 ]
