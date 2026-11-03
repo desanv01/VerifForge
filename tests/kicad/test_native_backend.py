@@ -90,7 +90,7 @@ def test_expiry_during_memory_query_refuses_launch(tmp_path):
 
 def test_native_backend_construction_and_import_are_inert(monkeypatch):
     import ctypes
-    monkeypatch.setattr(ctypes,'WinDLL',lambda *a,**k:pytest.fail('native constructor queried'))
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *a,**k:pytest.fail('native constructor queried'),raising=False)
     b=NativeBackend(Installation('1'*64))
     assert b.provenance=='native'; assert b.services is None
 
