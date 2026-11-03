@@ -5,7 +5,7 @@ import json
 import pytest
 from veriforge.kicad.reference import reference_requirements
 from veriforge.kicad.repair_execution import Bundle, Review, execute_candidate, digest, encode, FILES, IGNORED
-from tests.kicad.test_baseline import report
+from .test_baseline import report
 
 ROOT=Path(__file__).resolve().parents[2]
 

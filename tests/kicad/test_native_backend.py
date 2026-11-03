@@ -4,7 +4,7 @@ from dataclasses import replace
 import pytest
 from veriforge.kicad.native_backend import NativeBackend, Installation
 from veriforge.kicad.repair_execution import commands
-from tests.kicad.test_repair_execution import inputs, Fake
+from .test_repair_execution import inputs, Fake
 from veriforge.kicad.repair_execution import execute_candidate
 
 
