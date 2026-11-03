@@ -157,12 +157,14 @@ def reconcile_once(*, sessions=None, dispatcher=None, now=service_now, control=N
     dispatcher = dispatcher if dispatcher is not None else RQDispatcher()
     from . import repair_runtime as repairs
     repair = repairs.advance_batch(sessions, runtime=repair_runtime, clock=now)
+    from .eda_application import dispatch_eda
+    eda = dispatch_eda(dispatcher)
     planner_control = resolve_control(planner_owned=True, explicit_control=control, configuration=configuration)
     planner = planner_driver.reconcile_once(sessions, dispatcher, now=now, control=planner_control)
     return {**dispatch_pending(sessions, dispatcher, clock=now, control=control, configuration=configuration,
                               repair_runtime=repair_runtime), "interrupted": interrupted,
             "exports": dispatch_exports(sessions, dispatcher), "interrupted_exports": interrupted_exports,
-            "planner": planner, "repairs": repair}
+            "planner": planner, "repairs": repair, "eda_repairs": eda}
 
 
 if __name__ == "__main__":

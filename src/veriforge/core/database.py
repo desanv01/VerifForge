@@ -464,3 +464,4 @@ def session_factory(engine):
 # Register additive repair tables in the same metadata used by migrations and
 # catalogue inspection. Importing these models never creates or migrates a DB.
 from . import repair_models as _repair_models  # noqa: E402,F401
+from . import eda_repair_models as _eda_repair_models  # noqa: E402,F401
