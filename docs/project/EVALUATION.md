@@ -2,9 +2,11 @@
 
 Prepared 29 October 2026 for U10. This is a proposed evaluation protocol plus a receipt-based historical summary, **not an executed benchmark**. No new model, simulator, browser, restore or engineering-tool run was performed to write it. The [implementation gameplan](IMPLEMENTATION_GAMEPLAN.md) and [support matrix](SUPPORT_MATRIX.md) target sequences 1–6; U11/sequence 7 is stretch and sequence 8 is deferred. Missing gates below remain open until their artifacts are reviewed.
 
-Reconciled 1 November 2026 MYT after direct human resume. Earlier dated failures and snapshot-specific acceptances remain historical; the current scoped milestones below supersede obsolete preparation-only statuses. No new tool, model, browser or restore execution was performed for this documentation update.
+Reconciled 3 November 2026 MYT for the approved hybrid workflow. The direct human resume supersedes the old manual pause and credits hold. Live Meta work is authorized through the reviewed trusted path, with exact main-owned resource/request grants; authorization does not establish usable access or checked feedback. A8 prepares documentation and draft handoffs only, with no provider/key access, evaluation, browser, DB or engineering-tool operation. Use the current support matrix for acceptance; older checkpoint scopes and failure records below remain historical.
 
-## Current accepted milestones and remaining boundaries
+Nov3 readiness observation: main completed one actual bounded provider request after the credential-reader source correction; it returned `model_http_500`, with no typed completion or usage/cost evidence and zero native executions. The earlier local stable-file-read rejection occurred before any request. Usable model access and the full checked feedback loop remain unverified. Diagnose the observed HTTP500/request compatibility within a new explicit main assignment; no automatic retry and no renewed human hold are implied.
+
+## Earlier recorded checkpoint scopes (historical)
 
 - [Four-case RISC-V run 41202693632](../evidence/riscv/2026-10-31/README.md), source `c14525e3791569215ba385a1c5582d52d0b8858f`: control, seeded mutant, exact recompiled replay and same-run saved object/ELF/binary replay independently accepted. Saved replay omits RISC-V program compilation; Spike executes and Verilator HDL/C++ rebuilds. New four-case recorded-import candidate source is accepted but application adoption remains blocked by legacy persisted-validator compatibility; no ISA certification or core-repair claim.
 - [Fourth hosted AXI run40948230223](../evidence/axi/2026-10-30/README.md) accepted seven bounded API/tool attempts, exact strobe replay/export and preservation/cleanup. Earlier local and hosted failures remain historical; browser/candidate repair and local revision adoption remain separate.
@@ -13,7 +15,7 @@ Reconciled 1 November 2026 MYT after direct human resume. Earlier dated failures
 - [Fifth PostgreSQL qualification run 40958744363](../evidence/planner/2026-10-31/README.md) accepted six bounded PostgreSQL/Valkey/RQ/process cases with **mock HTTP**: duplicate delivery, resource fence, known/unknown transport, fixture pause, late cancellation, and worker-death quarantine with blocked replacement. Quarantine is not successful automatic recovery; no live Meta or populated-database restore follows.
 - Approved light/dark workbench source merged in [PR60](https://github.com/desanv01/VerifForge/pull/60), merge `b81bed3a5e1f8046eeca372fccc72b66247ee8c8`, after [CI41210807765](https://github.com/desanv01/VerifForge/actions/runs/41210807765) passed web tests/types/build at `aeb6ca0788d78f9ccc7da9f2bec7528e6fee5abc`. Original Windows conversion failure remains historical; later source integration does not establish actual browser/visual/keyboard/narrow-width acceptance.
 
-Live Meta key readiness remains deferred without repeated requests. Newer restore, generated repair, independent connected-system improvement, comparative evaluation results, release-snapshot reproduction and final video remain open.
+At that earlier checkpoint live Meta readiness was deferred. The Nov3 human authorization supersedes that human hold, not the missing actual evidence. Newer restore, generated repair, independent connected-system improvement, comparative evaluation results, release-snapshot reproduction and final video still require their own actual receipts.
 
 ## Historical evidence and its original acceptance scope
 
@@ -93,7 +95,7 @@ uv run --no-sync python scripts/reproduce_release.py --root /path/to/new-private
 
 The output directory must not already exist. Validation precedes export; any partial output after an I/O failure is preserved for review rather than overwritten or automatically deleted. Original measurement JSONL bytes and referenced hashed blob bytes are retained. Export contains `collection.json`, exact per-trial ledgers/blobs and `release-manifest.json`; retain the reported manifest hash independently. The verifier rechecks matrix/budget/identity/ledger/blob closure and the derived report, and rejects changed or unlisted files. It reports `manifest_validation_passed`, `execution=not_run` and `clean_tool_reproduction=not_established`.
 
-These are **private, unreviewed exports**. Raw proposals/responses and classification metadata require an explicit publication allowlist/privacy review; do not publish the directory or pass it to a model. Trusted local directory ACLs, cooperating writers and trusted producer/operator provenance remain assumptions. Hash consistency is not remote attestation, and metadata validation is not a new simulator execution, clean replay or release3/3. Actual tool/model execution is not exposed by either CLI. Live Meta holds and resource reservations remain unchanged.
+These are **private, unreviewed exports**. Raw proposals/responses and classification metadata require an explicit publication allowlist/privacy review; do not publish the directory or pass it to a model. Trusted local directory ACLs, cooperating writers and trusted producer/operator provenance remain assumptions. Hash consistency is not remote attestation, and metadata validation is not a new simulator execution, clean replay or release3/3. Actual tool/model execution is not exposed by either CLI. The Nov3 human credits hold is released; exact task/resource/request grants, reviewed credential handling and operational prerequisites still apply. Neither offline CLI makes a readiness probe or provider call.
 
 Required fields:
 
@@ -119,7 +121,7 @@ Release targets from the approved plan: an actual Meta-to-tool-to-feedback inves
 
 1. Frozen current source/runtime manifest and reviewed case/control inventory; neutral planner-facing aliases plus leakage audit for a held-out claim.
 2. Real Meta proposal, usage/identity, tool execution, independent feedback and subsequent model step; current live status is pending.
-3. Integrate the source-reviewed strategy harness after its separate acceptance gates, calibrate/freeze budget profiles and predetermined repeats, then collect complete raw records. Accepted record/harness source is not actual comparative measurement; no results have been collected under this protocol.
+3. Main freezes the delivered family-harness/collector integration after Phase A review, calibrates/fixes budget profiles and predetermined repeats, then grants the actual comparison. Existing source/mock checks are not measurements; any actual dataset must retain complete raw records and exclusions.
 4. Release-snapshot replay and regression receipts, actual candidate diff/provenance, independently extracted cross-domain evidence, and fresh browser flow.
 5. A reviewed sanitized claim/result summary and accessible reproduction prerequisites. Local private raw evidence is not a public permalink.
 
@@ -127,8 +129,16 @@ Use [DEMO_PLAN.md](DEMO_PLAN.md) for the narrative, [PROVENANCE.md](PROVENANCE.m
 
 ## Three-family input corpus
 
-`uv run python scripts/freeze_family_corpus.py --output .coordination/family-corpus-NEW` freezes the installed nine-fixture corpus without executing experiments. The new directory contains a trusted private manifest, a separate planner file containing only neutral aliases, and exact file hashes. Existing output is refused and preserved. Never send the private manifest, fixture roles or expected-answer metadata to a planner.
+`uv run --no-sync python scripts/freeze_family_corpus.py --output NEW_PRIVATE_CORPUS_DIRECTORY` freezes the installed nine-fixture corpus without executing experiments. The new directory contains a trusted private manifest, a separate planner file containing only neutral aliases, and exact file hashes. Existing output is refused and preserved. Never send the private manifest, fixture roles or expected-answer metadata to a planner.
 
 The corpus contains 54 deterministic detection, exact-replay, neighboring and regression plan records across FIFO, arithmetic and bounded AXI-Lite. It binds source/checker/contract/stimulus identities and uses the existing typed adapter experiments. Selected parameters are documented in the module; this is disclosed development coverage, not a held-out study or exhaustive parameter coverage. All cases remain unclassified until supported by separately reviewed ground-truth evidence. A seeded fixture role is not an observed defect verdict.
 
-`execution_plans(manifest, alias)` supplies typed inputs to a trusted collector/runtime. Actual attempts, tool/model identities, resource use, results and replay relationships must be collected during execution. The existing FIFO-only strategy harness remains scoped to FIFO; this input corpus does not claim that its strategy transport has become a general three-family planner. Actual comparative measurements remain open.
+`execution_plans(manifest, alias)` supplies typed inputs to a trusted collector/runtime. Actual attempts, tool/model identities, resource use, results and replay relationships must be collected during execution. The original FIFO harness and this corpus alone do not establish a three-family planner. Phase A family-harness/collection integration must supply its own stable delivered schema, supported profiles, focused checks and review before use. Actual comparative measurements remain open.
+
+## Nov3 execution handoff and command order
+
+Main first selects the integrated source/dirty patch, the reviewed study schema and the operator's exact private roots. The family corpus supplies nine disclosed-development inputs and54plan records, not nine verified defects. Keep unresolved classifications unresolved or explicitly excluded; do not infer ground truth from a fixture name. A family request must use the delivered family profile/registry and collector discriminator; never cast it into an older FIFO request merely to satisfy validation.
+
+The supported command interfaces are the input-freeze command above followed by the collect/reproduce examples in [Offline collection](#offline-collection-and-reproduction-validation). Populate every path/hash placeholder from the main-issued executable packet. Input freeze creates source metadata; actual strategies require separately granted runtime/provider execution; collection then reads retained heads/rows/blobs; validation checks the exported manifest. This order does not authorize any of those operations in a source-only task.
+
+For Phase B evaluation, freeze cases, strategies, seeds/repeats, information access and aggregate token/tool/wall/cycle limits before measuring. Record rejected/unknown calls and infrastructure work, actual versions and usage/nulls, exclusions and right-censoring. Reuse accepted historical native evidence only for its matching obligation; current application/release checks remain separate. A manifest hash pass is not an actual clean replay3/3 or a comparative result. An unchanged failed command needs a changed input or new diagnostic evidence before retry.

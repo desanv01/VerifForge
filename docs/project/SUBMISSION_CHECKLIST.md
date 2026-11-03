@@ -2,9 +2,11 @@
 
 Prepared 29 October 2026. Deadline supplied by the human's participant guide: **5 November 2026, 10:00 AM MYT (02:00 UTC)**, equivalent to 4 November, 9:00 PM EST. Aim for a reviewed package before the final buffer. These are preparation tasks, not a scheduler or permission to submit.
 
-Reconciled 1 November 2026 MYT after direct human resume. Earlier dated failures and snapshot-specific acceptances remain historical; the current scoped milestones below supersede obsolete preparation-only statuses. No new tool, model, browser or restore execution was performed for this documentation update. No final video/captions/playback is established; critical capture and reproduction gates remain open.
+Reconciled 3 November2026 MYT for the approved hybrid workflow. Direct human resume supersedes old pause/credits-hold wording; main issues finite execution packets and resource grants. Earlier evidence/failures remain historical, and current acceptance is recorded in the support matrix. This update performs no tool/model/browser/restore/evaluation operation or submission. No final video/captions/playback is established.
 
 The supplied guide requires public source, Meta-model incorporation, a three-minute demo, clear event-contribution identification and submission through Cerebral Valley. Its pasted rubric contained no judging weights; none are assumed. Organizer approval of continuation is settled and must not be reopened. Keep private correspondence private.
+
+Nov3 readiness observation: main completed one actual bounded provider request after the credential-reader source correction; it returned `model_http_500`, with no typed completion or usage/cost evidence and zero native executions. The earlier local stable-file-read rejection occurred before any request. Usable model access and the full checked feedback loop remain unverified. Diagnose the observed HTTP500/request compatibility within a new explicit main assignment; no automatic retry and no renewed human hold are implied.
 
 ## Recorded decisions and preparation
 
@@ -33,7 +35,7 @@ The supplied guide requires public source, Meta-model incorporation, a three-min
 ## Product evidence before claiming completion
 
 - [ ] U0/U1: frozen source/tool/image/contract/checker manifest, bounded capability/status declarations and independently reviewed baseline.
-- [ ] U2: actual Meta proposal → execution → independent feedback → subsequent model step, durable IDs and usage. Fifth PG/RQ/process gate accepted with mock HTTP only; operational adoption, populated restore and successful owner-loss recovery remain separate. Human deferred key; no repeat request or mock substitution.
+- [ ] U2: actual Meta proposal → execution → independent feedback → subsequent model step, durable IDs and usage. Fifth PG/RQ/process gate accepted with mock HTTP only; operational adoption, populated restore and successful owner-loss recovery remain separate. Live Meta is human-authorized Nov3; bounded readiness and full checked feedback remain actual execution gates. No mock substitution or automatic repeated probe.
 - [ ] U3/sequence1: complete selected family browser/candidate/regression path and release reproduction. Historical local memory/logging/permissions/verdict-class failures remain preserved; fourth hosted AXI seven-attempt API/tool/replay/export gate is accepted. No generated repair or actual browser acceptance follows.
 - [ ] U4/sequence2: complete compatible new-format recorded import, product/browser and any explicitly claimed repair scope. October31 control/seeded/exact-recompiled/saved-program replay gate accepted; no full ISA, arbitrary-program or core-repair claim. Historical local builds/first hosted ELF failure remain recorded.
 - [ ] U5/sequence 3: complete wider firmware/product integration. The bounded five-case native-MMIO control/bad/curated-candidate/saved-program-replay gate is independently accepted; arbitrary firmware/devices, model-generated repair, workbench integration and physical hardware remain open.
@@ -42,7 +44,7 @@ The supplied guide requires public source, Meta-model incorporation, a three-min
 - [ ] U8/sequence 6: independently supported cross-domain discrepancy and improvement/reruns. Bridge source fixes accepted; current native graphs/candidate remain inconclusive/no demonstrated improvement.
 - [ ] U9: actual browser finding/inspect/replay/candidate/validate/export and refresh/error behavior on frozen runtime. Bounded API r2 readback and PR60 light/dark source accepted separately; neither establishes actual browser/visual/keyboard/narrow-width acceptance or new four-case import adoption.
 - [ ] Reliability: current application running cancellation/stale/late handling and wider restart/broker recovery. PG fifth bounded mock-HTTP cancellation/quarantine accepted; unknown owner loss is not recovered. Original October24 backup restore accepted; newer database/artifact/application restoration remains open.
-- [ ] U10: calibrate the integrated FIFO harness, freeze budgets/corpus/information policy, collect actual raw results/exclusions and independently audit claims. New offline collection/reproduction tooling has developer checks; no actual comparative results, clean reproduction or score follows from those checks.
+- [ ] U10: freeze the delivered family harness/collector schema after Phase A review; calibrate budgets/corpus/information policy and predetermined seeds/repeats; collect actual raw results/exclusions under a main grant. Existing corpus and synthetic/metadata checks are not verified defect truth, comparative results or clean release reproduction.
 - [ ] Start U11/sequence 7 only after required work and submission-critical gates are stable. Sequence 8 remains deferred.
 
 [PR #23](https://github.com/desanv01/VerifForge/pull/23) and [#24](https://github.com/desanv01/VerifForge/pull/24) are merged; [#25](https://github.com/desanv01/VerifForge/pull/25) merged as `1db9916dff8e2fbdf181727bc8ba4a4862b254fa` after [current-head CI 40922456584](https://github.com/desanv01/VerifForge/actions/runs/40922456584). Source publication is separate from actual execution acceptance and application/browser adoption. The accepted RISC-V and firmware hosted gates have their own exact source/image/checker records in their linked evidence summaries.
@@ -54,7 +56,7 @@ An open checkbox is a precise missing gate, not an instruction to invent a favor
 | Required artifact | Completion evidence to record | Current status |
 |---|---|---|
 | Public repository | Final commit/tag, README/setup/support boundaries, accessible links | Existing repository recorded; final snapshot not frozen |
-| Meta incorporation | Actual requested/returned model/provider, prompt/schema identity, call/attempt/feedback lineage | Live gate pending |
+| Meta incorporation | Actual requested/returned model/provider, prompt/schema identity, call/attempt/feedback lineage | Human authorization recorded Nov3; actual readiness/feedback receipt pending |
 | Three-minute demo | Reviewed final video/transcript and accessible playback URL | Unrecorded script/transcript/subtitle skeleton prepared; final footage/captions/playback absent |
 | Contribution description | [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md) with dated source/execution distinctions and confirmed human roles | Source merges and scoped new evidence recorded; final release/roles pending |
 | Attribution/license | [PROVENANCE.md](PROVENANCE.md), actual upstream revisions/licenses/notices and project license decision | Inventory incomplete; license decision pending |
@@ -67,7 +69,7 @@ The [demo plan](DEMO_PLAN.md) provides the 180-second sequence. Repository About
 
 ## Missing demonstration shots and access gates
 
-- [ ] Capture the actual Meta proposal→tool→checked-feedback→subsequent-proposal in the identified product. Key readiness remains deferred; no repeat request or mock substitution.
+- [ ] Capture the actual Meta proposal→tool→checked-feedback→subsequent-proposal in the identified product. Human authorization is recorded; obtain main-owned readiness/feedback acceptance without credential disclosure. No mock substitution or automatic repeated probe.
 - [ ] Qualify actual PR60 light/dark browser inspect/candidate/replay/refresh/error/download behavior on identified runtime; reconcile new four-case import compatibility first if shown. API r2 evidence alone is not browser acceptance.
 - [ ] Freeze the [180-second script](DEMO_PLAN.md), separate the two configurations, retain curated-candidate labels and identify any recorded execution/inspection fallback. No video is recorded yet.
 - [ ] If a connected cross-domain improvement or generated repair is claimed, obtain its distinct independent facts/reruns or actual model-response/diff lineage; the two accepted CPU cases do not establish those claims.
@@ -84,3 +86,9 @@ The [demo plan](DEMO_PLAN.md) provides the 180-second sequence. Repository About
 - [ ] Submit once authorized, inspect confirmation, preserve the actual receipt and timestamp. Never mark submission complete from a prepared form or an upload attempt alone.
 
 No publishing, upload, submission, live model/tool operation or deadline automation was performed by this handoff.
+
+## Fields that must be populated from actual evidence
+
+Before submission, record the final public commit and dirty-patch state; exact supported cases and case/program/checker/contract/tool/model identities; measured evaluation/exclusions/unknown usage or an explicit absence; actual clean replay/regression receipts; browser and real Meta-feedback receipt; confirmed human contributors/contact/roles and event additions versus prior foundation; upstream notices and project-license decision; actual footage duration, final captions/transcript and playback URL; intended-reviewer access checks; then the authorized portal record/timestamp/confirmation. Do not fill unknown fields with guessed names, zero cost, a mock screenshot or a planned URL.
+
+The executable command interfaces are linked from [EVALUATION.md](EVALUATION.md#nov3-execution-handoff-and-command-order). Main must populate and issue their source/path/hash/resource fields before use. Phase B outline drafts and a submitted-looking JSON template are not READY packets or external submission authority. Preserve old failures and private originals; publication allowlists and final external action stay separate.
