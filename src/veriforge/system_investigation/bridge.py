@@ -269,8 +269,8 @@ def bundle_files(report: BridgeReport):
 
 
 def check_register_manifest(report: BridgeReport):
-    """Feed existing extracted address records to the reviewed manifest checker."""
-    from .manifest_checks import ManifestCheck, check_manifest
+    """Project valid incomplete bridges without inventing missing observations."""
+    from .manifest_checks import ManifestCheck, check_manifest, implementation_hash as checker_hash, record_hash
     report = BridgeReport.model_validate_json(report.model_dump_json())
     if report.family != "firmware_decode":
         raise ValueError("register bridge required")
@@ -278,4 +278,26 @@ def check_register_manifest(report: BridgeReport):
         fact_ids=("header-" + b.binding_id, "rtl-" + b.binding_id),
         requirement_fact_ids=("intent-" + b.binding_id,), field="value", expected=b.expected_address, reviewed_by=report.intent.reviewed_by)
         for b in report.intent.bindings)
-    return check_manifest(report.manifest, {r.fact.fact_id: r.data.model_dump(mode="json") for r in report.native_records}, checks)
+    records = {r.fact.fact_id: r.data.model_dump(mode="json") for r in report.native_records}
+    facts = {r.fact.fact_id: r.fact for r in report.native_records}
+    complete = tuple(c for c in checks if all(key in facts and facts[key].category == "observation" for key in c.fact_ids))
+    if complete:
+        result = check_manifest(report.manifest, records, complete)
+    else:
+        result = dict(execution_status="completed", scope="source_comparison_only", physical_verdict="inconclusive",
+                      manifest_hash=canonical_hash(report.manifest), checker_hash=checker_hash(), comparisons=[])
+    rows = {row["check_id"]: row for row in result["comparisons"]}
+    bridge_rows = {row.binding_id: row for row in report.comparisons}
+    for check in checks:
+        if check.check_id in rows:
+            continue
+        comparison = bridge_rows[check.check_id]
+        missing = tuple(key for key in check.fact_ids if key not in facts or facts[key].category != "observation")
+        rows[check.check_id] = dict(check_id=check.check_id, quantity=check.quantity, fact_ids=comparison.fact_ids,
+            expected=check.expected, observed=[records[key].get(check.field) for key in comparison.fact_ids],
+            value_comparison="inconclusive", verdict="inconclusive",
+            reasons=[*comparison.reasons, "missing_register_observations"], missing_fact_ids=missing)
+    result.update(comparisons=[rows[c.check_id] for c in checks],
+        checks_hash=record_hash({"checks": [c.model_dump(mode="json") for c in checks]}),
+        bridge_report_hash=canonical_hash(report), bridge_checker_hash=report.checker_hash)
+    return result

@@ -21,6 +21,7 @@ CAP = 1048576
 IMPLEMENTATION_SHA256 = sha256(Path(__file__).read_bytes()).hexdigest()
 NAMES = ('exercise3_core.v', 'exercise3_nexys_video_top.v', 'nexys_video_exercise3.xdc')
 APPROVED_XDC_SHA256 = EXERCISE3_HASHES[NAMES[2]]
+STORAGE_SHA256 = 'c0362f40428804eef23f337fe869155ef84f105fe92e5c098173cd77ffe47a8d'
 # Host-installed immutable Python only, not a caller-supplied executable/script.
 PROFILES = {
     'synthesis': ('tests/vivado/.tmp-u6-run-post-synth-retry-v3-20261030.py',
@@ -92,6 +93,66 @@ class RepairHooks:
 
 
 @dataclass(frozen=True)
+class ControllerInstallation:
+    """Trusted startup configuration, never deserialized from an API request.
+
+    Controller identities remain compiled in. Paths may relocate their exact
+    bytes; they do not admit another controller or a new engineering profile.
+    An explicitly relocated launcher additionally requires its host-reviewed hash.
+    """
+    project_root: Path
+    synthesis_controller: Path
+    routed_controller: Path | None = None
+    routed_recipe: Path | None = None
+    launcher: Path | None = None
+    launcher_sha256: str | None = None
+
+    def __post_init__(self):
+        for path in (self.project_root, self.synthesis_controller, self.routed_controller,
+                     self.routed_recipe, self.launcher):
+            if path is not None and (not isinstance(path,Path) or not path.is_absolute()):
+                raise ValueError('absolute trusted installation paths required')
+        for path in (self.synthesis_controller,self.routed_controller):
+            if path is not None and len(path.parents)<3:
+                raise ValueError('installed fixed controller requires at least three parent levels')
+        if (self.launcher is None)!=(self.launcher_sha256 is None):
+            raise ValueError('relocated launcher requires an identity')
+        if self.launcher is not None:
+            _sha(self.launcher_sha256)
+            if self.launcher.name.lower()!='vivado.bat' or any(c in str(self.launcher)for c in '&|<>^%!"\r\n'):
+                raise ValueError('unsupported fixed batch launcher path')
+
+    @classmethod
+    def legacy(cls, root):
+        root=Path(root).resolve(strict=True)
+        return cls(root,root/PROFILES['synthesis'][0],root/PROFILES['routed'][0],
+                   root/'.coordination/vivado-routed-nov1/attempt/recipe.tcl')
+
+    @property
+    def identity_sha256(self):
+        return _digest(_json({key:str(value)if isinstance(value,Path)else value
+                              for key,value in asdict(self).items()}))
+
+    def controller(self, profile):
+        path=self.synthesis_controller if profile=='synthesis'else self.routed_controller
+        if profile not in PROFILES or path is None:raise ValueError('profile is not installed')
+        raw=_read(path)
+        if _digest(raw)!=PROFILES[profile][1]:raise ValueError('trusted private installation unavailable/changed')
+        return path,raw
+
+    def recipe(self, profile):
+        if profile=='synthesis':raw=render_batch_recipe(BatchRecipe.EXERCISE3_POST_SYNTH).encode()
+        elif profile=='routed'and self.routed_recipe is not None:raw=_read(self.routed_recipe)
+        else:raise ValueError('fixed recipe is not installed')
+        if _digest(raw)!=PROFILES[profile][2]:raise ValueError('fixed recipe identity changed/unavailable')
+        return raw
+
+    def verify_launcher(self):
+        if self.launcher is not None and _digest(_read(self.launcher))!=self.launcher_sha256:
+            raise ValueError('installed launcher identity changed')
+
+
+@dataclass(frozen=True)
 class FixedToolOutput:
     receipt: bytes
     reports: dict[str, bytes]
@@ -127,7 +188,8 @@ def _sources(directory, expected):
 
 
 def prepare_repair(original: Path, candidate: Path, destination: Path,
-                   baseline: VivadoInvestigation, pins: RepairPins, *, project_root: Path) -> PreparedRepair:
+                   baseline: VivadoInvestigation, pins: RepairPins, *, project_root: Path,
+                   installation: ControllerInstallation | None = None) -> PreparedRepair:
     """Copy three exact approved files into new separate snapshots; no execution.
 
     Pins and project_root are trusted host configuration, never model authority.
@@ -142,9 +204,9 @@ def prepare_repair(original: Path, candidate: Path, destination: Path,
         raise ValueError('original differs from baseline source identity')
     if baseline.design_phase!=pins.profile: raise ValueError('baseline phase differs from fixed recipe')
     _sources(Path(original),pins.original);_sources(Path(candidate),pins.candidate)
-    if pins.profile=='synthesis': recipe=render_batch_recipe(BatchRecipe.EXERCISE3_POST_SYNTH).encode()
-    else: recipe=_read(Path(project_root)/'.coordination/vivado-routed-nov1/attempt/recipe.tcl')
-    if _digest(recipe)!=PROFILES[pins.profile][2]: raise ValueError('fixed recipe identity changed/unavailable')
+    installation=installation or ControllerInstallation.legacy(project_root)
+    if installation.project_root.resolve()!=Path(project_root).resolve():raise ValueError('installation root mismatch')
+    recipe=installation.recipe(pins.profile)
     destination=Path(destination).absolute()
     if destination.is_symlink() or destination.is_junction() or destination.exists(): raise ValueError('fresh destination required')
     destination.mkdir(parents=True)
@@ -194,10 +256,30 @@ class PrivateFixedBatchAdapter:
     """
     kind='private_fixed_native_protocol_relocated'
 
-    def __init__(self,project_root:Path,owner:str):
+    def __init__(self,project_root:Path,owner:str,*,installation:ControllerInstallation|None=None):
         if not owner.startswith('U6-') or len(owner)>100 or not all(c.isalnum()or c=='-'for c in owner):
             raise ValueError('explicit main reservation owner required')
         self.root=Path(project_root).resolve(strict=True);self.owner=owner
+        self.installation=installation or ControllerInstallation.legacy(self.root)
+        if self.installation.project_root.resolve()!=self.root:raise ValueError('installation root mismatch')
+
+    def _load_controller(self,prepared):
+        """Load verified installed bytes; separate from invocation for host checks."""
+        path,raw=self.installation.controller(prepared.pins.profile)
+        self.installation.verify_launcher()
+        if _digest(_read(Path(__file__).with_name('storage.py')))!=STORAGE_SHA256:
+            raise ValueError('private storage implementation changed')
+        module=types.ModuleType('_veriforge_fixed_vivado_repair');module.__file__=str(path)
+        exec(compile(raw,str(path),'exec'),module.__dict__)
+        if module.STORAGE_HASH!=STORAGE_SHA256 or _digest(_read(Path(module.storage_module.__file__)))!=STORAGE_SHA256:
+            raise ValueError('private storage implementation changed')
+        # Exact accepted controllers are import-inert. All operational globals
+        # below are bound before invoking any controller function.
+        module.ROOT=self.root
+        module.ATTEMPT=prepared.directory/'candidate';module.OWNER=self.owner
+        module.PLAN_HASH=prepared.candidate_plan_sha256
+        if self.installation.launcher is not None:module.LAUNCHER=str(self.installation.launcher)
+        return module
 
     def execute(self, prepared, hooks, deadline):
         def native_gate():
@@ -205,16 +287,8 @@ class PrivateFixedBatchAdapter:
             return (state['control']=='RUNNING' and state.get('resource_reservations',{}).get('engineering_tool',{}).get('owner')==self.owner
                     and _gate(hooks,deadline)is None)
         if not native_gate():raise ValueError('exact canonical main grant unavailable')
-        profile=prepared.pins.profile; relative,digest,_,_=PROFILES[profile]
-        path=self.root/relative;raw=_read(path)
-        if _digest(raw)!=digest: raise ValueError('trusted private installation unavailable/changed')
-        module=types.ModuleType('_veriforge_fixed_vivado_repair');module.__file__=str(path)
-        exec(compile(raw,str(path),'exec'),module.__dict__)  # Exact allowlisted installed code, not uploaded Python.
-        if Path(module.ROOT).resolve()!=self.root: raise ValueError('private runner root mismatch')
-        if _digest(_read(Path(module.storage_module.__file__)))!=module.STORAGE_HASH:
-            raise ValueError('private storage implementation changed')
-        module.ATTEMPT=prepared.directory/'candidate';module.OWNER=self.owner
-        module.PLAN_HASH=prepared.candidate_plan_sha256
+        profile=prepared.pins.profile
+        module=self._load_controller(prepared)
         def check():
             _verify(prepared)
             return prepared.pins.candidate
@@ -226,7 +300,7 @@ class PrivateFixedBatchAdapter:
         except (OSError,ValueError):
             return FixedToolOutput(_json(native),{},'native_receipt_unavailable','runner_return_fallback')
         decoded=json.loads(receipt)
-        if decoded.get('success')!=native.get('success') or not native.get('receipt_persisted'):
+        if _json(decoded)!=_json(native) or native.get('receipt_persisted')is not True:
             return FixedToolOutput(receipt,{},'native_receipt_persistence_mismatch')
         reports={}
         if not isinstance(decoded.get('artifacts'),dict):return FixedToolOutput(receipt,reports,'report_manifest_unavailable')
@@ -257,6 +331,7 @@ def execute_repair(prepared:PreparedRepair, baseline:VivadoInvestigation, runner
     with (prepared.directory/'operation-claim.json').open('xb')as stream:
         stream.write(_json({'baseline':prepared.baseline_sha256,'candidate_plan':prepared.candidate_plan_sha256}))
     result={'schema':'vivado.repair-execution.v1','baseline_sha256':prepared.baseline_sha256,
+            'candidate_plan_sha256':prepared.candidate_plan_sha256,
             'runner_kind':runner.kind,'execution_status':'blocked','blocker':None,
             'native_receipt_sha256':None,'candidate_projection':None,'repair_status':'not_validated','receipt_persisted':False}
     deadline=None
@@ -286,6 +361,12 @@ def execute_repair(prepared:PreparedRepair, baseline:VivadoInvestigation, runner
         if type(raw)is not bytes or len(raw)>CAP:raise ValueError('native receipt byte cap')
         (prepared.directory/'native-receipt.json').write_bytes(raw)  # Exact immutable received bytes.
         result['native_receipt_sha256']=_digest(raw)
+        if (not isinstance(reports,dict)or set(reports)-{n+'.rpt'for n in checker.REPORTS}or
+            any(type(value)is not bytes or len(value)>CAP for value in reports.values())or
+            sum(map(len,reports.values()))>8*CAP):raise ValueError('report byte/name limit')
+        saved_reports=prepared.directory/'received-reports';saved_reports.mkdir()
+        for name,data in reports.items():
+            with (saved_reports/name).open('xb')as stream:stream.write(data)
         native=json.loads(raw);_verify(prepared)
         native_reason=native.get('limit_reason')
         allowed={'timeout','control_or_reservation_changed','control_unavailable','preparation_validation_failed',

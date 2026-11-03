@@ -39,7 +39,7 @@ def freeze_corpus_main(argv=None):
             'diagnostic': 'invalid_or_changed_input_or_output', 'partial_output': 'preserve_if_present'}))
         return 1
 
-from .collection import CollectionRequest, export_collection, read_json, validate_reproduction
+from .collection import CollectionRequest, export_collection, parse_request, read_json, validate_reproduction
 
 
 def collect_main(argv=None):
@@ -49,7 +49,7 @@ def collect_main(argv=None):
     parser.add_argument("--output", required=True, help="New private output directory; must not exist")
     args = parser.parse_args(argv)
     try:
-        request = CollectionRequest.model_validate(read_json(args.request))
+        request = parse_request(read_json(args.request))
         manifest, sha = export_collection(request, args.root, args.output)
     except (OSError, ValueError, TypeError, RecursionError):
         print(json.dumps({"status": "collection_failed", "execution": "not_run",

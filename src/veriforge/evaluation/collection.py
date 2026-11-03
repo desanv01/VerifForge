@@ -1,4 +1,4 @@
-"""Offline private collection of existing FIFO evaluation ledgers and blobs.
+"""Offline private collection of existing FIFO/family ledgers and blobs.
 
 Never dispatches a provider/tool or scores a dataset. Manifest validation checks
 retained bytes and frozen metadata, not execution authenticity or clean replay.
@@ -14,10 +14,11 @@ import re
 import stat
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, TypeAdapter, field_validator, model_validator
 
 from veriforge.contracts import ArtifactReference, Identifier, Sha256, canonical_hash
 from . import harness as h, records as r, storage
+from . import family_corpus as corpus, family_harness as family
 
 MAX_PACKAGE_BYTES = 64 * 1024 * 1024
 MAX_PACKAGE_FILES = 4096
@@ -133,6 +134,49 @@ class CollectionRequest(r.RecordModel):
         return self
 
 
+class FamilyCaseBinding(CaseBinding):
+    """Installed case identity, explicitly not a ground-truth annotation."""
+    profile: Literal['rtl.fifo.v1', 'rtl.arithmetic.v1', 'rtl.axi_lite.v1']
+    classification: Literal['unresolved'] = 'unresolved'
+    ground_truth_review_sha256: None = None
+
+
+class FamilyCollectionRequest(CollectionRequest):
+    schema_version: Literal['evaluation.family-collection-request.v1'] = 'evaluation.family-collection-request.v1'
+    study: family.FamilyStudy
+    cases: Annotated[tuple[FamilyCaseBinding, ...], Field(min_length=1, max_length=9)]
+    corpus: corpus.CorpusManifest
+
+    @model_validator(mode='after')
+    def frozen_corpus_bindings(self):
+        frozen = corpus.validate_corpus(self.corpus)
+        require(canonical_hash(frozen) == self.study.registry_sha256, 'frozen_corpus_differs')
+        require(self.study.registry_sha256 == canonical_hash(corpus.build_corpus()), 'frozen_corpus_recipe_differs')
+        private = {case.case_id: case for case in frozen.cases}
+        for binding in self.cases:
+            case = private.get(binding.case_id)
+            require(case is not None, 'case_not_in_corpus')
+            identity = case.plans[0].identity
+            require((binding.profile, binding.source_sha256, binding.checker_sha256, binding.contract_sha256) ==
+                    (case.adapter_id, identity.source_hash, identity.checker_hash, identity.contract_hash),
+                    'frozen_family_binding_differs')
+        return self
+
+
+CollectionInput = Annotated[CollectionRequest | FamilyCollectionRequest, Field(discriminator='schema_version')]
+_REQUEST = TypeAdapter(CollectionInput)
+
+
+def parse_request(value) -> CollectionRequest | FamilyCollectionRequest:
+    """Schema-selected revalidation; old FIFO requests keep their exact schema."""
+    if isinstance(value, (CollectionRequest, FamilyCollectionRequest)):
+        value = value.model_dump(mode='json')
+    if isinstance(value, dict) and 'schema_version' not in value:
+        # Legacy model validation supplied this default before schema routing.
+        value = {'schema_version': 'evaluation.collection-request.v1', **value}
+    return _REQUEST.validate_python(value)
+
+
 class FileIdentity(r.RecordModel):
     path: str
     sha256: Sha256
@@ -144,8 +188,13 @@ class ReproductionManifest(r.RecordModel):
     schema_version: Literal["evaluation.reproduction.v1"] = "evaluation.reproduction.v1"
     execution: Literal["not_run"] = "not_run"
     disclosure: Literal["private_unreviewed_export"] = "private_unreviewed_export"
-    request: CollectionRequest
+    request: CollectionInput
     files: Annotated[tuple[FileIdentity, ...], Field(min_length=1, max_length=MAX_PACKAGE_FILES)]
+
+    @field_validator('request', mode='before')
+    @classmethod
+    def request_schema_default(cls, value):
+        return parse_request(value)
 
     @model_validator(mode="after")
     def unique_inventory(self):
@@ -176,7 +225,7 @@ def trial_records(request, capture, root):
     study, trial = request.study, capture.trial
     expected = dict(evaluation_revision=canonical_hash(study), campaign_id=h.identity(canonical_hash(study), trial.model_dump(mode="json")),
                     case_id=trial.case_id, strategy=trial.strategy, seed=trial.seed, replicate=trial.replicate,
-                    domain="rtl", profile="fifo-v1", source_sha256=binding.source_sha256,
+                    domain="rtl", profile=binding.profile if isinstance(binding, FamilyCaseBinding) else "fifo-v1", source_sha256=binding.source_sha256,
                     checker_sha256=binding.checker_sha256, contract_sha256=binding.contract_sha256,
                     environment_sha256=study.environment_sha256, strategy_sha256=study.strategy_sha256,
                     information_policy_sha256=study.information_policy_sha256, visibility=study.visibility,
@@ -221,7 +270,7 @@ def capture_files(request, root):
     Missing trials need explicit reviewed exclusions; incomplete captured trials
     remain incomplete. No hidden truth/witness is exported to a planner.
     """
-    request = CollectionRequest.model_validate_json(h.encoded(request))
+    request = parse_request(h.ledger_json(h.encoded(request)))
     root = directory(root)
     output, summaries, projected = {}, [], []
 

@@ -1,6 +1,10 @@
 # Three-minute demonstration handoff
 
-Prepared 29 October 2026; reconciled **1 November 2026 MYT** after direct human resume. This is a script and rehearsal plan, not a recorded demonstration or final submission. Organizer approval is settled. Submission remains due **5 November 2026, 10:00 AM MYT**. The [implementation gameplan](IMPLEMENTATION_GAMEPLAN.md) and [support matrix](SUPPORT_MATRIX.md) retain the broader gates.
+Prepared 29 October 2026; reconciled **3 November 2026 MYT** after direct human approval/resume of the hybrid workflow. This is a script and rehearsal plan, not a recorded demonstration or final submission. Organizer approval is settled. Submission remains due **5 November 2026, 10:00 AM MYT**. The [implementation gameplan](IMPLEMENTATION_GAMEPLAN.md) and [support matrix](SUPPORT_MATRIX.md) retain the broader gates.
+
+The Nov3 human instruction authorizes live Meta work and supersedes the old credits hold. Main-owned readiness diagnosis and the later admitted feedback campaign still require their reviewed path and exact resource/request budgets. This document and draft handoffs make no request, read no credential, and authorize no browser/tool/provider launch. Main issues the executable packets and user launch prompts; draft outlines are not READY assignments.
+
+Nov3 readiness observation: main completed one actual bounded provider request after the credential-reader source correction; it returned `model_http_500`, with no typed completion or usage/cost evidence and zero native executions. The earlier local stable-file-read rejection occurred before any request. Usable model access and the full checked feedback loop remain unverified. Diagnose the observed HTTP500/request compatibility within a new explicit main assignment; no automatic retry and no renewed human hold are implied.
 
 ## Story and configuration boundary
 
@@ -36,7 +40,7 @@ For an authorized later recording, label every evidence playback “Recorded hos
 2. Rehearse the RISC-V control→first-divergence path using summary, raw RVFI/Spike and normalized pair. Keep diagnostic DUT cycle separate from architectural retirement order.
 3. Rehearse the firmware bad observation→independent check→preserved header/diff→candidate path. Confirm the displayed cycle/address/probe/mailbox values match the actual records and the spoken labels say curated.
 4. Rehearse the two replay explanations using execution commands and matching hashes, not a new invocation. Point to the subset/omission bounds; neither directory is a full distributed runtime image.
-5. Reserve the 30-second Meta slot and list the unverified browser/product flows; accepted read-only API readback is supporting evidence only. After key readiness is supplied through the established secure path, a separate authorized run must establish real proposal→tool→checked-feedback→next-proposal and actual UI behavior. Do not repeat key requests while deferred.
+5. Reserve the 30-second Meta slot and list the unverified browser/product flows; accepted read-only API readback is supporting evidence only. The human credits authorization is already recorded; main must obtain/reuse actual readiness through the reviewed path and then grant the admitted proposal→tool→checked-feedback→next-proposal flow plus its visible UI behavior. No repeated key request or automatic recurring probe is needed.
 6. Review source/tool/upstream attribution, contribution dates, privacy and the 180-second reading. Main later chooses a frozen cut and grants recording/runtime slots; no service/DB/browser/native tool is started by these steps.
 
 A recorded-file fallback can honestly demonstrate the accepted engineering results locally before actual browser flows are accepted; bounded API r2 readback already has its separate acceptance. It cannot fulfill the missing real Meta/product interaction shots. If the intended final narrative still requires a connected cross-domain discrepancy/improvement, that shot also remains missing: native graph comparisons are inconclusive and the two CPU demonstrations do not close it.
@@ -45,7 +49,7 @@ A recorded-file fallback can honestly demonstrate the accepted engineering resul
 
 Before final capture, main must freeze the release source/runtime and exact retained packets; admit the new four-case bundle through a compatible immutable-validator path if it will be shown in the workbench; and grant the required local browser/runtime slot. Verify actual light/dark rendering, keyboard/focus, narrow/long-data, refresh/error and artifact download flows without inventing a tool rerun. Record any UI-only recorded-evidence playback as such.
 
-After human key readiness, separately authorize and retain real Meta proposal → tool → immutable feedback → next proposal, then qualify the visible product shot. Freeze the chosen hero cases and run release-snapshot reproduction/regression (target3/3) under their existing resource/checker bounds; historical repeats are not automatic release evidence. Use the four-case RISC-V pinned workflow/toolchain and firmware packet's matching runner, preserve their different replay commands, and validate accessible public metadata versus omitted private originals.
+After the main-owned bounded readiness check and exact operational grant, retain real Meta proposal → tool → immutable feedback → next proposal, then qualify the visible product shot. Nov3 human authorization does not itself fill that missing shot. Freeze the chosen hero cases and run release-snapshot reproduction/regression (target3/3) under their existing resource/checker bounds; historical repeats are not automatic release evidence. Use the four-case RISC-V pinned workflow/toolchain and firmware packet's matching runner, preserve their different replay commands, and validate accessible public metadata versus omitted private originals.
 
 Only after these dependencies settle: capture the fixed180-second cut, review secrets/rights/contribution labels, create captions/transcript, inspect playback and verify intended-reviewer links. Publication/deployment/submission remain main's separately authorized actions. No additional planning framework or job is introduced here.
 
@@ -66,7 +70,7 @@ Vivado October31 retry completed synthesis and six post-synthesis report capture
 | Final asset or decision | Current state |
 |---|---|
 | Accepted raw-result spine and exact manifests | RISC-V/firmware evidence available; AXI fourth-run subset published in PR #52; final cut and release-head hero replay 3/3 remain open |
-| Actual Meta two-step feedback and visible product shot | Deferred key; no accepted live Meta feedback |
+| Actual Meta two-step feedback and visible product shot | Human authorization recorded Nov3; bounded readiness/actual feedback and visible product evidence still required |
 | Native workbench finding/candidate/replay/inspect views | PR60 light/dark source and bounded API r2 readback accepted separately; actual browser/visual/keyboard/narrow/refresh/error gates and new four-case import adoption remain open |
 | Generated repair if claimed | No actual model response/diff lineage; firmware candidate is curated |
 | Connected cross-domain improvement if claimed | Missing independent connected facts and affected-tool reruns |
@@ -76,3 +80,9 @@ Vivado October31 retry completed synthesis and six post-synthesis report capture
 Use [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md), [PROVENANCE.md](PROVENANCE.md), [EVALUATION.md](EVALUATION.md) and [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for supporting detail. No judging weights are assumed. This document authorizes no job, recording, upload, deployment or submission.
 
 Current-state clarification, 1 November2026 MYT: four-case saved-program replay, Vivado synthesis/six reports, API r2 readback, PG fifth mock-HTTP qualification and PR60 light/dark source are accepted only within their individual scopes. None closes actual browser, real Meta feedback, release reproduction or final recording.
+
+## Final text and asset completion
+
+The draft180-second narration, transcript, seven subtitle cues and submission fields are operator preparation, not recorded assets. Keep the actual footage/date/source IDs, final model/request/usage/feedback receipt, browser acceptance, release replay/regression, human roles/license and playback/access fields empty until their evidence exists. Captions must be retimed to the actual cut; a draft SRT is not proof that the video exists or is accessible.
+
+Use the accepted RISC-V/firmware identities above for recorded shots and preserve the intentional seeded-versus-curated labels. The30-second Meta interval may contain only actual accepted proposal/tool/feedback evidence; a pending card is rehearsal only. Supporting AXI, Vivado, KiCad or cross-domain material replaces an existing interval if main changes the cut; it cannot silently extend the three-minute total or imply connected-system acceptance. Main separately controls recording/rendering, public disclosure, hosting and final portal submission.

@@ -325,14 +325,17 @@ class Journal:
     refuse use after exit or from another thread. No unlocked read/write API is
     exposed, and callbacks must not reenter the campaign's exclusive lock.
     """
-    def __init__(self, root):
+    def __init__(self, root, *, event_adapter=None):
+        # Installed host schemas only; no import path or request-selected plugin.
+        require(event_adapter is None or isinstance(event_adapter, TypeAdapter), "journal_event_adapter_invalid")
+        self._event_adapter = _EVENT if event_adapter is None else event_adapter
         self._lock = storage.PrivateFileLock(root, "dispatch.jsonl")
         self.path, self.lock_path = self._lock.path, self._lock.lock_path
 
     @contextmanager
     def locked(self):
         with self._lock.acquire():
-            session = _JournalSession(self.path, _JOURNAL_SEAL)
+            session = _JournalSession(self.path, _JOURNAL_SEAL, self._event_adapter)
             try:
                 yield session
             finally:
@@ -351,8 +354,9 @@ _JOURNAL_SEAL = object()
 
 
 class _JournalSession:
-    def __init__(self, path, seal):
+    def __init__(self, path, seal, event_adapter=_EVENT):
         require(seal is _JOURNAL_SEAL, "journal_session_invalid")
+        self._event_adapter = event_adapter
         self._path, self._active, self._owner = path, True, get_ident()
 
     @property
@@ -395,7 +399,7 @@ class _JournalSession:
             require(set(value) == {"sequence", "previous", "event", "sha256"}, "journal_invalid")
             require(type(value["sequence"]) is int and value["sequence"] == index and value["previous"] == head, "journal_chain")
             require(value["sha256"] == digest(encoded({key: value[key] for key in ("sequence", "previous", "event")})), "journal_chain")
-            event = _EVENT.validate_python(value["event"])
+            event = self._event_adapter.validate_python(value["event"])
             require(encoded(event) == encoded(value["event"]), "journal_invalid")
             events.append(event)
             head = value["sha256"]
@@ -404,7 +408,7 @@ class _JournalSession:
     def append(self, event):
         self._check()
         try:
-            event = _EVENT.validate_json(encoded(event))
+            event = self._event_adapter.validate_json(encoded(event))
         except (AttributeError, TypeError, ValueError):
             raise HarnessError("journal_event_invalid") from None
         events, head = self.read()
