@@ -35,6 +35,105 @@ def test_register_manifest_checker_integrates_existing_native_records():
     assert checked["scope"] == "source_comparison_only"
 
 
+@pytest.mark.parametrize("case,reason", [
+    ("unsupported_header", "unsupported_or_ambiguous_native_decode"),
+    ("absent_header_macro", "unsupported_or_ambiguous_native_decode"),
+    ("absent_rtl_signal", "selected_native_fact_missing"),
+    ("model_source", "model_proposal_is_not_native_observation"),
+])
+def test_register_manifest_projection_retains_valid_inconclusive_bridge(case, reason):
+    from veriforge.system_investigation.bridge import check_register_manifest
+    from veriforge.system_investigation.manifest_checks import implementation_hash
+    header = b"#include <unknown.h>" if case == "unsupported_header" else \
+        HEADER.replace(b"CONTROL_ADDR", b"OTHER_ADDR") if case == "absent_header_macro" else HEADER
+    rtl = RTL.replace(b"control", b"other") if case == "absent_rtl_signal" else RTL
+    report = compare_registers(source("header", header, origin="model_proposal" if case == "model_source" else "synthetic_fixture"),
+        source("rtl", rtl), registers())
+    before = report.model_dump_json()
+    checked = check_register_manifest(report)
+    row = checked["comparisons"][0]
+    assert row["verdict"] == row["value_comparison"] == "inconclusive"
+    assert reason in row["reasons"] and "missing_register_observations" in row["reasons"]
+    assert row["fact_ids"] == report.comparisons[0].fact_ids
+    assert row["missing_fact_ids"] == (("rtl-control",) if case == "absent_rtl_signal" else ("header-control", "rtl-control"))
+    assert checked["manifest_hash"] == canonical_hash(report.manifest)
+    assert checked["bridge_report_hash"] == canonical_hash(report)
+    assert checked["checker_hash"] == implementation_hash() and checked["bridge_checker_hash"] == report.checker_hash
+    assert checked["physical_verdict"] == "inconclusive" and checked["scope"] == "source_comparison_only"
+    assert report.model_dump_json() == before
+
+
+def test_register_projection_keeps_complete_and_missing_bindings_separate():
+    from veriforge.system_investigation.bridge import check_register_manifest
+    intent = RegisterIntent(bindings=(*registers().bindings,
+        AddressBinding(binding_id="status",header_macro="STATUS_ADDR",rtl_signal="status",expected_address=0x40000004)),
+        byte_base=0x40000000,reviewed_by="test-reviewer")
+    report = compare_registers(source("header",HEADER+b"#define STATUS_ADDR 0x40000004u\n"),source("rtl",RTL),intent)
+    checked = check_register_manifest(report)
+    assert [row["check_id"] for row in checked["comparisons"]] == ["control","status"]
+    assert [row["verdict"] for row in checked["comparisons"]] == ["consistent","inconclusive"]
+    assert checked["comparisons"][1]["observed"] == [0x40000004]
+    assert checked["comparisons"][1]["missing_fact_ids"] == ("rtl-status",)
+
+
+def test_projection_fallback_does_not_relax_generic_manifest_endpoints():
+    from veriforge.system_investigation.manifest_checks import ManifestCheck,check_manifest
+    report=compare_registers(source("header",b"#include <unknown.h>"),source("rtl",RTL),registers())
+    check=ManifestCheck(check_id="control",quantity="register_address",fact_ids=("header-control","rtl-control"),
+        requirement_fact_ids=("intent-control",),field="value",expected=0x40000000,reviewed_by="test-reviewer")
+    with pytest.raises(ValueError,match="endpoints must resolve"):
+        check_manifest(report.manifest,{r.fact.fact_id:r.data.model_dump(mode="json") for r in report.native_records},(check,))
+
+
+@pytest.mark.parametrize("tail", [b"",b";",b"; # comment",b";# [exec never]",b" ; \t# $variable [substitution]"])
+def test_xdc_clock_comments_only_at_command_start_or_after_separator(tail):
+    from veriforge.system_investigation.xdc import extract_clock_periods
+    data=b"# standalone [substitution] comment\ncreate_clock -period 10 [get_ports {clk}]"+tail+b"\n"
+    assert extract_clock_periods(data,("clk",)) == ({"kind":"clock_period","port":"clk","period_ps":10000,"line":2},)
+
+
+@pytest.mark.parametrize("command", [
+    b"create_clock -period 10 [get_ports {clk}] # extra arguments",
+    b"create_clock -period 10 [get_ports {clk}] # [exec never]",
+    b"create_clock -period 10 [get_ports {clk}]#attached",
+    b"create_clock -period 10 [get_ports {clk}] [puts never] ; # comment",
+    b"create_clock -period 10 [get_ports {clk}]; puts never; # comment",
+    b"create_clock -period $period [get_ports {clk}]; # comment",
+    b"create_clock -period [expr {10}] [get_ports {clk}]; # comment",
+])
+def test_xdc_trailing_arguments_or_substitution_never_hidden_by_comment(command):
+    from veriforge.system_investigation.xdc import extract_clock_periods
+    with pytest.raises(ValueError):extract_clock_periods(command,("clk",))
+
+
+def test_active_pin_comment_uses_same_separator_rule_without_changing_templates():
+    active=XDC.rstrip(b"\n;")
+    with pytest.raises(ValueError):extract_package_pins(active+b" # [exec never]",("ja[0]",))
+    assert extract_package_pins(active+b";# [exec never]",("ja[0]",))[0].package_pin=="AB22"
+    # Reference comments describe text, not active Tcl. Keep explicit reference mode.
+    rows=extract_package_pins(b"#"+active+b" # annotation",("ja[0]",),board_reference=True)
+    assert rows[0].interpretation=="commented_board_reference"
+
+
+@pytest.mark.parametrize("newline", [b"\n", b"\r\n"])
+def test_xdc_continued_comment_cannot_turn_next_line_into_active_clock(newline):
+    from veriforge.system_investigation.xdc import extract_clock_periods
+    data=b"# continued comment \\"+newline+b"create_clock -period 10 [get_ports {clk}]"+newline
+    with pytest.raises(ValueError,match="continuations"):
+        extract_clock_periods(data,("clk",))
+
+
+@pytest.mark.parametrize("newline", [b"\n", b"\r\n"])
+def test_xdc_unselected_pin_comment_continuation_cannot_emit_selected_pin(newline):
+    unselected=XDC.rstrip(b"\r\n").replace(b"ja[0]",b"ja[1]")
+    data=unselected+b" # continued comment \\"+newline+XDC
+    with pytest.raises(ValueError,match="continuations"):
+        extract_package_pins(data,("ja[0]",))
+    # Explicit reference mode remains a physical-line template reader, not Tcl.
+    template=b"# reference note \\"+newline+b"#"+XDC
+    assert extract_package_pins(template,("ja[0]",),board_reference=True)[0].interpretation=="commented_board_reference"
+
+
 def registers(reviewed=True):
     return RegisterIntent(bindings=(AddressBinding(binding_id="control", header_macro="CONTROL_ADDR",
         rtl_signal="control", expected_address=0x40000000),), byte_base=0x40000000,

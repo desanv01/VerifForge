@@ -12,6 +12,28 @@ PATTERN = re.compile(
     r"))\s+\[get_ports\s+\{\s*(?P<port>" + PORT + r")\s*\}\]\s*;?\s*")
 
 
+def _literal_command(raw):
+    """Only a whole-line comment or a comment after a literal command separator.
+
+    Remaining command text must still full-match the supported literal grammar;
+    this is not a general Tcl lexer or evaluator.
+    """
+    text = raw.strip()
+    if text.startswith("#"):
+        return ""
+    command, marker, _ = text.partition("#")
+    if marker and not command.rstrip().endswith(";"):
+        raise ValueError("active XDC comment requires a command separator")
+    return command.strip()
+
+
+def _reject_active_continuations(data):
+    # Tcl joins backslash-newline before interpreting comments. Never treat the
+    # next physical line as an independently active command in this subset.
+    if b"\\\n" in data or b"\\\r" in data:
+        raise ValueError("active XDC line continuations are unsupported")
+
+
 def extract_package_pins(data: bytes, ports: tuple[str, ...], *, board_reference=False):
     if type(board_reference) is not bool or not 1 <= len(ports) <= 16 or len(set(ports)) != len(ports):
         raise ValueError("explicit unique bounded port selection required")
@@ -19,6 +41,8 @@ def extract_package_pins(data: bytes, ports: tuple[str, ...], *, board_reference
         raise ValueError("XDC must be bounded bytes")
     if any(re.fullmatch(PORT, port) is None for port in ports):
         raise ValueError("literal port selection required")
+    if not board_reference:
+        _reject_active_continuations(data)
     rows = []
     for line, raw in enumerate(data.decode("utf-8-sig").splitlines(), 1):
         text = raw.strip()
@@ -31,7 +55,8 @@ def extract_package_pins(data: bytes, ports: tuple[str, ...], *, board_reference
             if not board_reference:
                 continue
             text = text[1:].strip()
-        text = text.split("#", 1)[0].strip()
+        # Explicit commented-reference mode reads a template, not active Tcl.
+        text = text.split("#", 1)[0].strip() if template else _literal_command(text)
         matched = PATTERN.fullmatch(text)
         if matched:
             if matched["port"] in ports:
@@ -59,10 +84,11 @@ def extract_clock_periods(data: bytes, ports: tuple[str, ...]):
         raise ValueError("bounded unique clock selection required")
     if any(re.fullmatch(PORT, p) is None for p in ports):
         raise ValueError("literal clock port required")
+    _reject_active_continuations(data)
     pattern = re.compile(r"create_clock\s+(?:-name\s+[A-Za-z_][A-Za-z0-9_]*\s+)?-period\s+([0-9]{1,9}(?:\.[0-9]{1,3})?)\s+\[get_ports\s+\{(" + PORT + r")\}\]\s*;?")
     rows = []
     for line, raw in enumerate(data.decode("utf-8-sig").splitlines(), 1):
-        text = raw.split("#", 1)[0].strip()
+        text = _literal_command(raw)
         if not text: continue
         match = pattern.fullmatch(text)
         if match:
