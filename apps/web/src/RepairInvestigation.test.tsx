@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, expect, it, vi } from 'vitest'
 import { RepairInvestigation } from './RepairInvestigation'
+import { RepairReportDetails } from './RepairReportDetails'
 import { compatibleStatus, parseRepairCapabilities, parseRepairReport, parseRepairRequest, parseRepairStatus, readPending, repairPollInterval, repairStorageKey } from './repairApi'
 
 const h='a'.repeat(64),other='b'.repeat(64)
@@ -11,14 +12,16 @@ const health={status:'ok',repair_api:'1',repair_admission_enabled:true,repair_fa
 const provenance={schema_version:'candidate.provenance.v1',recommendation_origin:'curated_catalog',materialization:'curated_fixture_selection',authorship_claim:'curated_source_not_generated_patch',assertion_basis:'controller_supplied_record',proposal_id:null,proposal_sha256:null,external_reference_id:null,model_call:null}
 const identity={source_hash:h,checker_hash:h,contract_hash:h,experiment_hash:h,environment_hash:h}
 function fixture(kind:'candidate'|'reduction'='candidate',state='active',attempt='original-1',family='arithmetic'){
-  return {job_id:'job-1',kind,execution_status:state,reason:state==='active'?null:'original_not_reproduced',version:1,request_hash:h,policy_hash:h,limits:{enabled:true,runtime_configured:true,runtime_identity:h,max_cases:16,max_reduction_attempts:12,max_wall_seconds:600,max_total_cycles:100000,max_reserved_artifact_bytes:268435456},max_attempts:12,original_attempt_id:attempt,original_result_hash:h,candidate_fixture_id:kind==='candidate'?'candidate-correct':null,suite_hash:kind==='candidate'?h:null,provenance,active_case_id:state==='active'?'case-1':null,best_case_id:null,deadline_at:new Date(Date.now()+600000).toISOString(),reserved_cycles:100,reserved_artifact_bytes:1024,cleanup_status:'worker_finalized_external_cleanup_unverified',cases:[{case_id:'case-1',ordinal:1,role:'reproduce',label:'original-failure-replay',plan:{target:family,adapter:family==='arithmetic'?'rtl.arithmetic.v1':'rtl.axi_lite.v1',fixture_id:'original-bug'},plan_hash:h,campaign_id:'campaign-1',experiment_id:'experiment-1',attempt_id:'child-1',execution_lease:'lease-1',status:state==='active'?'queued':'completed',execution_status:state==='active'?'queued':'completed',design_verdict:state==='active'?null:'design_mismatch',result_hash:state==='active'?null:h,result:state==='active'?null:{attempt_id:'child-1',identity},accepted_progress:false}],report_ready:state!=='active',report_hash:state==='active'?null:h}
+  return {job_id:'job-1',kind,execution_status:state,reason:state==='active'?null:'original_not_reproduced',version:1,request_hash:h,policy_hash:h,limits:{enabled:true,runtime_configured:true,runtime_identity:h,max_cases:16,max_reduction_attempts:12,max_wall_seconds:600,max_total_cycles:100000,max_reserved_artifact_bytes:268435456},max_attempts:12,original_attempt_id:attempt,original_result_hash:h,candidate_fixture_id:kind==='candidate'?'candidate-correct':null,suite_hash:kind==='candidate'?h:null,provenance,active_case_id:state==='active'?'case-1':null,best_case_id:null,deadline_at:new Date(Date.now()+600000).toISOString(),reserved_cycles:100,reserved_artifact_bytes:1024,cleanup_status:'worker_finalized_external_cleanup_unverified',cases:[{case_id:'case-1',ordinal:1,role:'reproduce',label:'original-failure-replay',plan:{target:family,adapter:family==='arithmetic'?'rtl.arithmetic.v1':'rtl.axi_lite.v1',fixture_id:'original-bug'},plan_hash:h,campaign_id:'campaign-1',experiment_id:'experiment-1',attempt_id:'child-1',execution_lease:'lease-1',status:state==='active'?'queued':'completed',execution_status:state==='active'?'queued':'completed',design_verdict:state==='active'?null:'design_mismatch',result_hash:state==='active'?null:h,result:state==='active'?null:reportResult('child-1'),accepted_progress:false}],report_ready:state!=='active',report_hash:state==='active'?null:h}
 }
-function report(job:ReturnType<typeof fixture>){return {sha256:h,report:{schema_version:'repair.report.v1',job_id:job.job_id,kind:job.kind,execution_status:job.execution_status,reason:job.reason,original_attempt_id:job.original_attempt_id,original_result_hash:h,request_hash:h,policy_hash:h,candidate_fixture_id:job.candidate_fixture_id,suite_hash:job.suite_hash,provenance,cases:job.cases,original_identity:identity,claim:job.kind==='candidate'?'validation_under_exact_recorded_checks':'bounded_search_no_minimality_guarantee',cleanup_status:job.cleanup_status,physical_cleanup_verified:false,operational_acceptance:false,improved:false}}}
+function reportPlan(family='arithmetic',count=4){return {schema_version:family==='arithmetic'?'arithmetic.v1':'axi_lite.v1',adapter:family==='arithmetic'?'rtl.arithmetic.v1':'rtl.axi_lite.v1',target:family,experiment_id:'wire-original',fixture_id:'original-bug',contract_id:'fixed-contract',seed:1,parameters:family==='arithmetic'?{width:8,latency:2}:{data_width:32,address_width:8},budget:{max_cycles:1000,wall_time_seconds:120,max_artifact_bytes:1048576},...(family==='arithmetic'?{operations:Array.from({length:count},()=>({op:'idle',cycles:1}))}:{cycles:Array.from({length:count},()=>({reset_n:true}))})}}
+function reportResult(attempt='original-1',pass=false){return {attempt_id:attempt,execution_status:'completed',verdict:pass?'pass_within_scope':'design_mismatch',identity,usage:{cycles:10,wall_time_seconds:0.1},failure_signature:pass?null:{requirement_id:'fixed-requirement',failure_class:'fixed-failure',first_cycle:8,expected:'expected',observed:'observed',signature_hash:h}}}
+function report(job:ReturnType<typeof fixture>){const original_plan=reportPlan(job.cases[0].plan.target),original_result=reportResult(job.original_attempt_id);return {sha256:h,report:{schema_version:'repair.report.v1',job_id:job.job_id,kind:job.kind,execution_status:job.execution_status,reason:job.reason,original_attempt_id:job.original_attempt_id,original_result_hash:h,original_plan,original_result,request_hash:h,policy_hash:h,candidate_fixture_id:job.candidate_fixture_id,suite_hash:job.suite_hash,provenance,cases:job.cases,original_identity:identity,claim:job.kind==='candidate'?'validation_under_exact_recorded_checks':'bounded_search_no_minimality_guarantee',cleanup_status:job.cleanup_status,physical_cleanup_verified:false,operational_acceptance:false,improved:false,best_case_id:job.best_case_id,...(job.kind==='reduction'?{reduced_experiment:original_plan,reduced_result:original_result}:{})}}}
 function validatedCandidate(){
   const raw=fixture('candidate','completed');raw.reason='validated_under_checks'
   const original=raw.cases[0]
-  raw.cases.push(...['witness','neighbor','regression'].map((role,i)=>({...original,case_id:`case-${i+2}`,ordinal:i+2,role,label:role,plan:{...original.plan,fixture_id:'candidate-correct'},campaign_id:`campaign-${i+2}`,experiment_id:`experiment-${i+2}`,attempt_id:`child-${i+2}`,execution_lease:`lease-${i+2}`,design_verdict:'pass_within_scope',result:{attempt_id:`child-${i+2}`,identity}})))
-  const review={original_attempt_id:'original-1',candidate_attempt_id:'child-2',checker_sha256:h,contract_sha256:h,provenance,unified_source_diff:'',unified_configuration_diff:'+curated fixture'}
+  raw.cases.push(...['witness','neighbor','regression'].map((role,i)=>({...original,case_id:`case-${i+2}`,ordinal:i+2,role,label:role,plan:{...original.plan,fixture_id:'candidate-correct'},campaign_id:`campaign-${i+2}`,experiment_id:`experiment-${i+2}`,attempt_id:`child-${i+2}`,execution_lease:`lease-${i+2}`,design_verdict:'pass_within_scope',result:reportResult(`child-${i+2}`,true)})))
+  const review={original_attempt_id:'original-1',candidate_attempt_id:'child-2',checker_sha256:h,contract_sha256:h,original_source:{fixture_id:'original-bug',file_sha256:h,source_identity_sha256:h,size_bytes:100,curated_variant:1},candidate_source:{fixture_id:'candidate-correct',file_sha256:h,source_identity_sha256:h,size_bytes:100,curated_variant:0},source_bytes_changed:false,configuration_changed:true,provenance,unified_source_diff:'',unified_configuration_diff:'+curated fixture'}
   const validation={status:'validated_under_checks',candidate_fixture_id:'candidate-correct',provenance,neighboring_plan_count:1,regression_plan_count:1,source_review:review,source_review_sha256:h,source_review_status:'available',original_result:{attempt_id:'original-1'},original_replay:{attempt_id:'child-1'},witness:{attempt_id:'child-2'},neighbors:[{attempt_id:'child-3'}],regressions:[{attempt_id:'child-4'}],candidate_experiments:raw.cases.slice(1).map(c=>c.plan)}
   const candidate={schema_version:'family.candidate-report.v1',suite_sha256:h,suite:{schema_version:'family.validation-suite.v1',adapter_id:'rtl.arithmetic.v1',checker_sha256:h,contract_sha256:h,cases:raw.cases.slice(1).map(c=>({role:c.role,label:c.label}))},validation}
   return {raw,wrapper:{...report(raw),report:{...report(raw).report,family_candidate_report:candidate}},validation}
@@ -69,6 +72,64 @@ it.each(['count','witness','original','source-review'])('rejects contradictory c
   if(field==='original')f.validation.original_replay.attempt_id='wrong-original-replay'
   if(field==='source-review')f.validation.source_review.candidate_attempt_id='wrong-source-attempt'
   expect(()=>parseRepairReport(f.wrapper,job,'arithmetic')).toThrow()
+})
+function reducedFixture(){
+  const raw=fixture('reduction','completed'),reducedPlan=reportPlan('arithmetic',2),reducedResult={...reportResult('child-2'),identity:{...identity,experiment_hash:other},usage:{cycles:6,wall_time_seconds:0.05}}
+  raw.reason='bounded_candidates_exhausted';Object.assign(raw,{best_case_id:'case-2'})
+  raw.cases.push({...raw.cases[0],case_id:'case-2',ordinal:2,role:'reduction',label:'trial-2',plan:reducedPlan,plan_hash:other,campaign_id:'campaign-2',experiment_id:'experiment-2',attempt_id:'child-2',execution_lease:'lease-2',result:reducedResult,accepted_progress:true})
+  const wrapper={...report(raw),report:{...report(raw).report,improved:true,best_case_id:'case-2',reduced_experiment:reducedPlan,reduced_result:reducedResult}}
+  return {raw,reducedPlan,reducedResult,wrapper}
+}
+it('connects exact reduction plans, checked outcomes and failure signatures',()=>{
+  const {raw,reducedResult,wrapper}=reducedFixture(),job=parseRepairStatus(raw,'original-1','arithmetic'),parsed=parseRepairReport(wrapper,job,'arithmetic')
+  render(<RepairReportDetails report={parsed} kind="reduction"/>)
+  const region=screen.getByRole('region',{name:'Reduction witness comparison'})
+  expect(within(region).getByText('4')).toBeInTheDocument();expect(within(region).getByText('2')).toBeInTheDocument()
+  expect(screen.getByText(/minimality is not guaranteed/)).toBeInTheDocument()
+  expect(screen.getAllByText('fixed-requirement · fixed-failure · first cycle 8')).toHaveLength(2)
+  reducedResult.identity.checker_hash=other;expect(()=>parseRepairReport(wrapper,job,'arithmetic')).toThrow()
+})
+it.each([0.5,120.5,3600])('preserves valid fractional/subsecond execution budget %s',seconds=>{
+  const raw=fixture('reduction','completed'),wrapper=report(raw)
+  wrapper.report.original_plan.budget.wall_time_seconds=seconds
+  expect(parseRepairReport(wrapper,parseRepairStatus(raw,'original-1','arithmetic'),'arithmetic').reduction?.reducedPlan.seconds).toBe(seconds)
+})
+it.each([0,-0.5,3600.1,Infinity,NaN])('rejects invalid execution budget %s',seconds=>{
+  const raw=fixture('reduction','completed'),wrapper=report(raw)
+  wrapper.report.original_plan.budget.wall_time_seconds=seconds
+  expect(()=>parseRepairReport(wrapper,parseRepairStatus(raw,'original-1','arithmetic'),'arithmetic')).toThrow()
+})
+it.each(['plan-id','plan-rows','verdict','cycles','seconds','failure-value','failure-class'])('rejects detached reduced details with unchanged accepted case: %s',field=>{
+  const f=reducedFixture(),job=parseRepairStatus(f.raw,'original-1','arithmetic')
+  const wrapper={...f.wrapper,report:{...f.wrapper.report,reduced_experiment:structuredClone(f.reducedPlan),reduced_result:structuredClone(f.reducedResult)}}
+  if(field==='plan-id')wrapper.report.reduced_experiment.experiment_id='different-plan'
+  if(field==='plan-rows'&&'operations' in wrapper.report.reduced_experiment)wrapper.report.reduced_experiment.operations?.push({op:'idle',cycles:1})
+  if(field==='verdict'){wrapper.report.reduced_result.verdict='pass_within_scope';wrapper.report.reduced_result.failure_signature=null}
+  if(field==='cycles')wrapper.report.reduced_result.usage.cycles++
+  if(field==='seconds')wrapper.report.reduced_result.usage.wall_time_seconds=99
+  if(field==='failure-value')wrapper.report.reduced_result.failure_signature!.observed='invented'
+  if(field==='failure-class')wrapper.report.reduced_result.failure_signature!.failure_class='another-failure'
+  expect(()=>parseRepairReport(wrapper,job,'arithmetic')).toThrow()
+})
+it('allows accepted reduction first-cycle and value changes while preserving backend failure semantics',()=>{
+  const f=reducedFixture();f.reducedResult.failure_signature!.first_cycle=3;f.reducedResult.failure_signature!.observed='reduced value';f.reducedResult.failure_signature!.signature_hash=other
+  const parsed=parseRepairReport(f.wrapper,parseRepairStatus(f.raw,'original-1','arithmetic'),'arithmetic')
+  expect(parsed.reduction?.reducedResult.failure?.cycle).toBe(3)
+  expect(parsed.reduction?.reducedResult.failure?.observed).toBe('reduced value')
+})
+it('renders source bytes and curated configuration as distinct candidate changes',()=>{
+  const f=validatedCandidate(),job=parseRepairStatus(f.raw,'original-1','arithmetic')
+  render(<RepairReportDetails report={parseRepairReport(f.wrapper,job,'arithmetic')} kind="candidate"/>)
+  expect(screen.getByRole('region',{name:'Candidate source identities'})).toBeInTheDocument()
+  expect(screen.getByText(/Source bytes changed: false · curated configuration changed: true/)).toBeInTheDocument()
+  f.validation.source_review.candidate_source.source_identity_sha256=other
+  expect(()=>parseRepairReport(f.wrapper,job,'arithmetic')).toThrow()
+})
+it('links exact child campaigns without carrying an old repair or export selection',async()=>{
+  history.replaceState(null,'','/?repair=job-1&export=old-export')
+  vi.spyOn(globalThis,'fetch').mockImplementation(async input=>String(input)==='/api/health'?json(health):json(fixture()))
+  mount();const link=await screen.findByRole('link',{name:'Open reproduce campaign campaign-1'})
+  expect(link).toHaveAttribute('href','/?campaign=campaign-1')
 })
 it('keeps FIFO outside the durable API and shows an unsupported runtime without job controls',async()=>{
   const fetch=vi.spyOn(globalThis,'fetch').mockResolvedValue(json({status:'ok'}))
