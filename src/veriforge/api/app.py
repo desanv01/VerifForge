@@ -73,6 +73,8 @@ def create_app(engine=None, *, initialize_catalog=True, artifact_root=None,
     app.include_router(evidence_router(sessions, artifact_root))
     from .investigations import investigations_router
     app.include_router(investigations_router(sessions))
+    from .eda_repairs import create_router as eda_repairs_router
+    app.include_router(eda_repairs_router(), prefix="/api")
     app.include_router(planner_router(sessions, policy=planner_policy, control=planner_control, now=planner_at))
     from veriforge.core.repair_runtime import RepairRuntime
     from .repairs import repairs_router
