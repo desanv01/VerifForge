@@ -84,3 +84,46 @@ def test_foreign_original_is_not_authorized_and_unknown_ids_are_safe(state):
     assert caught.value.status_code == 404
     with pytest.raises(HTTPException) as caught: api['status']('not-a-job')
     assert caught.value.status_code == 404
+
+
+@pytest.mark.parametrize('change', ['disabled', 'identity', 'limits', 'reader-error', 'wrong-type', 'unchanged'])
+def test_live_policy_change_during_admission_fences_final_control(monkeypatch, change):
+    """Fake service transaction only: no SQLite, socket or worker operation."""
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    selected = [support.policy()]
+    rollback = []
+    def reader():
+        if selected[0] is None:
+            raise RuntimeError('synthetic-reader-unavailable')
+        return selected[0]
+    @contextmanager
+    def transaction():
+        try:
+            yield object()
+        except Exception:
+            rollback.append(True)
+            raise
+    def preflight(session, attempt_id, key, body, *, policy, control, **kwargs):
+        assert control() == 'RUNNING'
+        if change == 'disabled': selected[0] = jobs.RepairPolicy()
+        elif change == 'identity': selected[0] = selected[0].model_copy(update={'runtime_identity':'b'*64})
+        elif change == 'limits': selected[0] = support.policy(max_cases=15)
+        elif change == 'reader-error': selected[0] = None
+        elif change == 'wrong-type': selected[0] = {'enabled':True}
+        # The real admission service already checks this callback again after
+        # its evidence/suite preflight. Assert the route supplies fresh policy.
+        if control() != 'RUNNING': raise jobs.RepairDisabled('synthetic-revocation')
+        if change == 'unchanged': return SimpleNamespace(id='synthetic-job')
+        pytest.fail('captured policy permitted admission after its withdrawal')
+    monkeypatch.setattr(jobs, 'admit', preflight)
+    monkeypatch.setattr(jobs, 'status', lambda session,identity:{'job_id':identity})
+    router = repairs_router(SimpleNamespace(begin=transaction), policy_reader=reader, control=lambda:'RUNNING')
+    route = next(route.endpoint for route in router.routes if route.name == 'admit')
+    if change == 'unchanged':
+        assert route('synthetic-attempt', jobs.RepairRequest(kind='reduction'), 'synthetic-key') == {'job_id':'synthetic-job'}
+        assert rollback == []
+    else:
+        with pytest.raises(HTTPException) as caught:
+            route('synthetic-attempt', jobs.RepairRequest(kind='reduction'), 'synthetic-key')
+        assert caught.value.status_code == 503 and rollback == [True]
