@@ -234,3 +234,18 @@ def test_cli_entrypoints_and_fixed_private_diagnostics(dataset, tmp_path, capsys
     req.write_text('{"study":{},"study":{}}')
     assert collect_main(["--request", str(req), "--root", str(root), "--output", str(tmp_path / "invalid")]) == 1
     assert str(tmp_path) not in capsys.readouterr().out
+
+
+def test_legacy_default_schema_still_parses_and_collects(dataset, tmp_path, capsys):
+    root, _, request = dataset()
+    value = request.model_dump(mode='json')
+    value.pop('schema_version')
+    assert c.parse_request(value) == request
+    path = tmp_path / 'legacy-default.json'
+    path.write_text(json.dumps(value), encoding='utf-8')
+    assert collect_main(['--request', str(path), '--root', str(root), '--output', str(tmp_path / 'export-default')]) == 0
+    assert json.loads(capsys.readouterr().out)['status'] == 'collected_not_scored'
+    manifest, _ = c.capture_files(request, root)
+    saved = manifest.model_dump(mode='json')
+    saved['request'].pop('schema_version')
+    assert c.ReproductionManifest.model_validate(saved) == manifest
