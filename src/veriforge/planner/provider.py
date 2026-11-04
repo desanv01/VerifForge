@@ -11,7 +11,8 @@ import httpx
 from pydantic import Field, SecretStr
 
 from veriforge.contracts import WireModel
-from .models import ModelUsage, PlannerContext, PlannerDecision, ProviderCompletion
+from .models import ModelUsage, PlannerContext, ProviderCompletion
+from .wire_schema import decision_wire_schema
 
 ENDPOINT = "https://api.meta.ai/v1/chat/completions"
 INSTRUCTIONS = (
@@ -53,7 +54,7 @@ def request_payload(context: PlannerContext, model: str, output_tokens: int) -> 
             {"role": "user", "content": context.model_dump_json()},
         ],
         "response_format": {"type": "json_schema", "json_schema": {
-            "name": "veriforge_planner_decision", "schema": PlannerDecision.model_json_schema(),
+            "name": "veriforge_planner_decision", "schema": decision_wire_schema(),
         }},
         "max_completion_tokens": output_tokens,
         "stream": False,
