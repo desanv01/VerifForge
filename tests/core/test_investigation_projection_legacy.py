@@ -11,11 +11,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
+import tempfile
 import struct
 from types import ModuleType, SimpleNamespace
 import unittest
-import uuid
 
 from veriforge.contracts import canonical_hash
 from veriforge.contracts.engineering import (
@@ -536,16 +535,13 @@ def _firmware_fixture():
 
 class LegacyProjectionChecks(unittest.TestCase):
     def setUp(self):
-        self.tmp = Path(os.environ['B6_CANDIDATE_TMP']) / ('case-' + uuid.uuid4().hex)
-        self.tmp.mkdir()
+        self.tmp = Path(self.enterContext(tempfile.TemporaryDirectory(
+            prefix='b6-case-', dir=os.environ.get('B6_CANDIDATE_TMP'))))
+        self.addCleanup(policy.configure_registered_validator, None)
         self.source = self.tmp / 'synthetic_registered_policy_source.txt'
         self.source.write_bytes(b'# synthetic host registration identity; no worker\n')
         self.module = self._backend()
         policy.configure_registered_validator(self.module, source_sha256=sha(self.source.read_bytes()))
-
-    def tearDown(self):
-        policy.configure_registered_validator(None)
-        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _backend(self):
         module = ModuleType('synthetic_registered_legacy_policy')
@@ -831,8 +827,9 @@ class PolicyOperationCorrectionTests(unittest.TestCase):
     """B6-F1 regressions: one captured policy operation spans the whole response."""
 
     def setUp(self):
-        self.tmp = Path(os.environ['B6_CANDIDATE_TMP']) / ('policy-' + uuid.uuid4().hex)
-        self.tmp.mkdir()
+        self.tmp = Path(self.enterContext(tempfile.TemporaryDirectory(
+            prefix='b6-policy-', dir=os.environ.get('B6_CANDIDATE_TMP'))))
+        self.addCleanup(policy.configure_registered_validator, None)
         self.source = self.tmp / 'synthetic_registered_policy_source.txt'
         self.source.write_bytes(b'# synthetic host registration identity; no worker\n')
         self.state = dict(clock=0.0, deadline_seconds=policy.OPERATION_SECONDS, operation=None,
@@ -841,10 +838,6 @@ class PolicyOperationCorrectionTests(unittest.TestCase):
         self.module = _policy_operation_backend(self.source, self.state)
         policy.configure_registered_validator(self.module,
             source_sha256=sha(self.source.read_bytes()))
-
-    def tearDown(self):
-        policy.configure_registered_validator(None)
-        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _response(self, fixture, *, read_seconds=0.0, build_seconds=0.0,
             build_error=None, change_source_on_encode=False):
