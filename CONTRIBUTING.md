@@ -44,4 +44,4 @@ Use the pull request template to make these distinctions easy to review. Update 
 
 The [CI workflow](.github/workflows/ci.yml) selects Python checks, web checks and real Linux FIFO smoke based on changed paths. Its scope does not establish live Meta, Vivado, arithmetic or full runtime qualification. Relevant checks should pass before merge; explain skipped or unavailable checks instead of presenting them as passes.
 
-License selection is pending. This guide does not add a license, contributor agreement or permission grant.
+Original first-party VerifForge code is licensed under [AGPL-3.0-only](LICENSE), copyright (C) 2026 Desan Vasu. Third-party material retains its own licenses and notices. This guide does not add a separate contributor agreement.

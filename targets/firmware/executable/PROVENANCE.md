@@ -1,6 +1,6 @@
 # Firmware executable source provenance and public boundary
 
-This directory and src/veriforge/firmware executable/harness/job/driver files are original VerifForge implementation sources. They contain a curated bad STATUS header and a hand-authored one-line correction; no model-generated repair or executed firmware is claimed. Public source authorization does not imply an explicit open-source license grant: this checkout currently has no project-root LICENSE file. Main owns any project licensing decision; do not invent a license for original project files.
+This directory and src/veriforge/firmware executable/harness/job/driver files are original VerifForge implementation sources. They contain a curated bad STATUS header and a hand-authored one-line correction; no model-generated repair or executed firmware is claimed. Original first-party code is licensed under [AGPL-3.0-only](../../../LICENSE), copyright (C) 2026 Desan Vasu. Upstream PicoRV32 and other third-party material retain their own licenses and notices.
 
 The externally authored execution dependency is the unmodified upstream PicoRV32 RTL at targets/riscv/upstream/picorv32.v, revision ef203c2b0a3fb793280f5114941416c425c5b461, Git blob cc45fa998f1857b06a856ea59b931f6c37e06b34, SHA2560836050971b3c6cdd28ac3b1e5719a67fb645161912bef1e472e63995ceb0622. Its ISC notice remains in the file header. targets/riscv/upstream.json records repository, revision, checksums and role; targets/riscv/picorv32_top.sv is the project's existing wrapper reused read-only.
 
