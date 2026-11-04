@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from pydantic import Field, StrictInt
+from pydantic import Field, StrictInt, StringConstraints, model_validator
 
 from veriforge.contracts import (
     AttemptResult, BehavioralContract, Experiment, FailureSignature, FifoOperation, WireModel,
@@ -63,10 +63,24 @@ class ModelUsage(WireModel):
 
 
 class ProviderCompletion(WireModel):
-    content: Annotated[str, Field(max_length=256_000, repr=False)]
+    """Provider response. Null content is legal only for a length-terminated response.
+
+    The field stays required and string constraints are preserved; the invariant keeps
+    null+stop, null+other/missing finish reason and missing content invalid. Acceptance
+    remains the independent validator's decision.
+    """
+
+    content: Annotated[Annotated[str, StringConstraints(max_length=256_000)] | None,
+                       Field(repr=False)]
     model: Annotated[str, Field(min_length=1, max_length=128)]
     usage: ModelUsage | None = None
     finish_reason: Annotated[str, Field(max_length=64)]
+
+    @model_validator(mode="after")
+    def _null_content_requires_length(self) -> "ProviderCompletion":
+        if self.content is None and self.finish_reason != "length":
+            raise ValueError("null content requires length finish_reason")
+        return self
 
 
 class Feedback(WireModel):
