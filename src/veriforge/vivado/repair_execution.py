@@ -98,7 +98,8 @@ class ControllerInstallation:
 
     Controller identities remain compiled in. Paths may relocate their exact
     bytes; they do not admit another controller or a new engineering profile.
-    An explicitly relocated launcher additionally requires its host-reviewed hash.
+    Execution requires an explicitly supplied host-reviewed launcher path and
+    SHA256. Construction remains inert for metadata/blocked workflows.
     """
     project_root: Path
     synthesis_controller: Path
@@ -148,7 +149,9 @@ class ControllerInstallation:
         return raw
 
     def verify_launcher(self):
-        if self.launcher is not None and _digest(_read(self.launcher))!=self.launcher_sha256:
+        if self.launcher is None or self.launcher_sha256 is None:
+            raise ValueError('host-reviewed launcher identity required')
+        if _digest(_read(self.launcher))!=self.launcher_sha256:
             raise ValueError('installed launcher identity changed')
 
 
@@ -265,8 +268,8 @@ class PrivateFixedBatchAdapter:
 
     def _load_controller(self,prepared):
         """Load verified installed bytes; separate from invocation for host checks."""
-        path,raw=self.installation.controller(prepared.pins.profile)
         self.installation.verify_launcher()
+        path,raw=self.installation.controller(prepared.pins.profile)
         if _digest(_read(Path(__file__).with_name('storage.py')))!=STORAGE_SHA256:
             raise ValueError('private storage implementation changed')
         module=types.ModuleType('_veriforge_fixed_vivado_repair');module.__file__=str(path)
@@ -278,7 +281,7 @@ class PrivateFixedBatchAdapter:
         module.ROOT=self.root
         module.ATTEMPT=prepared.directory/'candidate';module.OWNER=self.owner
         module.PLAN_HASH=prepared.candidate_plan_sha256
-        if self.installation.launcher is not None:module.LAUNCHER=str(self.installation.launcher)
+        module.LAUNCHER=str(self.installation.launcher)
         return module
 
     def execute(self, prepared, hooks, deadline):
