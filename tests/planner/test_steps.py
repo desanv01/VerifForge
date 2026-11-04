@@ -15,6 +15,7 @@ from veriforge.planner.models import (
     ExperimentProposal, Feedback, InvestigationLimits, ModelUsage, PlannerDecision, Pricing, ProviderCompletion,
 )
 from veriforge.planner.provider import encode_payload, request_payload
+from veriforge.planner.wire_schema import decision_wire_schema_hash
 from veriforge.planner.steps import (
     PLANNER_CAPABILITIES, STEPS_VERSION, DUPLICATE_CORRECTION, INVALID_CORRECTION,
     PlannerStepError, admission_stop_reason, build_context, build_experiment,
@@ -66,8 +67,10 @@ def test_fifo_capability_frozen_and_schema_identity_unchanged():
     capability = require_planner_capability("rtl.fifo.v1")
     assert capability.steps_version == STEPS_VERSION == "planner.steps.v1"
     assert capability.prompt_version == "vf-planner-1"
-    assert capability.decision_schema_hash == hashlib.sha256(
+    assert capability.logical_decision_schema_hash == hashlib.sha256(
         json.dumps(PlannerDecision.model_json_schema(), sort_keys=True).encode()).hexdigest()
+    assert capability.decision_schema_hash == decision_wire_schema_hash()
+    assert capability.decision_schema_hash != capability.logical_decision_schema_hash
     with pytest.raises(TypeError):
         PLANNER_CAPABILITIES["rtl.arithmetic.v1"] = capability
     with pytest.raises(ValidationError):

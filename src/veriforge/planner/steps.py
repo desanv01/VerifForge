@@ -26,6 +26,7 @@ from .models import (
     Pricing, ProviderCompletion, StopProposal,
 )
 from .provider import encode_payload, request_payload
+from .wire_schema import decision_wire_schema_hash
 
 STEPS_VERSION = "planner.steps.v1"
 FIFO_ADAPTER = "rtl.fifo.v1"
@@ -45,16 +46,19 @@ class PlannerCapability(WireModel):
     adapter_id: Literal["rtl.fifo.v1"] = FIFO_ADAPTER
     steps_version: Literal["planner.steps.v1"] = STEPS_VERSION
     prompt_version: Literal["vf-planner-1"] = "vf-planner-1"
+    # Existing durable schema_hash fields identify the actual generation schema.
     decision_schema_hash: str
+    logical_decision_schema_hash: str
 
 
 def _schema_hash() -> str:
-    # Preserve the existing controller's byte-for-byte schema hash convention.
+    # Preserve the strict validator identity separately from the wire schema.
     return hashlib.sha256(json.dumps(PlannerDecision.model_json_schema(), sort_keys=True).encode()).hexdigest()
 
 
 PLANNER_CAPABILITIES: Mapping[str, PlannerCapability] = MappingProxyType({
-    FIFO_ADAPTER: PlannerCapability(decision_schema_hash=_schema_hash()),
+    FIFO_ADAPTER: PlannerCapability(decision_schema_hash=decision_wire_schema_hash(),
+                                    logical_decision_schema_hash=_schema_hash()),
 })
 
 
