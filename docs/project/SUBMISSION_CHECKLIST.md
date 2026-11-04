@@ -32,7 +32,7 @@ Current acceptance, 5 November 2026 MYT: an actual Meta proposal executed as a 1
 - [x] Operator shot-script, draft transcript, seven-cue subtitle skeleton and submission-field template prepared. They contain explicit pending shots/null final fields; no recorded media, synchronized final captions, playback or submission is claimed.
 - [ ] Reconfirm final public repository access and exact submission commit; the planning audit's recorded public visibility is not a final link check.
 - [ ] Main reconciles release source, runtime image and current support matrix. Do not stage private receipts or blanket-add ignored evidence.
-- [ ] Select the project license with the human and retain required upstream notices. No root LICENSE/NOTICE was present at this handoff inspection; public visibility does not choose a license.
+- [x] Human selected [AGPL-3.0-only](../../LICENSE) for original first-party code, copyright (C) 2026 Desan Vasu. Existing third-party notices remain unchanged; the complete notice inventory for any additional distribution remains separate.
 
 ## Product evidence before claiming completion
 
@@ -62,7 +62,7 @@ An open checkbox is a precise missing gate, not an instruction to invent a favor
 | Meta incorporation | Actual requested/returned model/provider, prompt/schema identity, call/attempt/feedback lineage | Scoped actual proposal/tool/persisted-feedback/separate followup accepted; [evidence and limits](../evidence/planner/2026-11-05/README.md); broader application gates open |
 | Three-minute demo | Reviewed final video/transcript and accessible playback URL | Unrecorded script/transcript/subtitle skeleton prepared; final footage/captions/playback absent |
 | Contribution description | [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md) with dated source/execution distinctions and confirmed human roles | Source merges and scoped new evidence recorded; final release/roles pending |
-| Attribution/license | [PROVENANCE.md](PROVENANCE.md), actual upstream revisions/licenses/notices and project license decision | Inventory incomplete; license decision pending |
+| Attribution/license | [PROVENANCE.md](PROVENANCE.md), actual upstream revisions/licenses/notices and project license decision | First-party AGPL-3.0-only selected; broader distribution notice inventory incomplete |
 | Evaluation | [EVALUATION.md](EVALUATION.md), frozen methods and complete raw/summary records | Protocol/records/harness source integrated; offline collection implemented, independent feature review/calibration/actual results pending |
 | Reproduction | Exact selected plans, source/checker/contract/environment, dependencies and verified clean replay | Offline manifest/byte validator implemented; actual clean release reproduction3/3 remains separate from metadata validation and historical replay acceptance |
 | Product access | Local setup or an explicitly authorized hosted route if required by the final form | Local-only product; no hosted deployment claimed |

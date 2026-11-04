@@ -32,7 +32,9 @@ Deterministic FIFO execution and replay require no model key. Model-driven plann
 
 ## Current capabilities
 
-Active development, as of 3 November 2026 MYT. These are scoped evidence and source-review states, not a completed release or benchmark. The [support matrix](docs/project/SUPPORT_MATRIX.md) separates Import, Execute and Repair gates. Further reviewed source updates were merged in [PR74](https://github.com/desanv01/VerifForge/pull/74) at `11f4665`, after CI passed for head `6fdf2b5`.
+Active development, as of 5 November 2026 MYT. These are scoped evidence and source-review states, not a completed release or benchmark. The [support matrix](docs/project/SUPPORT_MATRIX.md) separates Import, Execute and Repair gates. [PR82](https://github.com/desanv01/VerifForge/pull/82) reconciled the live-feedback evidence and legacy-projection source; [PR83](https://github.com/desanv01/VerifForge/pull/83) added opt-in separate KiCad stdout/stderr capture and portable fake-API tests. Both merged after their exact-head CI passed; these source checks do not establish native export or browser acceptance.
+
+For the retained-evidence demonstration, start with the [scoped Meta/FIFO feedback record](docs/evidence/planner/2026-11-05/README.md) and [seeded firmware mismatch, curated correction and replay](docs/evidence/firmware/2026-10-30/README.md). Inspecting those recorded results is separate from a fresh execution. The setup below is a development recipe; no clean-clone release reproduction or live browser demonstration is claimed.
 
 | Area | Accepted evidence / source | Boundary / remaining work |
 |---|---|---|
@@ -40,7 +42,7 @@ Active development, as of 3 November 2026 MYT. These are scoped evidence and sou
 | Evidence workflows | Bounded reduction, curated candidate validation, exact replay and tested API export/download | Generated repair, current browser flow and clean release-snapshot reproduction remain open |
 | API and local runtime | Family FIFO/arithmetic API execution; isolated native recorded readback: two admissions, 301 stored artifacts, zero execution rows, 23 HTTP responses and four downloads | Snapshot-specific results; native candidate API/worker integration, new four-case RISC-V admission, browser acceptance and general runtime adoption remain pending |
 | Workbench | Approved light/dark source in [PR60](https://github.com/desanv01/VerifForge/pull/60); reviewed repair reports bind child plans/results, fractional budgets and source/configuration diffs, with campaign navigation | Source/jsdom scope; actual visual, keyboard, narrow-width and browser workflows remain open |
-| Meta planner | Typed experiments, bounded role/runtime integration source reviewed; [six PG/RQ/process cases](docs/evidence/planner/2026-10-31/README.md) qualified with **mock HTTP** | Human-authorized live work: one bounded request returned HTTP500, with no typed completion, usage/cost evidence or accepted feedback. Quarantine is not successful recovery |
+| Meta planner | [Accepted scoped live feedback](docs/evidence/planner/2026-11-05/README.md): actual 17-cycle proposal → hosted FIFO → independently checked and persisted feedback → separately authorized actual 13-cycle proposal | The first experiment passed its supplied stimulus; no new bug or repair claim. Followup proposal was not executed. The original expired round remained cancelled/not_invoked. Broader application/recovery/replay/browser gates and project-wide cost remain open |
 | Arithmetic pipeline | WIDTH=8, latency=2 control, latency/data mutants, API execution and exact replay accepted | Broader corpus, candidate regression and actual browser gate remain |
 | AXI-Lite | [Fourth hosted gate](docs/evidence/axi/2026-10-30/README.md): seven bounded API/tool attempts, exact strobe replay, export and preservation/cleanup | 32-bit, four-register supported subset; local revision adoption, candidate RTL repair and browser gate remain |
 | RISC-V | [Four-case PicoRV32/Spike gate](docs/evidence/riscv/2026-10-31/README.md): control, seeded divergence, exact recompiled replay and same-run saved object/ELF/binary replay | RAM-only RV32I smoke, not ISA certification/core repair. Saved replay rebuilds HDL/C++; new-format application import remains unadopted |
@@ -50,7 +52,7 @@ Active development, as of 3 November 2026 MYT. These are scoped evidence and sou
 | Cross-domain | Missing-observation projections and conservative literal-XDC parsing source reviewed | Common/unreviewed ancestry stays inconclusive; no independently demonstrated system discrepancy or repair |
 | Evaluation | FIFO/arithmetic/bounded-AXI family harness connects nine-case frozen inputs to private collection/export and reproduction-manifest validation; legacy FIFO behavior retained | Source/fake-boundary acceptance; family classifications remain unresolved. Actual transport, calibrated measurements, model usage and clean tool reproduction remain open |
 
-There is no hosted application release or general-purpose code-execution service. Newer database/artifact restore, independent connected-system improvement, accepted live Meta feedback, final video and release reproduction remain open. A successful build is not functional correctness, and a timeout is not automatically a design defect.
+There is no hosted application release or general-purpose code-execution service. Newer database/artifact restore, independent connected-system improvement, final video/playback and clean release reproduction remain open. The scoped live Meta feedback result above does not close those gates. A successful build is not functional correctness, and a timeout is not automatically a design defect.
 
 ## Quick start
 
@@ -147,4 +149,8 @@ docs/project/             Interfaces, setup, support boundaries and implementati
 
 Please include the affected contract, exact reproduction, tool versions and verification basis when reporting a problem. Separate mocked results from actual tool execution. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md); never put credentials or private project evidence in public issues.
 
-License selection is pending. No project license or license badge is asserted here.
+## License
+
+Copyright (C) 2026 Desan Vasu. VerifForge's original first-party code is licensed under the GNU Affero General Public License version 3 only ([AGPL-3.0-only](LICENSE)). It is provided without warranty; see the full license for terms.
+
+Third-party code, tools, dependencies, hardware designs and assets retain their own licenses and notices. This grant does not relicense them or authorize redistribution of private designs. PicoRV32 retains its ISC header, and the [Spike notice](targets/riscv/upstream/SPIKE-LICENSE) is preserved. See [provenance](docs/project/PROVENANCE.md) for the dependency and evidence boundaries.
