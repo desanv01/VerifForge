@@ -12,8 +12,8 @@ import types
 
 from .repair_execution import CLI, LIMITS, commands
 
-HELPERS = {'owned_process.py':'d3d33a80f7da4153634bdaa168b8393ffd04d97ae2125b2df3a97b48f45a7518',
-           'resource_api.py':'f2899fc3cb44fe08299af76e575cdb5fed763b61c411cbc4546a2835f6625454'}
+HELPERS = {'owned_process.py':'0d29dc5cd783648a6a01e2b415b5225d2a2f66997c673fc9bd8a29515de7d54b',
+           'resource_api.py':'3175a53a3f40e846a82457019aebf35929ac8d74fabf4d7c510dd265e4ddb88b'}
 
 
 @dataclass(frozen=True)
@@ -27,9 +27,10 @@ class Installation:
 
 
 class _WindowsServices:
-    def __init__(self,installation,guard):
+    def __init__(self,installation,guard,*,separate_stderr=False):
         if os.name!='nt': raise RuntimeError('Windows native profile required')
         self.installation=installation
+        self.separate_stderr=separate_stderr
         self.verify_installation(); guard()
         base=Path(__file__).parent
         helper_bytes={name:(base/name).read_bytes() for name in HELPERS}
@@ -57,7 +58,7 @@ class _WindowsServices:
     def windows_directory(self): return self.api.windows_directory()
     def launch(self,argv,env,cwd,guard):
         self.api.pre_resume_guard=guard
-        return self.owned.OwnedProcess(argv,env=env,cwd=str(cwd),_api=self.api)
+        return self.owned.OwnedProcess(argv,env=env,cwd=str(cwd),_api=self.api,separate_stderr=self.separate_stderr)
     def peek(self,stream): return self.api.peek_pipe(stream)
 
 
@@ -66,7 +67,10 @@ class NativeBackend:
 
     The private test seam forces fake provenance even if all callbacks pass.
     """
-    def __init__(self,installation:Installation,*,_test_services=None,_clock=time.monotonic,_sleep=time.sleep):
+    def __init__(self,installation:Installation,*,separate_stderr=False,_test_services=None,_clock=time.monotonic,_sleep=time.sleep):
+        if type(separate_stderr) is not bool: raise ValueError('boolean stream option required')
+        self.separate_stderr=separate_stderr
+        self.error_stream=self.error_log=None
         if type(installation) is not Installation: raise ValueError('installation profile required')
         if _test_services is None and (_clock is not time.monotonic or _sleep is not time.sleep):
             raise ValueError('test clocks require fake OS services')
@@ -90,7 +94,7 @@ class NativeBackend:
             if self.clock()>=deadline: raise TimeoutError('native stage deadline')
         guard()
         try:
-            if self.services is None: self.services=_WindowsServices(self.installation,guard)
+            if self.services is None: self.services=_WindowsServices(self.installation,guard,separate_stderr=self.separate_stderr)
             self.services.verify_installation(); guard()
             if self.services.memory()<LIMITS['available_memory_floor']: raise RuntimeError('2GiB memory floor')
             guard()
@@ -98,11 +102,14 @@ class NativeBackend:
             env=dict(SystemRoot=windows,WINDIR=windows,PATH=str(Path(CLI).parent),
                 TEMP=str(root/'temp'),TMP=str(root/'temp'),KICAD_CONFIG_HOME=str(root/'config'),
                 APPDATA=str(root/'config'),LOCALAPPDATA=str(root/'config'),USERPROFILE=str(root/'config'))
-            self.log=(root/'reports'/f'{command.name}.native-combined.log').open('xb',buffering=0)
+            if not self.separate_stderr:
+                self.log=(root/'reports'/f'{command.name}.native-combined.log').open('xb',buffering=0)
             def resume_guard():
                 self.services.verify_installation(); guard()
             self.launch_attempted=True
             self.process=self.services.launch(command.argv,env,cwd,resume_guard)
+            if self.separate_stderr:
+                return self._capture_split(command,root,guard)
             self.stream=self.process.stdout
             captured=bytearray(); eof=False
             while True:
@@ -133,6 +140,43 @@ class NativeBackend:
             self.cleanup_record=getattr(exc,'cleanup_receipt',None)
             raise
 
+    def _capture_split(self,command,root,guard):
+        self.stream=self.process.stdout
+        self.error_stream=self.process.stderr
+        if self.stream is None or self.error_stream is None or self.stream is self.error_stream:
+            raise RuntimeError('distinct native streams required')
+        self.log=(root/'reports'/f'{command.name}.native-stdout.log').open('xb',buffering=0)
+        self.error_log=(root/'reports'/f'{command.name}.native-stderr.log').open('xb',buffering=0)
+        buffers=[bytearray(),bytearray()]
+        streams=(self.stream,self.error_stream)
+        logs=(self.log,self.error_log)
+        eof=[False,False]
+        while True:
+            guard()
+            if self.services.memory()<LIMITS['available_memory_floor']: raise RuntimeError('2GiB memory floor')
+            for index,stream in enumerate(streams):
+                guard()
+                count,ended=self.services.peek(stream)
+                if type(count) is not int or count<0 or type(ended) is not bool or (ended and count):
+                    raise RuntimeError('contradictory pipe accounting')
+                eof[index]=ended
+                if count:
+                    if sum(map(len,buffers))+count>LIMITS['log_bytes']: raise RuntimeError('aggregate log cap')
+                    raw=stream.read(min(count,4096))
+                    if not raw: raise RuntimeError('short pipe read')
+                    buffers[index].extend(raw)
+                    if logs[index].write(raw)!=len(raw): raise RuntimeError('native stream short write')
+            status=self.process.poll()
+            if status is not None and all(eof):
+                self.log_eof=True
+                break
+            self.sleep(LIMITS['sample_seconds'])
+        guard()
+        return dict(returncode=status,stdout=bytes(buffers[0]),stderr=bytes(buffers[1]),
+            provenance=self.provenance,tool_sha256=self.installation.executable_sha256,
+            version_expected=self.installation.version,log_format='separate_stdout_stderr',
+            stderr_status='present' if buffers[1] else 'empty',diagnostics_present=bool(buffers[1]))
+
     def cleanup(self,*,seconds):
         errors=[]; receipt=self.cleanup_record
         try:
@@ -141,11 +185,11 @@ class NativeBackend:
                 receipt=self.process.cleanup_receipt
         except BaseException as exc: errors.append(str(exc))
         finally:
-            for stream in (self.stream,self.log):
+            for stream in (self.stream,self.error_stream,self.log,self.error_log):
                 if stream is not None:
                     try: stream.close()
                     except BaseException as exc: errors.append(str(exc))
-            self.process=self.stream=self.log=None
+            self.process=self.stream=self.error_stream=self.log=self.error_log=None
         # No child creation is a settled failed preflight, not native success.
         settled=not errors and ((receipt is None and not self.launch_attempted) or (receipt is not None and receipt.get('errors')==[] and
             receipt.get('final_member_pids')==[] and type(receipt.get('root_exit_status')) is int and

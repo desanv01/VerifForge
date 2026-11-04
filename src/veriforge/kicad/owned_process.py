@@ -89,15 +89,23 @@ class WindowsApi:
             raise
 
     def create_suspended(self, argv, env, cwd):
+        return self._create_suspended_streams(argv, env, cwd, separate_stderr=False)
+
+    def create_suspended_split(self, argv, env, cwd):
+        return self._create_suspended_streams(argv, env, cwd, separate_stderr=True)
+
+    def _create_suspended_streams(self, argv, env, cwd, *, separate_stderr):
         import msvcrt
         require(argv and os.path.isabs(argv[0]), 'absolute_executable_required')
-        read_fd = write_fd = null_fd = None
+        read_fd = write_fd = null_fd = error_read_fd = error_write_fd = None
         process = thread = None
-        stream = None
+        stream = error_stream = None
         primary = None
         errors = []
         try:
             read_fd, write_fd = os.pipe()
+            if separate_stderr:
+                error_read_fd, error_write_fd = os.pipe()
             null_fd = os.open(os.devnull, os.O_RDONLY)
             output = msvcrt.get_osfhandle(write_fd)
             input_handle = msvcrt.get_osfhandle(null_fd)
@@ -106,19 +114,27 @@ class WindowsApi:
             startup = subprocess.STARTUPINFO()
             startup.dwFlags = subprocess.STARTF_USESTDHANDLES
             startup.hStdInput = input_handle
-            startup.hStdOutput = startup.hStdError = output
-            startup.lpAttributeList = {'handle_list': [output, input_handle]}
+            startup.hStdOutput = output
+            error_output = msvcrt.get_osfhandle(error_write_fd) if separate_stderr else output
+            if separate_stderr:
+                os.set_handle_inheritable(error_output, True)
+            startup.hStdError = error_output
+            startup.lpAttributeList = {'handle_list': [output, input_handle] +
+                ([error_output] if separate_stderr else [])}
             process, thread, pid, _ = self.winapi.CreateProcess(
                 argv[0], subprocess.list2cmdline(argv), None, None, True,
                 0x4 | 0x8, env, cwd, startup)  # SUSPENDED | DETACHED_PROCESS
             stream = os.fdopen(read_fd, 'rb', buffering=0)
             read_fd = None
+            if separate_stderr:
+                error_stream = os.fdopen(error_read_fd, 'rb', buffering=0)
+                error_read_fd = None
         except BaseException as error:
             primary = error
         # Complete ALL parent descriptor transfers before returning ownership.
         # A close may fail after closing the descriptor: never retry its numeric
         # value (which another thread could reuse). Record uncertain cleanup.
-        for descriptor in (read_fd, write_fd, null_fd):
+        for descriptor in (read_fd, write_fd, null_fd, error_read_fd, error_write_fd):
             if descriptor is not None:
                 try:
                     os.close(descriptor)
@@ -127,7 +143,7 @@ class WindowsApi:
                     if primary is None:
                         primary = error
         if primary is None:
-            return process, thread, pid, stream
+            return (process, thread, pid, stream, error_stream) if separate_stderr else (process, thread, pid, stream)
         # A failed return cannot transfer this suspended, unassigned process to
         # OwnedProcess. Settle it here even when the failure was finalization.
         if process is not None:
@@ -145,11 +161,12 @@ class WindowsApi:
                     self.close(handle)
                 except BaseException:
                     errors.append('suspended_handle_close_failed')
-        if stream is not None:
-            try:
-                stream.close()
-            except BaseException:
-                errors.append('suspended_stream_close_failed')
+        for pending_stream in (stream, error_stream):
+            if pending_stream is not None:
+                try:
+                    pending_stream.close()
+                except BaseException:
+                    errors.append('suspended_stream_close_failed')
         try:
             primary.suspended_cleanup_errors = errors
         except Exception:
@@ -220,9 +237,9 @@ class WindowsApi:
 
 class OwnedProcess:
     """Popen-shaped principal whose poll also checks the entire owned Job."""
-    def __init__(self, argv, *, env, cwd, _api=None):
+    def __init__(self, argv, *, env, cwd, _api=None, separate_stderr=False):
         self.api = _api if _api is not None else WindowsApi()
-        self._handle = self.thread = self.job = self.stdout = None
+        self._handle = self.thread = self.job = self.stdout = self.stderr = None
         self.pid = None
         self.creation_identity = None
         self.closed = False
@@ -233,7 +250,11 @@ class OwnedProcess:
         self.member_records = []
         try:
             self.job = self.api.create_job()
-            self._handle, self.thread, self.pid, self.stdout = self.api.create_suspended(argv, env, cwd)
+            require(type(separate_stderr) is bool, 'split_stream_option')
+            if separate_stderr:
+                self._handle, self.thread, self.pid, self.stdout, self.stderr = self.api.create_suspended_split(argv, env, cwd)
+            else:
+                self._handle, self.thread, self.pid, self.stdout = self.api.create_suspended(argv, env, cwd)
             self.creation_identity = self.api.identity(self._handle)
             require(self.creation_identity[0] == self.pid, 'created_pid_differs')
             self.api.assign(self.job, self._handle)
@@ -246,11 +267,12 @@ class OwnedProcess:
         except BaseException as error:
             self.close_tree(grace=2)
             self.cleanup_receipt['errors'].extend(getattr(error,'suspended_cleanup_errors', []))
-            if self.stdout is not None:
-                try:
-                    self.stdout.close()
-                except BaseException:
-                    self.cleanup_receipt['errors'].append('failed_launch_stream_close_failed')
+            for pending_stream in (self.stdout, self.stderr):
+                if pending_stream is not None:
+                    try:
+                        pending_stream.close()
+                    except BaseException:
+                        self.cleanup_receipt['errors'].append('failed_launch_stream_close_failed')
             # Preserve the primary failure and cleanup evidence for the caller.
             try:
                 error.cleanup_receipt = self.cleanup_receipt

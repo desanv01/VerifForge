@@ -8,7 +8,7 @@ import hashlib
 from pathlib import Path
 import types
 
-HELPER_SHA='d3d33a80f7da4153634bdaa168b8393ffd04d97ae2125b2df3a97b48f45a7518'
+HELPER_SHA='0d29dc5cd783648a6a01e2b415b5225d2a2f66997c673fc9bd8a29515de7d54b'
 _path=Path(__file__).resolve().parent/'owned_process.py'
 with _path.open('rb',buffering=0) as _stream:
     _raw=_stream.read(1048576+1)
@@ -116,6 +116,11 @@ class LimitedWindowsApi(owned.WindowsApi):
         need(self.active_job is not None,'registration_job_missing')
         self.verify_limits(self.active_job)
         return super().create_suspended(argv,env,cwd)
+
+    def create_suspended_split(self,argv,env,cwd):
+        need(self.active_job is not None,'registration_job_missing')
+        self.verify_limits(self.active_job)
+        return super().create_suspended_split(argv,env,cwd)
 
     def assign(self,job,process):
         super().assign(job,process)
