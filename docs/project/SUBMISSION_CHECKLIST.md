@@ -2,11 +2,13 @@
 
 Prepared 29 October 2026. Deadline supplied by the human's participant guide: **5 November 2026, 10:00 AM MYT (02:00 UTC)**, equivalent to 4 November, 9:00 PM EST. Aim for a reviewed package before the final buffer. These are preparation tasks, not a scheduler or permission to submit.
 
-Reconciled 3 November2026 MYT for the approved hybrid workflow. Direct human resume supersedes old pause/credits-hold wording; main issues finite execution packets and resource grants. Earlier evidence/failures remain historical, and current acceptance is recorded in the support matrix. This update performs no tool/model/browser/restore/evaluation operation or submission. No final video/captions/playback is established.
+Reconciled 5 November 2026 MYT for the approved hybrid workflow and scoped live-feedback acceptance. Direct human resume supersedes old pause/credits-hold wording; main issues finite execution packets and resource grants. Earlier evidence/failures remain historical, and current acceptance is recorded in the support matrix. This update performs no tool/model/browser/restore/evaluation operation or submission. No final video/captions/playback is established.
 
 The supplied guide requires public source, Meta-model incorporation, a three-minute demo, clear event-contribution identification and submission through Cerebral Valley. Its pasted rubric contained no judging weights; none are assumed. Organizer approval of continuation is settled and must not be reopened. Keep private correspondence private.
 
-Nov3 readiness observation: main completed one actual bounded provider request after the credential-reader source correction; it returned `model_http_500`, with no typed completion or usage/cost evidence and zero native executions. The earlier local stable-file-read rejection occurred before any request. Usable model access and the full checked feedback loop remain unverified. Diagnose the observed HTTP500/request compatibility within a new explicit main assignment; no automatic retry and no renewed human hold are implied.
+Historical Nov3 readiness: the first bounded provider request returned `model_http_500`, with no typed completion or usage/cost evidence and zero native executions. The earlier local stable-file-read rejection preceded any request. These failures remain preserved alongside later accepted results.
+
+Current acceptance, 5 November 2026 MYT: an actual Meta proposal executed as a 17-cycle hosted FIFO experiment, with immutable checker verdict `pass_within_scope`. Its checked result was persisted and consumed by a separately authorized actual Meta followup returning a valid 13-cycle proposal; that proposal was not executed. The original bounded round expired and was cancelled without invoking its provider call. See the [accepted scope and public evidence](../evidence/planner/2026-11-05/README.md). Application adoption, recovery, exact-plan replay and workbench qualification remain open.
 
 ## Recorded decisions and preparation
 
@@ -35,7 +37,8 @@ Nov3 readiness observation: main completed one actual bounded provider request a
 ## Product evidence before claiming completion
 
 - [ ] U0/U1: frozen source/tool/image/contract/checker manifest, bounded capability/status declarations and independently reviewed baseline.
-- [ ] U2: actual Meta proposal → execution → independent feedback → subsequent model step, durable IDs and usage. Fifth PG/RQ/process gate accepted with mock HTTP only; operational adoption, populated restore and successful owner-loss recovery remain separate. Live Meta is human-authorized Nov3; bounded readiness and full checked feedback remain actual execution gates. No mock substitution or automatic repeated probe.
+- [x] Scoped actual Meta proposal → hosted FIFO execution → independently checked persisted feedback → separately authorized subsequent model proposal, with retained identities and usage, accepted. See the [scope and explicit round boundary](../evidence/planner/2026-11-05/README.md). The new 13-cycle proposal was not executed.
+- [ ] U2: broader application/two-stage API adoption, populated restore, successful owner-loss recovery, exact-plan replay and workbench qualification. The fifth PG/RQ/process gate used mock HTTP; the accepted live-feedback demonstration does not close these gates.
 - [ ] U3/sequence1: complete selected family browser/candidate/regression path and release reproduction. Historical local memory/logging/permissions/verdict-class failures remain preserved; fourth hosted AXI seven-attempt API/tool/replay/export gate is accepted. No generated repair or actual browser acceptance follows.
 - [ ] U4/sequence2: complete compatible new-format recorded import, product/browser and any explicitly claimed repair scope. October31 control/seeded/exact-recompiled/saved-program replay gate accepted; no full ISA, arbitrary-program or core-repair claim. Historical local builds/first hosted ELF failure remain recorded.
 - [ ] U5/sequence 3: complete wider firmware/product integration. The bounded five-case native-MMIO control/bad/curated-candidate/saved-program-replay gate is independently accepted; arbitrary firmware/devices, model-generated repair, workbench integration and physical hardware remain open.
@@ -56,7 +59,7 @@ An open checkbox is a precise missing gate, not an instruction to invent a favor
 | Required artifact | Completion evidence to record | Current status |
 |---|---|---|
 | Public repository | Final commit/tag, README/setup/support boundaries, accessible links | Existing repository recorded; final snapshot not frozen |
-| Meta incorporation | Actual requested/returned model/provider, prompt/schema identity, call/attempt/feedback lineage | Human authorization recorded Nov3; actual readiness/feedback receipt pending |
+| Meta incorporation | Actual requested/returned model/provider, prompt/schema identity, call/attempt/feedback lineage | Scoped actual proposal/tool/persisted-feedback/separate followup accepted; [evidence and limits](../evidence/planner/2026-11-05/README.md); broader application gates open |
 | Three-minute demo | Reviewed final video/transcript and accessible playback URL | Unrecorded script/transcript/subtitle skeleton prepared; final footage/captions/playback absent |
 | Contribution description | [EVENT_CONTRIBUTIONS.md](EVENT_CONTRIBUTIONS.md) with dated source/execution distinctions and confirmed human roles | Source merges and scoped new evidence recorded; final release/roles pending |
 | Attribution/license | [PROVENANCE.md](PROVENANCE.md), actual upstream revisions/licenses/notices and project license decision | Inventory incomplete; license decision pending |
@@ -69,7 +72,7 @@ The [demo plan](DEMO_PLAN.md) provides the 180-second sequence. Repository About
 
 ## Missing demonstration shots and access gates
 
-- [ ] Capture the actual Meta proposal→tool→checked-feedback→subsequent-proposal in the identified product. Human authorization is recorded; obtain main-owned readiness/feedback acceptance without credential disclosure. No mock substitution or automatic repeated probe.
+- [ ] Capture the accepted Meta proposal→tool→checked-feedback→separately authorized subsequent proposal, preserving its explicit round boundary; qualify any product/browser view shown. The actual evidence is accepted, while the visible product shot and final footage remain missing.
 - [ ] Qualify actual PR60 light/dark browser inspect/candidate/replay/refresh/error/download behavior on identified runtime; reconcile new four-case import compatibility first if shown. API r2 evidence alone is not browser acceptance.
 - [ ] Freeze the [180-second script](DEMO_PLAN.md), separate the two configurations, retain curated-candidate labels and identify any recorded execution/inspection fallback. No video is recorded yet.
 - [ ] If a connected cross-domain improvement or generated repair is claimed, obtain its distinct independent facts/reruns or actual model-response/diff lineage; the two accepted CPU cases do not establish those claims.
