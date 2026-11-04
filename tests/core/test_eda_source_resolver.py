@@ -73,7 +73,9 @@ def fixture(tmp_path,monkeypatch,domain='kicad',*,clock_period_ps=10000,fixed_ru
         from veriforge.vivado.repair_execution import ControllerInstallation,PROFILES
         from veriforge.vivado import repair_execution as execution
         from veriforge.vivado.readiness import render_batch_recipe,BatchRecipe
-        installation=ControllerInstallation(tmp_path,tmp_path/'private/installed/controller.py')
+        launcher=tmp_path/'tool'/'vivado.bat';launcher.parent.mkdir();launcher.write_bytes(b'rem inert synthetic launcher')
+        installation=ControllerInstallation(tmp_path,tmp_path/'private/installed/controller.py',
+                                            launcher=launcher,launcher_sha256=sha256(launcher.read_bytes()).hexdigest())
         recipe=artifact('recipe',render_batch_recipe(BatchRecipe.EXERCISE3_POST_SYNTH).encode());shared.append(recipe)
         requirements=artifact('requirements',encoded(dict(domain=domain,part='xc7a200tsbg484-1',top='exercise3_nexys_video_top',clock_period_ps=clock_period_ps,recipe=recipe.reference.model_dump(mode='json'))))
         configuration=artifact('configuration',encoded(dict(domain=domain,profile='vivado.exercise3.v1')))

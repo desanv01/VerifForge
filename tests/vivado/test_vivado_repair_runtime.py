@@ -15,9 +15,17 @@ from veriforge.vivado import storage
 from test_repair_execution import FakeTool, setup, synthetic_xdc_admission_for_fake_tool_tests
 
 
+def inert_launcher(tmp_path):
+    launcher=tmp_path/'tool'/'vivado.bat';launcher.parent.mkdir(parents=True,exist_ok=True)
+    launcher.write_bytes(b'rem inert test launcher')
+    return launcher,sha256(launcher.read_bytes()).hexdigest()
+
+
 def runtime_for(tmp_path,prepared,hooks):
     document=tmp_path/'requirements.txt';document.write_bytes(b'Explicit synthetic test-only requirements')
-    installation=ControllerInstallation(tmp_path,tmp_path/'private'/'installed-synthesis.py')
+    launcher,launcher_sha256=inert_launcher(tmp_path)
+    installation=ControllerInstallation(tmp_path,tmp_path/'private'/'installed-synthesis.py',
+                                        launcher=launcher,launcher_sha256=launcher_sha256)
     runtime=VivadoRepairRuntime(tmp_path/'artifacts',installation,'U6-FAKE-RESERVATION',lambda job:hooks,
                                 requirements_document=document)
     pins=replace(prepared.pins,io_requirements_sha256=sha256(document.read_bytes()).hexdigest())
@@ -98,8 +106,8 @@ def install_fake_controller(tmp_path,monkeypatch):
     path.write_bytes(raw)
     profile=execution.PROFILES['synthesis']
     monkeypatch.setitem(execution.PROFILES,'synthesis',(profile[0],sha256(raw).hexdigest(),*profile[2:]))
-    launcher=tmp_path/'tool'/'vivado.bat';launcher.parent.mkdir();launcher.write_bytes(b'rem inert test launcher')
-    return ControllerInstallation(tmp_path,path,launcher=launcher,launcher_sha256=sha256(launcher.read_bytes()).hexdigest())
+    launcher,launcher_sha256=inert_launcher(tmp_path)
+    return ControllerInstallation(tmp_path,path,launcher=launcher,launcher_sha256=launcher_sha256)
 
 
 def test_portable_fixed_binding_relocates_globals_without_launch(tmp_path,monkeypatch):
@@ -185,7 +193,9 @@ def test_installed_original_controller_import_only_when_available(tmp_path,profi
     prepared,baseline,hooks=setup(tmp_path)
     prepared=replace(prepared,pins=replace(prepared.pins,profile=profile))
     copy=tmp_path/'relocated'/'controllers'/f'{profile}.py';copy.parent.mkdir(parents=True);copy.write_bytes(raw)
-    installation=ControllerInstallation(tmp_path,copy,routed_controller=copy)
+    launcher,launcher_sha256=inert_launcher(tmp_path)
+    installation=ControllerInstallation(tmp_path,copy,routed_controller=copy,
+                                        launcher=launcher,launcher_sha256=launcher_sha256)
     module=PrivateFixedBatchAdapter(tmp_path,'U6-IMPORT-ONLY',installation=installation)._load_controller(prepared)
     assert callable(module.run_attempt)and module.ROOT==tmp_path
     assert module.ATTEMPT==prepared.directory/'candidate'and module.OWNER=='U6-IMPORT-ONLY'
