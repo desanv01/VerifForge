@@ -26,7 +26,7 @@ from .models import (
     Pricing, ProviderCompletion, StopProposal,
 )
 from .provider import encode_payload, request_payload
-from .wire_schema import decision_wire_schema_hash
+from .wire_schema import decision_wire_schema_hash, decode_decision_json
 
 STEPS_VERSION = "planner.steps.v1"
 FIFO_ADAPTER = "rtl.fifo.v1"
@@ -213,7 +213,7 @@ def validate_completion(completion: ProviderCompletion, *, requested_model: str,
     try:
         if completion.finish_reason != "stop":
             raise ValueError
-        decision = PlannerDecision.model_validate_json(completion.content)
+        decision = decode_decision_json(completion.content)
     except (ValidationError, ValueError):
         return CompletionDecision(outcome="invalid_proposal")
     return CompletionDecision(outcome="accepted", decision=decision)

@@ -22,6 +22,13 @@ INSTRUCTIONS = (
     "checker edits, fixture selections, new requirements, or budget changes. "
     "Use only reviewed requirement IDs. Include reset before traffic. "
     "Respect the cycle bound and avoid repeated experiments. Coverage intent is a hypothesis."
+    " Return wire_version veriforge.planner-wire.v2 and proposal with every field: "
+    "kind, reason, objective_ids, seed, operations. For experiment, reason is the empty "
+    "string and objective_ids and operations are nonempty. Represent every FIFO edge "
+    "only as op cycle with reset, write, read booleans and unsigned value, all required. "
+    "A reset edge has reset true; an idle edge has all booleans false; include reset "
+    "before traffic. Do not omit operations or operation fields. For stop, give a "
+    "nonempty reason, objective_ids [], seed 0, operations []. Return no extra fields."
 )
 
 
