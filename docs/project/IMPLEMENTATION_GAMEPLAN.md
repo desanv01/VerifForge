@@ -601,7 +601,7 @@ After every phase, report: what works, which acceptance checks passed, which evi
 
 ## Sources rechecked for this plan
 
-- [Meta event schedule and rules publication notice](https://dev.meta.ai/events/global-hackathon): dates, themes, and the need to inspect final rules.
+- [Meta Global AI Developer Hackathon 2026 schedule and rules](https://dev.meta.ai/events/global-hackathon): dates, themes, and the need to inspect final rules.
 - [Meta Model API cookbook](https://dev.meta.ai/docs/cookbook): structured outputs, tool calls, streaming, and agent-loop primitives.
 - [cocotb simulator support](https://docs.cocotb.org/en/stable/simulator_support.html): simulator-specific compatibility rather than universal interchangeability.
 - [cocotb timing model](https://docs.cocotb.org/en/stable/timing_model.html): sampling and scheduling semantics.
