@@ -1,70 +1,145 @@
-<div align="center">
+<h1 align="center">VerifForge</h1>
 
-# VerifForge
+<p align="center">
+  <strong>Propose the experiment. Check the result.</strong><br />
+  AI-guided engineering experiments, independent verdicts, and replayable evidence.
+</p>
 
-**Investigate engineering failures with bounded experiments, independent checks, and replayable evidence.**
+<p align="center">
+  Built for the <a href="https://cerebralvalley.ai/e/meta-ai-developer-hackathon">Meta Global AI Developer Hackathon 2026</a><br />
+  Push the Frontier · Indie Developer Track · SkyNet / Desan Vasu
+</p>
 
-[![CI](https://github.com/desanv01/VerifForge/actions/workflows/ci.yml/badge.svg)](https://github.com/desanv01/VerifForge/actions/workflows/ci.yml)
+<p align="center">
+  <a href="https://youtu.be/9nSpILaVUCE"><img src="https://img.shields.io/badge/demo-3_minutes-0d9488" alt="Three-minute demo" /></a>
+  <img src="https://img.shields.io/badge/Meta-muse--spark--1.3-0d9488" alt="Meta muse-spark-1.3" />
+  <a href="https://github.com/desanv01/VerifForge/actions/workflows/ci.yml"><img src="https://github.com/desanv01/VerifForge/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-0d9488" alt="AGPL-3.0-only license" /></a>
+</p>
 
-[Quick start](#quick-start) · [Workflow](#workflow) · [Current capabilities](#current-capabilities) · [Development](#development) · [Documentation](#documentation)
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#demo">Demo</a> ·
+  <a href="https://youtu.be/9nSpILaVUCE">Watch video</a> ·
+  <a href="#get-started">Get started</a> ·
+  <a href="#meta-model-api">Meta Model API</a> ·
+  <a href="docs/project/README.md">Documentation</a>
+</p>
 
-</div>
+<p align="center">
+  <a href="https://youtu.be/9nSpILaVUCE"><img src="docs/assets/demo/overview.png" alt="VerifForge film frame introducing the gap between an AI proposal and trusted engineering evidence" width="1000" /></a>
+  <br /><sub>Frame from the three-minute evidence walkthrough · authored graphics presenting retained engineering results.</sub>
+</p>
 
-![VerifForge architecture: reviewed contracts and typed proposals enter a bounded controller; trusted execution supplies observations to an independent checker and replayable evidence.](docs/assets/veriforge/investigation-flow.svg)
+## Why VerifForge
 
-<p align="center"><em>Original architecture illustration · not a product screenshot or execution evidence.</em></p>
+An AI can suggest a useful test. Engineers still need to know what actually ran, what was observed, and why the conclusion should be trusted.
 
-VerifForge is a local engineering investigation assistant connecting specifications, source files, tools and test results. Its supported configurations grow from RTL into RISC-V, firmware, FPGA tools, PCB checks and cross-domain evidence. Start from reviewed requirements, run controlled experiments, inspect expected versus observed behavior, and retain the exact stimulus and evidence needed to replay a finding.
+VerifForge connects typed experiment proposals to bounded engineering tools and independent checks. Source, stimulus, checker and contract identities stay attached to the result, so a proposal, an execution status and a design verdict can be inspected separately.
 
-The model proposes experiments. The independent checker determines the verdict. A completed execution can contain a mismatch, timeout, or build failure; a passing result establishes only the checked scope.
+## Features
 
-## Workflow
+<table>
+<tr>
+<td width="50%" valign="top">
 
-| Step | What happens | What stays inspectable |
-|---|---|---|
-| Define | Bind a curated source revision to reviewed requirements and a checker | Contract, parameters, source and checker identities |
-| Plan | Select typed stimulus and finite resource limits | Exact operations, seed, objectives and budget |
-| Execute | Dispatch a bounded experiment to its trusted adapter | Tool versions, execution status, logs and observations |
-| Check | Compare observations with an independent reference model | Expected/observed values, verdict and failure signature |
-| Reproduce | Replay, reduce or export a curated finding | Original evidence, fresh attempts and remaining uncertainty |
+### Make the next test concrete
 
-Deterministic FIFO execution and replay require no model key. Model-driven planning is optional; its operational acceptance is separate from source review. The planner cannot introduce shell commands, choose arbitrary files, change the active checker, or enlarge its own budget.
+Turn a verification objective into typed stimulus with explicit operations and finite budgets. The demonstrated Meta proposal became a 17-cycle FIFO experiment.
 
-## Current capabilities
+</td>
+<td width="50%" valign="top">
 
-Active development, as of 5 November 2026 MYT. These are scoped evidence and source-review states, not a completed release or benchmark. The [support matrix](docs/project/SUPPORT_MATRIX.md) separates Import, Execute and Repair gates. [PR82](https://github.com/desanv01/VerifForge/pull/82) reconciled the live-feedback evidence and legacy-projection source; [PR83](https://github.com/desanv01/VerifForge/pull/83) added opt-in separate KiCad stdout/stderr capture and portable fake-API tests. Both merged after their exact-head CI passed; these source checks do not establish native export or browser acceptance.
+### Keep the verdict independent
 
-For the retained-evidence demonstration, start with the [scoped Meta/FIFO feedback record](docs/evidence/planner/2026-11-05/README.md) and [seeded firmware mismatch, curated correction and replay](docs/evidence/firmware/2026-10-30/README.md). Inspecting those recorded results is separate from a fresh execution. The setup below is a development recipe; no clean-clone release reproduction or live browser demonstration is claimed.
+Compare native observations with an immutable checker. A process can complete successfully while the checked design behavior contains a mismatch.
 
-| Area | Accepted evidence / source | Boundary / remaining work |
-|---|---|---|
-| FIFO verification | Real correct-fixture pass, seeded reset-mutant mismatch, exact replay and independent checking | Curated installed fixtures; no arbitrary RTL uploads or model-discovered bug claim |
-| Evidence workflows | Bounded reduction, curated candidate validation, exact replay and tested API export/download | Generated repair, current browser flow and clean release-snapshot reproduction remain open |
-| API and local runtime | Family FIFO/arithmetic API execution; isolated native recorded readback: two admissions, 301 stored artifacts, zero execution rows, 23 HTTP responses and four downloads | Snapshot-specific results; native candidate API/worker integration, new four-case RISC-V admission, browser acceptance and general runtime adoption remain pending |
-| Workbench | Approved light/dark source in [PR60](https://github.com/desanv01/VerifForge/pull/60); reviewed repair reports bind child plans/results, fractional budgets and source/configuration diffs, with campaign navigation | Source/jsdom scope; actual visual, keyboard, narrow-width and browser workflows remain open |
-| Meta planner | [Accepted scoped live feedback](docs/evidence/planner/2026-11-05/README.md): actual 17-cycle proposal → hosted FIFO → independently checked and persisted feedback → separately authorized actual 13-cycle proposal | The first experiment passed its supplied stimulus; no new bug or repair claim. Followup proposal was not executed. The original expired round remained cancelled/not_invoked. Broader application/recovery/replay/browser gates and project-wide cost remain open |
-| Arithmetic pipeline | WIDTH=8, latency=2 control, latency/data mutants, API execution and exact replay accepted | Broader corpus, candidate regression and actual browser gate remain |
-| AXI-Lite | [Fourth hosted gate](docs/evidence/axi/2026-10-30/README.md): seven bounded API/tool attempts, exact strobe replay, export and preservation/cleanup | 32-bit, four-register supported subset; local revision adoption, candidate RTL repair and browser gate remain |
-| RISC-V | [Four-case PicoRV32/Spike gate](docs/evidence/riscv/2026-10-31/README.md): control, seeded divergence, exact recompiled replay and same-run saved object/ELF/binary replay | RAM-only RV32I smoke, not ISA certification/core repair. Saved replay rebuilds HDL/C++; new-format application import remains unadopted |
-| Firmware | [Native-MMIO gate](docs/evidence/firmware/2026-10-30/README.md): control, seeded STATUS-address defect, curated header correction and exact saved-program replay | HDL rebuilt; no Spike MMIO, arbitrary firmware, generated repair, physical-board or full workbench claim |
-| Vivado | 2026.1 synthesis/six reports and 344.797s routed characterization/ten reports accepted; 35/35 routable nets routed. Portable controller/runtime source enforces an external candidate-plan ticket | Exact snapshot: 12 inputs/6 outputs lack delays; 20 methodology warnings. Native candidate application binding and complete I/O/CDC/function/board/repair acceptance remain open |
-| KiCad | Configured ERC/DRC correction; concrete fixed-command KiCad 10.0.6 backend source reviewed and merged in [PR73](https://github.com/desanv01/VerifForge/pull/73) | Four ERC/five DRC ignores unchanged; installed backend/native candidate/API qualification, exact mating/physical/electrical acceptance remain open |
-| Cross-domain | Missing-observation projections and conservative literal-XDC parsing source reviewed | Common/unreviewed ancestry stays inconclusive; no independently demonstrated system discrepancy or repair |
-| Evaluation | FIFO/arithmetic/bounded-AXI family harness connects nine-case frozen inputs to private collection/export and reproduction-manifest validation; legacy FIFO behavior retained | Source/fake-boundary acceptance; family classifications remain unresolved. Actual transport, calibrated measurements, model usage and clean tool reproduction remain open |
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-There is no hosted application release or general-purpose code-execution service. Newer database/artifact restore, independent connected-system improvement, final video/playback and clean release reproduction remain open. The scoped live Meta feedback result above does not close those gates. A successful build is not functional correctness, and a timeout is not automatically a design defect.
+### Carry checked feedback forward
 
-## Quick start
+Persist the checked observations and their identities. In the recorded chain, a subsequent actual Meta request used that feedback to propose another experiment.
 
-Use **Docker Engine with Compose v2** (Docker Desktop with Linux containers on Windows), **Git**, and **Node.js 24 / npm** for the web application. Source development also uses **Python 3.12** and **uv**. The container supplies the supported Verilator/cocotb combination; native Windows simulation is unsupported.
+</td>
+<td width="50%" valign="top">
 
-From a new checkout:
+### Find the first concrete conflict
+
+The separate seeded firmware example identifies the first incorrect STATUS register access at cycle 95, with expected and observed MMIO addresses.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Revisit the exact experiment
+
+Retain stimulus, source, checker, contract and tool identities. The firmware example includes saved-program replays of the bad and corrected observations.
+
+</td>
+<td width="50%" valign="top">
+
+### Inspect the evidence behind a claim
+
+Follow source-linked summaries to identified hosted runs and preserved result records. Curated corrections, model proposals and actual tool observations keep distinct origins.
+
+</td>
+</tr>
+</table>
+
+## Demo
+
+**[Watch the three-minute engineering walkthrough on YouTube →](https://youtu.be/9nSpILaVUCE)** · [Demo and evidence guide](docs/project/DEMO.md)
+
+The film presents retained execution evidence through narrated, authored graphics. It follows two distinct engineering examples:
+
+1. An actual **muse-spark-1.3** response proposes a **17-cycle FIFO experiment**.
+2. A hosted native run executes that stimulus; the independent checker returns **`pass_within_scope`**.
+3. Checked, persisted feedback reaches a separately authorized actual Meta call, returning a **13-cycle proposal that was not executed**.
+4. A separate firmware/MMIO example reveals a **seeded STATUS-address mismatch**.
+5. A **hand-authored one-line correction** passes under the unchanged checker and contract, with saved-program replay evidence.
+
+<table>
+<tr>
+<td width="50%" valign="top">
+  <a href="docs/assets/demo/proposal.png"><img src="docs/assets/demo/proposal.png" alt="Authored film frame showing the actual 17-cycle Meta proposal and the identified hosted FIFO run" width="100%" /></a>
+  <p><strong>A real typed proposal.</strong> Exact stimulus and identities are saved before dispatch.</p>
+</td>
+<td width="50%" valign="top">
+  <a href="docs/assets/demo/feedback.png"><img src="docs/assets/demo/feedback.png" alt="Authored film frame explaining checked persisted feedback and the separately authorized unexecuted followup" width="100%" /></a>
+  <p><strong>Feedback with an explicit boundary.</strong> The original round expired; the later actual proposal remains unexecuted.</p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+  <a href="docs/assets/demo/firmware.png"><img src="docs/assets/demo/firmware.png" alt="Authored film frame identifying the seeded firmware STATUS-address conflict at cycle 95" width="100%" /></a>
+  <p><strong>A concrete native mismatch.</strong> Execution status and design verdict tell different parts of the story.</p>
+</td>
+<td width="50%" valign="top">
+  <a href="docs/assets/demo/replay.png"><img src="docs/assets/demo/replay.png" alt="Authored film frame describing the curated header correction and saved-program replays" width="100%" /></a>
+  <p><strong>A curated correction and replay.</strong> The checker and contract stay fixed; the correction is hand-authored.</p>
+</td>
+</tr>
+</table>
+
+[Frame provenance →](docs/assets/demo/README.md) · [Meta/FIFO evidence](docs/evidence/planner/2026-11-05/README.md) · [Firmware evidence](docs/evidence/firmware/2026-10-30/README.md)
+
+## Get started
+
+### Explore the recorded results
+
+Start with the [video](https://youtu.be/9nSpILaVUCE) and [evidence guide](docs/project/DEMO.md). Inspecting the public records needs no provider key, paid credits or new simulator run.
+
+### Run the local development stack
+
+You'll need **Git**, **Docker Engine with Compose v2** (Linux containers on Windows), and **Node.js 24 / npm** for the web workbench. The container supplies the supported Verilator/cocotb toolchain.
 
 ```sh
 git clone https://github.com/desanv01/VerifForge.git
 cd VerifForge
-
-# Build the simulator base before the application image.
 docker build -t veriforge-rtl:dev -f infra/rtl/Dockerfile .
 docker compose up -d --build
 docker compose ps -a
@@ -78,79 +153,59 @@ npm ci
 npm run dev
 ```
 
-Open the [local workbench](http://127.0.0.1:5173). The API binds to [127.0.0.1:18000](http://127.0.0.1:18000/api/health), and Vite proxies `/api` there. Review the installed FIFO contract before creating and starting an experiment. Compilation counts toward its wall-time budget; cold builds need more time than the default 30-second runner allowance.
+Open **http://127.0.0.1:5173**. The API health endpoint is **http://127.0.0.1:18000/api/health**, with `/api` proxied by Vite. Deterministic curated FIFO use needs no model key. Compilation counts toward execution budgets; use the [runtime guide](docs/project/LOCAL_RUNTIME.md) for migrations, logs and image updates, and the [RTL toolchain guide](docs/project/RTL_TOOLCHAIN.md) for direct execution and replay. These are local development instructions; the film inspects separately recorded results.
 
-This is a local development recipe for the current checkout. It does not certify every newer API workflow. See [local runtime setup](docs/project/LOCAL_RUNTIME.md) for migrations, logs, runtime limitations and image updates, and [FIFO toolchain setup](docs/project/RTL_TOOLCHAIN.md) for direct execution/replay. Docker must be able to fetch the declared base images and dependencies during a first build.
-
-Optional local configuration is documented in [.env.example](.env.example). Keep real values in an ignored local file; no model key is needed for deterministic use. The provided local database defaults and single local identity are for loopback development, not remote exposure.
-
-To stop services while retaining local data:
+Stop the services while retaining their data:
 
 ```sh
 docker compose stop
 ```
 
-Named volumes preserve database history and artifacts. Removing volumes deletes that history.
+Keep real credentials in an ignored local file. The loopback defaults are intended for local development. [Configuration example →](.env.example)
 
-## How it works
+## Meta Model API
 
-- **One investigation engine:** the Python backend separates contracts, campaign control, trusted adapters, independent checking and evidence workflows.
-- **Independent authority:** reviewed contracts and checker identities remain fixed during an investigation. Planner intent and requested coverage never substitute for observed results.
-- **Durable execution records:** PostgreSQL holds campaign authority; Valkey/RQ delivers bounded work to a separate worker. Attempts retain their own results and artifacts.
-- **Replay without inference:** stored typed stimulus, source/checker/contract hashes and tool evidence let a finding be inspected and replayed independently of a new model call.
+The demonstrated planner calls **`muse-spark-1.3` through the Meta Model API** to propose typed engineering experiments. Model responses are validated against an allowed schema; the planner does not choose arbitrary files, inject shell commands, replace a checker or enlarge its own budget.
 
-The frontend uses React, Vite, TypeScript and TanStack Query. RTL execution uses cocotb and Verilator. Each adapter reports its supported configuration and separates imported evidence, actual execution and independently checked repair.
+The first accepted call produced the executed 17-cycle FIFO stimulus. Its checked observations were imported, independently checked again and persisted. The original bounded followup expired without invoking the provider and was cancelled; a separately authorized actual call then consumed the saved feedback and returned the unexecuted 13-cycle proposal.
 
-## Development
+The initial experiment reset an empty FIFO and passed its checked scope; it did not expose the known reset defect. The separate firmware correction was hand-authored. [Model identities, lineage and results →](docs/evidence/planner/2026-11-05/README.md)
 
-Install the locked Python environment from the repository root:
+## Built with
 
-```sh
-uv sync --locked --dev
-uv run --no-sync pytest tests/contracts -q
-```
+| Interface | Engine & API | Persistence & jobs | Engineering tools & model |
+| --- | --- | --- | --- |
+| React · TypeScript · Vite · TanStack Query | Python 3.12 · FastAPI · typed contracts | PostgreSQL · Valkey · RQ · retained artifacts | Verilator · cocotb · PicoRV32/Spike · Meta Model API |
 
-For the frontend:
+One investigation engine keeps contracts, bounded execution, independent checking and evidence records separate. Curated RTL, RISC-V and firmware configurations have their own source-linked execution records; FPGA/PCB adapters and their acceptance scopes are documented individually.
 
-```sh
-cd apps/web
-npm ci
-npm test
-npm run typecheck
-npm run build
-```
+## Architecture
 
-Choose tests for the component being changed. HTTP/async tests need local socket access; planner tests can launch controlled test processes. Real simulator and runtime suites have separate prerequisites and are not interchangeable with mock-provider or SQLite checks. See [CONTRIBUTING.md](CONTRIBUTING.md) for evidence expectations and [the CI workflow](.github/workflows/ci.yml) for the exact selected checks. The badge reports selected GitHub source checks; actual tool/model/runtime acceptance is recorded separately in the support matrix.
+![Investigation architecture: typed proposals pass through bounded trusted execution; an independent checker supplies verdicts and retained evidence.](docs/assets/veriforge/investigation-flow.svg)
 
-## Repository layout
+<p align="center"><sub>Original architecture illustration · proposal, execution and verdict remain distinct.</sub></p>
 
-```text
-apps/web/                 Local React workbench
-src/veriforge/            Contracts, engine, API, adapters, planner and evidence
-targets/                  Curated HDL fixtures
-tests/                    Component, acceptance and opt-in integration checks
-infra/                    Simulator and application container definitions
-migrations/               Database migrations
-docs/project/             Interfaces, setup, support boundaries and implementation plan
-```
+## Scope and contributions
+
+Our contribution to the **Meta Global AI Developer Hackathon 2026** is the integration behind the recorded Meta/FIFO feedback chain and firmware/MMIO check/replay path, demonstrated on **4 November** and **30 October**. The deterministic FIFO/platform foundation predates the event; PicoRV32 and execution tools remain upstream work. [Dated contribution ledger →](docs/project/EVENT_CONTRIBUTIONS.md)
+
+The demonstration establishes these curated simulation cases and their retained evidence. Full browser/application qualification, broader recovery and clean release reproduction are separate gates; the film is an evidence walkthrough, not a live UI session. [Detailed supported configurations and boundaries →](docs/project/SUPPORT_MATRIX.md)
+
+**Team SkyNet** · **Desan Vasu** · Solo Indie entrant. [Source, tools and attribution →](docs/project/PROVENANCE.md)
 
 ## Documentation
 
-| Start here | Reference |
-|---|---|
-| Local services and workbench | [Runtime](docs/project/LOCAL_RUNTIME.md) · [UI](docs/project/UI.md) |
-| Contracts and adapters | [Shared interfaces](docs/project/INTERFACES.md) · [Adapter registry](docs/project/ADAPTERS.md) |
-| Execution and evidence | [FIFO toolchain](docs/project/RTL_TOOLCHAIN.md) · [Evidence workflows](docs/project/EVIDENCE.md) · [API](docs/project/API.md) |
-| Additional integrations | [Arithmetic](docs/project/ARITHMETIC.md) · [RISC-V / firmware](docs/project/FIRMWARE.md) · [Meta planner](docs/project/META_INTEGRATION.md) · [Vivado](docs/project/VIVADO.md) |
-| Evidence and evaluation | [RISC-V results](docs/evidence/riscv/2026-10-31/README.md) · [Firmware results](docs/evidence/firmware/2026-10-30/README.md) · [Evaluation protocol](docs/project/EVALUATION.md) · [Provenance](docs/project/PROVENANCE.md) |
-| Intended release scope | [Implementation gameplan](docs/project/IMPLEMENTATION_GAMEPLAN.md) |
+- [Documentation index](docs/project/README.md)
+- [Demo, results and evidence links](docs/project/DEMO.md)
+- [Local runtime setup](docs/project/LOCAL_RUNTIME.md) · [RTL execution and replay](docs/project/RTL_TOOLCHAIN.md)
+- [Shared interfaces](docs/project/INTERFACES.md) · [Adapters](docs/project/ADAPTERS.md) · [Evidence](docs/project/EVIDENCE.md)
+- [Meta integration](docs/project/META_INTEGRATION.md) · [Firmware](docs/project/FIRMWARE.md)
+- [Support matrix](docs/project/SUPPORT_MATRIX.md) · [Contribution ledger](docs/project/EVENT_CONTRIBUTIONS.md) · [Provenance](docs/project/PROVENANCE.md)
 
-## Contributing and security
+## Feedback
 
-Please include the affected contract, exact reproduction, tool versions and verification basis when reporting a problem. Separate mocked results from actual tool execution. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md); never put credentials or private project evidence in public issues.
+Found a problem or have a useful engineering case? [Open an issue](https://github.com/desanv01/VerifForge/issues) with expected behavior, exact stimulus, tool versions and reproducible steps. Use curated or permission-cleared examples; keep credentials and private designs out of public reports. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 ## License
 
-Copyright (C) 2026 Desan Vasu. VerifForge's original first-party code is licensed under the GNU Affero General Public License version 3 only ([AGPL-3.0-only](LICENSE)). It is provided without warranty; see the full license for terms.
-
-Third-party code, tools, dependencies, hardware designs and assets retain their own licenses and notices. This grant does not relicense them or authorize redistribution of private designs. PicoRV32 retains its ISC header, and the [Spike notice](targets/riscv/upstream/SPIKE-LICENSE) is preserved. See [provenance](docs/project/PROVENANCE.md) for the dependency and evidence boundaries.
+Original first-party VerifForge code is licensed under **GNU AGPL version 3 only** ([AGPL-3.0-only](LICENSE)), copyright (C) 2026 Desan Vasu. Third-party code, tools, dependencies, hardware designs and assets retain their own rights and notices, including PicoRV32's ISC header and the [Spike BSD-3-Clause notice](targets/riscv/upstream/SPIKE-LICENSE). See [provenance](docs/project/PROVENANCE.md).
